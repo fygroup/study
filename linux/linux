@@ -16,5 +16,9 @@ yum -y install
 当误删除时，立即umount 磁盘
 ntfsundelete /dev/sdc1 -f -t 1m  //查看1个月内的删除文件
 ntfsundelete /dev/sdc1 -d /home/wilson/tmp/ -u -i 881,2341,234   //恢复文件
-//----------------------------------------------
-
+//---添加用户-------------------------------------------
+groupadd gitgroup   //添加组
+useradd malx        //添加用户
+passwd malx         //设置用户密码
+usermod -G gitgroup malx //为用户分配组
+chgrp -R gitgroup /home/data/git/  //修改文件夹的组

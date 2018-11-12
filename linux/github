@@ -1,7 +1,14 @@
 git reflog   #你所有的操作
 git cherry-pick  0cba81c   #会退到这个状态
 //---初键库---------------------------------
-(1)
+(1)创建云端仓库
+    git init --bare --share
+(2)克隆云端仓库
+    git clone ./**
+    git add -A 
+    git commit -m 'dadad'
+    git push origin master
+(3)连接github的操作
 git init命令把这个目录变成Git可以管理的仓库
 git config --global user.email ""
 git config --global user.name ""
