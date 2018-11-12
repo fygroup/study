@@ -1,0 +1,267 @@
+person拟合度检验
+chisq.test(A,p=p)
+
+ks.test(X,Y)
+
+列联表数据独立性检验
+chisq.test(x,correct=F)   #x是矩阵
+
+#当数据小于5时 用fisher精确检验
+fisher.test()
+
+
+sd()   标准差
+
+cut(x,br=c()) #分位数
+
+
+   
+a[a[,1] %in% c(2,4),]！！！！！！！！！！！！！！！！！！！麻痹的欲哭无泪呀！！！！
+
+ceiling()
+floor()
+round()
+
+
+typeof(p2) 查看对象本质
+
+runif(n, min = 0, max = 1) 产生平均数
+
+隐马氏模型 简单地用HiddenMarkov包，复杂的用depmixS4包
+
+
+write.table(x,sep=" ","windows_compare.txt",row.names = F,quote = F)  quote 可以去除双引号
+
+parse(file = "cim.test.txt")  将文件内容答应道界面
+
+runif(1,0,1/6)  0到1/6 随机产生一个数。
+
+svg()# 保存为.svg矢量图
+
+plyr包 
+arrange(dataframe,desc(D))  #对D列进行倒序
+
+quantile(x,probs=c(0,0.2,0.4,0.6,0.8,1))
+
+
+rev(1:5)  颠倒向量
+
+R语言类的重要性
+names()
+
+sink(".txt")   抓取屏幕输出
+。
+。
+。
+sink()
+
+
+qtl包
+drop.markers(cross, markers)   删除marker
+nind()  杂交个体数目
+nmar()	每个连锁群marker数目
+nchr()	连锁群数
+vector("list", 20)	创建一个list  里面包含20个元素
+
+gen[is.na(gen)] <- 0
+
+
+
+> asd[1,,drop = FALSE]
+     [,1] [,2] [,3]
+[1,]    1    9   17
+> asd[1,]
+[1]  1  9 17
+> class(asd[1,,drop = FALSE])
+[1] "matrix"
+> class(asd[1,])
+[1] "integer"
+
+diff(x,lag=n) #滞后差分，lag用以指定滞后几项。默认的lag值为1，x<-c(1,5,23,29),diff(x)返回值为c(4,18,6)
+
+pull.map（）
+movemarker(ch3c, find.marker(ch3c, 7,index=4), 15)
+plot.rf is used to plot the
+pairwise recombination fractions and LOD scores.
+
+
+有时需要反复执行一段R代码，并使用不同得参数，可以将代码用文本编辑器写为R脚本(*.R)，在第一行加入
+
+Args <- commandArgs()
+
+然后通过
+
+Rscript *.R 参数1 参数2 ...
+
+执行脚本。
+
+脚本中
+
+Args[6]==参数1
+
+Args[7]==参数2
+
+
+options(scipen=200)  取消科学计数
+
+
+rt()	#t分布
+
+runif()		#平均分布
+
+
+norm是正态分布，前面加r表示生成随机正态分布的序列，
+rnorm(10)表示产生10个数；给定正太分布的均值和方差，
+pnorm可以输出正态分布的分布函数，
+dnorm可以输出正态分布的概率密度函数，
+qnorm给定分为数正太分布
+
+d  Density的缩写，表示密度函数。举个例子，标准正太分布x=0对应的值可以用dnorm(0)计算
+p  Probability的缩写，表示概率函数。举个例子，标准正太分布从负无穷大到0的概率，可以用pnorm(0)计算
+q  Quantile的缩写，表示分位函数。举个例子，如果知道标准正太分布从负无穷大到x的概率是0.9678，想要知道这个x的值，可以通过qnorm(0.9678)计算。
+
+y<-rnorm(100,mean=20,sd=2)
+y1<-density(y)	# 核密度
+hist(y,freq=F) #freq  T 频率直方图 F 密度直方图
+lines(y1)
+ecdf(y) # 分布函数    表示落到 0—x之间的概率
+
+runif(242,min=-0.3,max=0.3) 从-0.3 到0.3 随机产生242个值
+
+如果需要长期使用某个包的话，每次开启都需要输入library()，比较麻烦，因此可以让R启动时自动加载某些包。在R的安装目录/etc/Rprofile.site加入下载语句：
+
+例如让R启动时自动加载ggplot2包
+
+local({old <- getOption("defaultPackages")
+
+       options(defaultPackages = c(old, "ggplot2"))})
+
+R语言选项
+library(getopt)
+spec<-matrix(c(
+  'infile','i','1','character',
+  'outfile','o','1','character',
+  'help','h','0','logical',
+  )
+)
+opt<-getopt(spec)
+if (!is.null(opt$help)){
+  cat(getopt(spec,usage=T))
+  q(status = 1) #发生错误，退出脚本 
+}
+
+gl(3,2,12) 3个水平，2个重复，12个数
+1 1 2 2 3 3 1 1 2 2 3 3
+
+
+tapply(data$pos,INDEX = data$chr,mean)
+
+cumsum  累加
+
+match(markers,rownames(snpData))  # 找到markers在snpData中的位置
+
+
+numeric（3）#创建3个等于0的向量
+
+diff 计算查分  就是计算每个数之间的差。
+
+区分order与sort的区别
+
+choose(m,n)   c(m,n)  排列组合
+
+save(dasd,file="")  load("")  存储  读取数据
+
+library(scales)  alpha 设置透明色
+
+text(...adj=c())   
+
+rev() 颠倒顺序
+
+axis(1,pos=2)  pos横坐标的位置
+
+intersect  查找相同的元素
+
+col <- factor(as.character(local[,2]), levels = c(levels(local[,2])), labels = rainbow(length(unique(local[,2]))))
+
+loess拟合：loess()
+
+list.files(indir,pattern="r2$",full=T) #列出目录下匹配格式的文件
+
+sub（）替换
+
+do.call(LD_decay,opt) #调用函数先进的用法  前面是函数 后面是选项
+
+
+
+
+rm(list=ls())
+path = 'J:/lab/EX29 --在R语言中进行文件（夹）操作'
+setwd(path)
+cat("file A\n", file="A") #创建一个文件A，文件内容是'file A','\n'表示换行，这是一个很好的习惯
+cat("file B\n", file="B")  #创建一个文件B
+file.append("A", "B")  #将文件B的内容附到A内容的后面，注意没有空行
+file.create("A")  #创建一个文件A, 注意会覆盖原来的文件
+file.append("A", rep("B", 10)) #将文件B的内容复制10便，并先后附到文件A内容后
+file.show("A")  #新开工作窗口显示文件A的内容
+file.copy("A", "C") #复制文件A保存为C文件，同一个文件夹
+dir.create("tmp")  #创建名为tmp的文件夹
+file.copy(c("A", "B"), "tmp") #将文件夹拷贝到tmp文件夹中
+list.files("tmp")  #查看文件夹tmp中的文件名
+unlink("tmp", recursive=F) #如果文件夹tmp为空，删除文件夹tmp
+unlink("tmp", recursive=TRUE) #删除文件夹tmp，如果其中有文件一并删除
+file.remove("A", "B", "C")  #移除三个文件
+file.exists("A")  #A文件是否存在
+
+中位数:对序列排序后,排在中间的数,需要特别注意的是如果序列为偶数,中位数是中间两个数平均值.  R函数:median
+x[max(1,i-window),min(len,i+window)]
+
+
+x <- try(function(x), silent=TRUE)
+#防止错误跳出，
+if(class(x)=='try-error')....
+
+
+par  对于ggplot2 没有作用
+可以用
+library(grid)
+
+vp1 <- viewport(width = 1, height = 1, x = 0.5, y = 0.5)
+
+vp1 <- viewport()
+
+#vieport()函数可创建视图窗口，参数x,y,width,height控制视图窗口的大小和位置（ｘ，ｙ控制视图窗口的中心位置）。默认的测量单位是“ｎｐｃ”，范围从０到１。（０,０），代表左下角，（１,１）代表右上角，（０.５,０.５）代表视图窗口的中心。也可以用ｕｎｉｔ（２，＂ｃｍ＂）或ｕｎｉｔ（１，＂ｊｉｎｃｈ＂）这样的绝对单位。
+http://blog.sina.com.cn/s/blog_670445240102v25a.html
+pdf("polishing-subplot-1.pdf", width = 4, height = 4)
+subvp <- viewport(width = 0.4, height = 0.4, x = 0.75, y = 0.35)
+b
+print(c, vp = subvp)
+dev.off()
+
+
+p<-p+guides(fill = guide_legend(ncol = 4))
+
+nlevels(gl(3, 7)) # = 3
+
+
+quantile()给出了学生综合得分的百分位数
+
+
+args=commandArgs(T)   
+
+
+
+union()   两个集合的并集
+intersect（） 两个集合的交集
+
+1.数据的中心化
+
+所谓数据的中心化是指数据集中的各项数据减去数据集的均值。
+例如有数据集1, 2, 3, 6, 3，其均值为3,那么中心化之后的数据集为1-3,2-3,3-3,6-3,3-3,即：-2,-1,0,3,0
+scale(data, center=T,scale=F)
+
+2.数据的标准化
+所谓数据的标准化是指中心化之后的数据在除以数据集的标准差，即数据集中的各项数据减去数据集的均值再除以数据集的标准差。
+scale(data, center=T,scale=T)
+
+
+quantile(c(),probs=c(0.25,0.75))
