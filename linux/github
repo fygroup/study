@@ -14,4 +14,24 @@ git clone https://github.com/BingGostar/program_study
 git add -A 
 git commit -m 'dsad'
 git push -u master origin
+//--------------------------------------
+git config format.pretty oneline #显示历史记录时，每个提交的信息只显示一行
+git config color.ui true
+关于本地误删的后悔药:
+git reflog #查看所有分支的所有操作记录
+git cherry-pick 147b3b5  #恢复
+如何让本地回归到先前的版本号:
+git log 查看之前的版本信息获取版本号
+git checkout 版本id号
+例如:git  checkout b59aa374658e105d8c3be04d1d3ed931ae8a0c48
+当pull冲突时
+git fetch --all
+git reset --hard origin/master
+//---权限控制--------------------------------
+你只有git pull的权利，并没有git push的权利
+url = https://github.com/BingGostar/c_project.git   //会提示你用账号密码登陆
+url = git@github.com:BingGostar/c_project.git       //会用密钥登陆
+ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
+
+
 
