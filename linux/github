@@ -1,3 +1,17 @@
 git reflog   #你所有的操作
 git cherry-pick  0cba81c   #会退到这个状态
+//---初键库---------------------------------
+(1)
 git init命令把这个目录变成Git可以管理的仓库
+git config --global user.email ""
+git config --global user.name ""
+git remote add origin https://github.com/BingGostar/program_study
+git add -A 
+git commit -m ''
+git push -u master origin
+(2)
+git clone https://github.com/BingGostar/program_study
+git add -A 
+git commit -m 'dsad'
+git push -u master origin
+
