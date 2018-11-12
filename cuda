@@ -1,0 +1,114 @@
+//---初始化------------------------------
+xxx_kernel<<<grid, block, sharedMemSize>>>；
+
+
+bool InitCUDA()
+ {
+    int deviceCount; 
+   // 获取显示设备数
+    cudaGetDeviceCount (&deviceCount);
+    if (deviceCount == 0) 
+    {
+        cout << "找不到设备" << endl;
+        return EXIT_FAILURE;
+    }
+    int i;
+    for (i=0; i<deviceCount; i++)
+    {
+        cudaDeviceProp prop;
+        if (cudaGetDeviceProperties(&prop,i)==cudaSuccess) // 获取设备属性
+        {
+              if (prop.major>=1) //cuda计算能力
+              {
+                  break;
+              }
+        }
+    }
+    if (i==deviceCount)
+    {
+         cout << "找不到支持 CUDA 计算的设备" << endl;
+         return EXIT_FAILURE;
+    }
+    cudaSetDevice(i); // 选定使用的显示设备
+       return EXIT_SUCCESS;
+ }
+//---内存--------------------------------
+
+锁页内存：cudaMallocHost((void**)&a, nbytes); 在主机端申请一块内存，这块内存gpu可以访问
+cudaFreeHost(host_c);  
+设备内存：cudaMalloc（(void**)&a, nbytes）在设备的Global Memory申请内存
+cudaFree(dev_a);
+
+//---流操作------------------------------
+cudaStream_t stream;
+cudaStreamCreate(&stream);
+
+cudaError_t cudaStreamCreateWithFlags(cudaStream_t* pStream, unsigned int flags);
+// flag为以下两种，默认为第一种，非阻塞便是第二种。
+cudaStreamDefault: default stream creation flag (blocking)
+cudaStreamNonBlocking: asynchronous stream creation flag (non-blocking)
+
+
+cudaError_t cudaStreamDestroy(cudaStream_t stream);  //资源释放
+
+cudaError_t cudaStreamSynchronize(cudaStream_t stream);//等待当前流，到完成为止
+cudaError_t cudaStreamQuery(cudaStream_t stream);//不阻塞，直接返回是否完成
+
+int* a;
+cudaMallocHost((void**)&a,nbytes);  //申请锁页内存
+int* d_a;
+cudaMalloc((void**)&a,nbytes); //申请设备内存
+
+cudaMemcpyAsync(inputDevPtr + i * size, hostPtr + i * size, size, cudaMemcpyHostToDevice, stream[i]);  
+MyKernel<<<100, 512, 0, stream[i]>>>(outputDevPtr + i * size, inputDevPtr + i * size, size);  
+cudaMemcpyAsync(hostPtr + i * size, outputDevPtr + i * size, size, cudaMemcpyDeviceToHost, stream[i]); 
+
+默认的写法 0
+cudaMemcpyAsync(d_a, a, nbytes, cudaMemcpyHostToDevice, 0);
+increment_kernel << <blocks, threads, 0, 0 >> >(d_a, value);
+cudaMemcpyAsync(a, d_a, nbytes, cudaMemcpyDeviceToHost, 0);
+
+Event
+cudaEvent_t event;
+cudaError_t cudaEventCreate(cudaEvent_t* event);
+cudaError_t cudaEventDestroy(cudaEvent_t event);
+
+cudaEvent_t start_event;
+cudaEvent_t end_event;
+cudaError_t cudaEventRecord(start_event, stream); //执行event
+...
+cudaError_t cudaEventRecord(end_event, stream);
+
+cudaError_t cudaEventSynchronize(cudaEvent_t event); //阻塞等待
+cudaError_t cudaEventQuery(cudaEvent_t event);// 返回是否完成   如果所有操作都完成了，则返回cudaSuccess，否则返回cudaErrorNotReady。
+
+cudaError_t cudaEventElapsedTime(float* ms, cudaEvent_t start, cudaEvent_t stop);//返回start和stop之间的时间间隔，单位是毫秒
+
+
+多个流要交叉添加：
+cudaMemcpyAsync(dev_a, host_a,size,cudaMemcpyHostToDevice,stream1);
+cudaMemcpyAsync(dev_b, host_b,size,cudaMemcpyHostToDevice,stream2);
+kernel<<<blocknum, perthreadnum, 0, stream1 >>();
+kernel<<<blocknum, perthreadnum, 0, stream2 >>();
+cudaMemcpyAsync(host_a, dev_a,size,cudaMemcpyDeviceToHost,stream1);
+cudaMemcpyAsync(host_b, dev_b,size,cudaMemcpyDeviceToHost,stream2);
+
+
+//---线程通信----------------------------
+__syncthreads()；当某个线程执行到该函数时，进入等待状态，直到同一线程块（Block）中所有线程都执行到这个函数为止，
+即一个__syncthreads()相当于一个线程同步点，确保一个Block中所有线程都达到同步，然后线程进入运行状态。
+
+cudaDeviceSynchronize(); 阻塞设备
+
+因为CUDA API和host代码是异步的，cudaDeviceSynchronize可以用来停住CUP等待CUDA中的操作完成：
+
+
+//grid和block的配置准则------------------
+  保证block中thrad数目是32的倍数。
+  避免block太小：每个blcok最少128或256个thread。
+  根据kernel需要的资源调整block。
+  保证block的数目远大于SM的数目。
+  多做实验来挖掘出最好的配置。
+
+
+

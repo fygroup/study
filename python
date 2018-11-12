@@ -1,0 +1,1426 @@
+import os
+os.path.abspath   绝对路径
+
+NumPy是一个定义了数值数组和矩阵类型和它们的基本运算的语言扩展。
+
+SciPy是另一种使用NumPy来做高等数学、信号处理、优化、统计和许多其它科学任务的语言扩展。
+
+Matplotlib是一个帮助绘图的语言扩展
+
+input() 函数从键盘输入一行字符串
+
+capitalize()将字符串的第一个字母变成大写,其他字母变小写   str.capitalize()
+
+两个不一样
+a=''
+a=False
+
+None是一个特殊的常量。
+None和False不同。
+None不是0。
+None不是空字符串。
+None和任何其他的数据类型比较永远返回False。
+None有自己的数据类型NoneType。
+你可以将None复制给任何变量，但是你不能创建其他NoneType对象。
+
+sys.argv[0]   传递参数
+
+生成器  yield  
+return
+
+错误类型 IndexError  Exception
+
+import report as wr
+
+sys.path.append()
+
+__init__.py 文件定义了包的属性和方法。其实它可以什么也不定义；可以只是一个空文件，但是必须存在。如果 __init__.py 不存在，这个目录就仅仅是一个目录，而不是一个包，它就不能被导入或者包含其它的模块和嵌套包
+
+
+data=np.empty((4*6),dtype=np.int64)
+x,y,z=data.reshape(8,3).T
+print(x,y,z)
+
+
+python中检测某个变量是否有定义
+第二种方法：
+    try:
+         print   var
+    except   NameError:
+         print   'var   not   defined'
+
+第三种方法：
+      'var'   in   dir()
+
+
+dir()  中是此脚本中的变量集合
+
+eval()  字符转变量
+
+ zip(list1,list2)  同时遍历
+
+re.match(pattern, string, flags=0)
+字符串的开头是否能匹配正则表达式。返回_sre.SRE_Match对象，如果不能匹配返回None。
+
+re.search( )  是全部匹配
+
+rstrip().split()
+
+counts = sparse.coo_matrix((data, (i, j)), shape=(N, N), dtype=float) #注意 建议加上dtype！！！！！！
+#data 以 （i,j）定位在矩阵中
+
+
+result.todense()
+
+pat1=re.compile('^\s+$')   #将正则表达式翻译成 pattern
+
+parser.add_argument('-c','--chrSize',help='chrSize',dest='chrSize',type=open,required=True)
+注意里面的open  这样可以直接拿来读 当句柄！！！
+
+a=[1,2,3]
+b=[4,5,6]
+zip=
+
+if os.path.exists(outdir) == False:
+		os.makedirs(outdir)
+
+pandas
+DataFrame.groupby(['b1','b2']).mean()
+data.apply(num_missing, axis=0) 每一列
+data.sort_values(['ApplicantIncome','CoapplicantIncome'], ascending=False)
+
+
+np.ravel()  扁平化数组
+
+argsort（）  类似R的order
+
+
+pd.fillna()   填补缺失
+
+np.arange(-5,5,0.01)
+
+pd.value_counts（）  计数
+
+
+fillna(value=0,inplace=True)
+
+p.replace(np.nan,0)
+
+df.insert(1,'e',list())   插入第一列
+
+
+print("{0}{1}".format(x,y))
+
+
+pd.as_matrix()
+
+
+
+安装到package到制定目录的好处在于python的升级不一定会影响之前安装的package，减少了工作量。
+
+把要安装的路径 PREFIX 加到 PYTHONPATH 里使用python setup.py install –prefix PREFIX运行 python -c “from distutils.sysconfig import get_python_lib; print(get_python_lib()) ”
+
+在上一步输出的路径里 加入package.pth 文件，内容为PREFIX?
+但是对于egg文件会失败
+
+python setup.py install [–prefix <INSTALL_DIR]?
+export PYTHONPATH=/lib//site-packages:$PYTHONPATH
+
+#---------------------plt-------------------------------------------------------
+plt.xlabel('')
+plt.ylabel('')
+plt.xticks([0,1,2],['','',''])
+plt.title("")
+plt.legend((rect,),(u"图例",))
+plt.text(rect.get_x()+rect.get_width()/2., 1.03*height, '%s' % float(height))
+
+
+ax.set_title(title)
+	ax.set_xlabel(xlab，fontsize=10)
+	ax.set_ylabel(ylab,fontsize=10)
+
+	ax.tick_params(top='off',bottom='on',left='off',right='off')  #是否有刻度线
+	ax.spines['bottom'].set_color('k')
+	ax.spines['bottom'].set_linewidth(0.05)
+	ax.spines['left'].set_color('k')
+	ax.spines['left'].set_linewidth(0.05)
+	ax.spines['top'].set_color('k')
+	ax.spines['top'].set_linewidth(0.05)
+	ax.spines['right'].set_color('k')
+	ax.spines['right'].set_linewidth(0.05)
+	ax.set_xlim()
+	ax.set_ylim
+ax1.spines['right'].set_visible(False)
+ax1.spines['top'].set_visible(False)
+# Only show ticks on the left and bottom spines
+ax1.yaxis.set_ticks_position('left')
+ax1.xaxis.set_ticks_position('bottom')
+
+ax.plot(X,Y,'o',color="red",alpha=0.4,markersize=5)
+
+ax=fig.add_subplot(111,axisbg='red')
+
+ax.set_axis_bgcolor('w')  #axis区域 的背景色
+
+plt.axvline(x=i-0.5, linewidth=0.05, color='grey')   #垂线
+plt.axhline(y=i-0.6, linewidth=0.05, color='grey')   #横线
+
+ax.set_xticks(xticks)                                              #刻度线
+ax.set_xticklabels(xlable,rotation='vertical',fontsize='x-small')  #刻度线的label
+ax.xaxis.set_ticks_position('bottom')				   #画下面刻度线
+ax.set_yticks(xticks)				
+
+fig, axes = plt.subplots(nrows=nrows)                                   #另一种分割字图
+fig.subplots_adjust(top=0.95, bottom=0.01, left=0.2,right=0.99)
+ax3=fig.add_axes([0.1,0.55,0.8,0.25])
+
+ax.tick_params(axis='x|y|both', which='major', labelsize=5) 
+
+cmap = mpl.colors.ListedColormap(['r', 'g', 'b', 'c'])
+bounds = [1, 2, 4, 7, 8]
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+#mpl.colors.Normalize(vmin=-1.,vmax=1.)
+
+ax.set_xticks(chrloc)
+ax.set_xticklabels(chrlist,rotation='vertical',fontsize='x-small')
+ax.xaxis.set_ticks_position('top')
+ax.set_yticks(chrloc)
+ax.set_yticklabels(chrlist,fontsize='x-small')
+
+cbar.ax.tick_params(labelsize=10)   # colorbar 字体大小
+
+ax1.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.,prop={'size':8})
+fig.subplots_adjust(top=0.93, bottom=0.1, left=0.1, right=0.9)
+
+ax.set_xlim((0, 2*np.pi))
+ax.set_xticks([0, np.pi, 2*np.pi])
+ax.set_xticklabels(['0', '$\pi$', '2$\pi$'])
+ax.set_ylim((-1.5, 1.5))
+ax.set_yticks([-1, 0, 1])
+
+fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(6, 6), sharey=True)
+axes[0, 0].boxplot(data, labels=labels)
+axes[0, 0].set_title('Default', fontsize=fs)
+plot.legend(loc=2, prop={'size': 6})
+
+ax.xaxis.tick_top()  #扭转x染色体
+ax.xaxis.set_ticks_position('top')
+
+plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8，hspace=0.2, wspace=0.3)  #调整图片边缘
+
+text(0.5, 0.5,'matplotlib',
+     horizontalalignment='center',
+     verticalalignment='center',
+     transform = ax.transAxes)
+
+for label in ax1.get_yticklabels():
+	label.set_fontsize(6)
+posi=ax1.get_position()
+clip_on=False   框外可见
+ax.yaxis.set_label_coords(-0.05, 0.5) ylabel 位置
+#axes.set_ylabel("$P_y$",position=(0,0.5),transform=axes.transAxes)  xlabel位置
+
+
+ax2.spines['left'].set_bounds(-1, 1) 
+ax.text(0.95, 0.01, 'colored text in axes coords',
+        verticalalignment='bottom', horizontalalignment='right',
+        transform=ax.transAxes,
+        color='green', fontsize=15)
+
+
+ax.get_yaxis().set_tick_params(which='both',pad = -2, direction='out',length=10) pad 距离  length 长度
+ax.get_xaxis().set_tick_params(which='both', direction='out')
+plt.draw()
+
+to set both the x and y axis at the same time:
+
+ax = plt.gca()
+ax.tick_params(direction='out')
+
+legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,ncol=2, mode="expand", borderaxespad=0.)
+
+#----color map 颜色调制-----------------------
+
+cmap = matplotlib.colors.LinearSegmentedColormap.from_list('cmap',['#0000A0','#121C3B','#04071B','#5B0E12','#AC1F24'],255)
+
+norm = mpl.colors.Normalize(vmin=-0.8,vmax=1)
+
+cax=ax.matshow(self.pearsonmat,cmap=cmap,,clim=(-0.8, 1), norm=MidpointNormalize(midpoint=0,vmin=-0.8, vmax=1))
+
+
+
+#-------------------------------------------------------------------------------
+
+
+np.random.randn(5,4) 生成5x4随机矩阵
+
+
+a=np.array([1,2,3])
+np.tile(a,3)  #[1,2,3,1,2,3,1,2,3]
+
+
+import collections.Counter
+c=Counter('dsadad')
+c=Counter([1,2,3,1,2,3,1,2,3])
+对于c的更新，先要定义一个Counter类
+d=Counter(1)
+c.undata(d)
+
+字典值排序
+dict= (dic.items(), key=lambda d:d[1], reverse = True)
+
+sorted(dic.iteritems(),key=lambda x:x[0])
+
+yield 迭代借口
+
+
+时间：
+import time
+>>> time.time()
+1468917153.351066
+>>> time.localtime(time.time())
+time.struct_time(tm_year=2016, tm_mon=7, tm_mday=19, tm_hour=16, tm_min=32, tm_sec=38, tm_wday=1, tm_yday=201, tm_isdst=0)
+>>> time.asctime( time.localtime(time.time()) )
+'Tue Jul 19 16:33:55 2016'
+>>> time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+'2016-07-19 16:34:30'
+
+t0=time.clock()   cpu 运行时间
+time.clock()-t0
+
+
+
+except SystemExit :     收到终止信号
+
+#====================================数据库=========================================================
+import spqite3
+数据库：
+conn = sqlite3.connect(db)
+cur = conn.cursor()
+
+显示：
+db.execute('select name from sqlite_master where type=\'table\'').fetchall()
+
+显示数据表的信息
+db.execute('pragma table_info([PROJECT])').fetchall()
+
+新插入列
+alter table student add column name varchar
+
+
+查找
+select_sql = 'select * from dinnerusr where user = \'{0}\''.format(user)
+cur.execute(select_sql)
+theUser = cur.fetchall()  #theUser=idn, user, name, email, groups, dinner
+
+插入
+insert_sql = "insert into dinnerusr(user,name,email,groups,dinner) values (?,?,?,?,?)"
+cur.execute(insert_sql,(usr,name,mail,group,''))    
+conn.commit()
+
+更新
+update_sql = "update dinnerusr set name = \'{0}\', email = \'{1}\', groups = \'{2}\' where user = \'{3}\'".format(name,email,groups,usr)
+cur.execute(update_sql)    
+conn.commit()
+
+改变输出格式(.mode)
+sqlite> .mode list
+    你可以用“.separator”点命令来改变分界符。例如，为了把分割符改为一个逗号和一个空格，你可以这样做：
+sqlite> .separator ", "
+    在“line"模式下，每一个位于条记录中的列在它自己那行显示。每行由列名、一个等号和列数据组成。下一条记录以一个空行隔开。这是一个行模式输出的例子：
+sqlite> .mode line
+    在列模式下，每条记录在一个单独的行中以数据列对齐的方式显示。列如：
+sqlite> .mode column
+sqlite> select * from tbl1;
+one          two       
+----------   ----------
+hello        10        
+goodbye      20        
+        在默认的情况下，每列至少10个字符宽。太宽(超过设定的宽度)的数据将被截取。你可以用“.width”命令来调整列宽。如下所示：
+sqlite> .width 12 6            (第一列12,第二列6)
+sqlite> select * from tbl1;
+     上面例子中".width"命令设置第一列宽为12第二列宽为6。其它的列宽不变。你可以指定与你查询结果需要的列数一样多的“.width”参数。    如果你指定一列宽为0，那么这个列宽将自动以下面三个数字中的最大值做为列宽：10、表头宽度和最宽的数据列的宽度。这可以让列自动调整宽度。每列的默认设置为自动调整的0值。    出现在输出开头两行的列标示可以用".header"点命令关闭。在上面的例子中，列标示是打开的。可以用下面的方法关闭列标示：
+sqlite> .header off
+sqlite> select * from tbl1;
+    另外一个有用的输出模式是"insert"。在插入模式下，被子格式化为看起来像SQL INSERT语句的样式。你可以用插入模式来产生文件（便于）以后用于不同数据库的输入。 当指定插入模式时，你必须给定一个特定参数就是要插入的表名。例如：
+sqlite> .mode insert new_table
+sqlite> select * from tbl1;
+INSERT INTO 'new_table' VALUES('hello',10);
+INSERT INTO 'new_table' VALUES('goodbye',20);
+    最新的输出格式是“html”。在这种模式下，sqlite3把查询的结果写做XHTML表。开始的<TABLE>和结束 的</TABLE>（标记）没有写出，但有<TR>、<TH>和<TD>等分界符。html输出对 CGI来说是相当有用地。把结果写到文件中
+
+
+
+
+
+#================================numpy==================================================================
+np.genfromtxt(matrix_file)
+
+a=np.array()
+b=np.array()
+power(a-b,2) #a-b的平方
+
+np.zeros([2,3])  创建2行3列的全是0矩阵
+
+np.random.rand(3,2)  创建 3行2列的随机矩阵（0-1）
+
+np.isnan()
+
+data.astype(int)
+
+np.zeros([x,y])  #创建x行 y列 全是0的矩阵
+np.ones([x,y])  #创建x行 y列 全是1的矩阵
+
+
+data.repeat()
+np.tile(data,rep)     扩充数组
+
+data.ravel()  扁平化
+
+data.flatten()  拉直
+
+np.column_stack([[1,2,3],[6,1,4]])
+array([[1, 6],
+       [2, 1],
+       [3, 4]])
+
+nd1 = np.genfromtxt(args.icedAsisMatrix)  # 读文件
+
+np.vstack((nd1,nd2)) #列堆叠
+
+from scipy import sparse
+counts = sparse.coo_matrix((nd[:,2], (nd[:,0], nd[:,1])), shape=(N, N), dtype=float)
+counts.todense()
+
+
+np.save()
+
+np.genfromtxt(matrix_file)
+numpy.savetxt(fname, X, fmt='%.18e', delimiter=' ', newline='\n', header='', footer='', comments='# '）
+只要有一个为真，那么返回真，可用来判断 一行是否全为 0
+data.any(0) 行
+data.any(1) 列
+
+
+
+np.nan
+
+np.nansum
+np.nanmean
+np.nanmax
+
+np.column_stack([nd2[:,1],nd2[:,0],nd2[:,2]])
+
+1.水平组合
+>>> np.hstack((a,b))
+array(［ 0, 1, 2, 0, 2, 4],
+       [ 3, 4, 5, 6, 8, 10],
+       [ 6, 7, 8, 12, 14, 16］)
+>>> np.concatenate((a,b),axis=1)
+array(［ 0, 1, 2, 0, 2, 4],
+       [ 3, 4, 5, 6, 8, 10],
+       [ 6, 7, 8, 12, 14, 16］)
+
+2.垂直组合
+>>> np.vstack((a,b))
+array(［ 0, 1, 2],
+       [ 3, 4, 5],
+       [ 6, 7, 8],
+       [ 0, 2, 4],
+       [ 6, 8, 10],
+       [12, 14, 16］)
+>>> np.concatenate((a,b),axis=0)
+array(［ 0, 1, 2],
+       [ 3, 4, 5],
+       [ 6, 7, 8],
+       [ 0, 2, 4],
+       [ 6, 8, 10],
+       [12, 14, 16］)
+
+a = numpy.empty((3,3,))
+a=numpy.empty((20*3),dtype=np.int32)#创建20行3列，每一个是int类型的矩阵
+
+a[:] = numpy.NAN    #创建空矩阵
+
+data[data==0]=np.nan
+
+nd2 = np.column_stack([nd2[:,1],nd2[:,0],nd2[:,2]])   #新建列合并
+nd = np.vstack((nd1,nd2))			      #行合并
+
+np.savetxt(outfile,nd,fmt='%i\t%i\t%i',newline='\n')
+np.linspace(1,10,100)  #1到10  平均100个数字
+ 
+np.equal(a, 0)
+mask=np.any(np.isnan(U),axis=0)  删除全是零的行列
+mat[~mask]      
+mat[:,~mask]
+
+
+mask=np.all(mat_matrix==0,axis=0)
+
+mat=np.delete(mat,[0],axis=0)
+
+np.array().argsort()
+
+np.unique(...)
+
+q=np.where(data=x)
+q[0]
+
+np.percentile(a,95)#95%分位数
+
+
+np.intersect1d(a,b)  交集
+
+np.triu(X)   上三角矩阵
+
+np.arange(3,7)
+array([3, 4, 5, 6])
+#=========================================================================================================
+#===============================pandas===========================================================================================
+DataFrame.iterrows() #迭代每一行
+0 chrom      chr1
+start         0
+end      100000
+bNum          1
+Name: 0, dtype: object
+
+meanRpkmdf['pc1']=-meanRpkmdf['pc1']  #对整个一列取负数
+
+lowess_mat.round({'expect':3,'count/expect':3})   #将 expect和count/expect的列 round   （保留3位）
+
+
+data.drop_duplicates()   #去重
+
+pandas的空值是NaN
+
+判断空值是pd.isnull()
+
+pf.isin([1,2])
+
+pd.tolist()  #转化为list
+
+normal_matrix=normal_matrix.drop(['index'],axis=1)  # 删除
+
+data.replace(3,5)  #将所有的3替换成5
+
+counts = sparse.coo_matrix((df[2], (df[0], df[1])), shape=(N, N), dtype=float)
+counts = np.array(counts.todense())
+df = pd.DataFrame(counts.todense(),index = bed['bNum'].tolist(),columns = bed['bNum'].tolist())
+
+df.fillna()   #填充缺失
+
+data.iloc[1,2]=...
+data.ix[1,'a']=....
+
+(data.ix[1,:]==0).all()  #判断一行是否全为0
+*****************.any()  #判断一行是否有0
+
+添加行可以直接 a.append(b)
+
+pow(a,2)  #平方
+
+df.dropna(axis=0, how='all')  # 去除全是na的行列
+
+lowess_mat.ix[lowess_mat['count']==0,'count']=np.nan
+
+pd.concat([x,a['c']],axis=1)   #列合并
+
+mat.ix[(mat[0]>=0.2) & (mat[0]<=0.4)]
+
+mat.duplicated()
+去除重复的行！！（全部）
+
+curmat=curmat.sort_values(['b1','b2'],axis=0)
+
+DataFrame.empty == True   判断 数据框是否为空
+
+a=np.array(range(10)
+a.resize(20,refcheck=0)
+a
+array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+mat=pd.concat([mat,allmat],axis=0).groupby(['b1','b2'],as_index=False).sum()
+
+NT_mat=NT_mat.reindex(columns=sorted(NT_mat.columns))
+
+删除列
+
+mat[['dis','count']]  #重排列名
+
+df=df.drop(df.index[[1,3]]) #删除行
+
+pd.DataFrame([[1,2,3]])#创建一行
+
+mat.append(mat1)  列合并
+mat['a'].str.startswith('')
+#===========================================scipy===================================================================================
+scipy.interpolate.UnivariateSpline  #类似路易斯拟合
+
+#===========================================sparse==================================================================================
+疏松矩阵运行更快 内存更小
+
+from scipy import sparse
+a=np.mat([[],[],[]])
+mat_sparse=sparse.csr_matrix(a)
+coo_matrix((data, (row,col)), shape=(4,4))
+sparse.issparse(mat_sparse)==True
+
+mat_sparse.diagonal
+
+mat_sparse.todense()  #转换成致密矩阵正常的
+
+df = df[df.iloc[:,0].isin(bed['bNum']) & df.iloc[:,1].isin(bed['bNum'])]
+counts = sparse.coo_matrix((df[2], (df[0], df[1])), shape=(M, N), dtype=float)
+counts = np.array(counts.todense())  #稀疏矩阵一定先转换为致密矩阵
+df = pd.DataFrame(counts.todense(),index = bed1['bNum'].tolist(),columns = bed2['bNum'].tolist())
+
+
+
+#===============================pysam 模块==========================================================================================
+#sam文件
+染色体	比对flag	read名称	比对位置	比对得分	比对内容	是否有另外的片段（* 有 = 没有 对于上段比对这里应该是*）																																	
+read1   97      	seq1    	61      	60      	120M    	=       						1081    1080    GTGGACCCTGCAGCCTGGCTGTGGGGGCCGCAGTGGCTGAGGGGTGCAGAGCCGAGTCACGGGGTTGCCAGCACAGGGGCTTAACCTCTGGTGACTGCCAGAGCTGCTGGCAAGCTAGAG    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII        NM:i:0  MD:Z:120        AS:i:120        XS:i:0
+
+import pysam    #读取bam文件的模块
+
+samfile=pysam.AlignmentFile("xxx.bam",'rb')
+
+for read in samfile.fetch(until_eof=True):
+for read in samfile.fetch('chr1',100,200):  # 获取  chr1 100到200之间的比对信息
+
+
+#samfile.getrname(read.tid)
+#read.tid  输出染色体的数字
+#read.qname  染色体的名称
+#read.is_unmapped  是否比对上
+#read.mapping_quality 比对质量
+#read.has_tag("AS") 判断是否有tag （AS 匹配得分 XS 第二好的匹配得分  如果AS>XS 唯一比对 否则 muti 比对 ）
+#samfile.getrname(read.tid) 读取染色体的名称
+#read.pos	比对上的位置
+#read.flag  比对flag
+#多段比对  read.rnext（如果read.rnext小于0，没有多段比对） 下一个比对的染色体名字（read.tid） read.pnext 下一个比对的位置（read.pos）
+read.next_reference_id
+#read.is_read1 是否read1 read.is_read2 是否read2
+pysam.AlignmentFile("allpaired.bam", "wb", template=samfile)
+read.qual   # 序列质量
+read.query  # 序列
+read.is_reverse    判断方向
+
+
+#===================================================================================================================================
+
+#==============================Intersecter, Interval模块============================================================================
+#范围限定
+from bx.intervals.intersection import Intersecter, Interval
+tree=Intersecter()
+tree.add_interval(Interval(1,2,value=''))
+
+x=tree.find(start，end) #判定是否在start end的范围内 如果在  那么 x==1
+tree.value['name']
+
+ >>> from bx.intervals.intersection import Interval, IntervalTree
+ |  >>> intersecter = IntervalTree()
+ |
+ |  An interval is a start and end position and a value (possibly None).
+ |  You can add any object as an interval:
+ |
+ |  >>> intersecter.insert( 0, 10, "food" )
+ |  >>> intersecter.insert( 3, 7, dict(foo='bar') )
+ |
+ |  >>> intersecter.find( 2, 5 )
+ |  ['food', {'foo': 'bar'}]
+
+
+
+
+
+#===================================================================================================================================
+
+a=os.popen("pwd")
+print(a.read().strip())   #获得返回值结果
+
+Python中的strip用于去除字符串的首尾字符，同理，lstrip用于去除左边的字符，rstrip用于去除右边的字符。
+
+
+if os.path.exists(i) == False:
+            os.makedirs(i)      #多级建立文件夹
+
+re.split("\s+",line.strip())   #注意末尾的\n
+
+monitor logdump -p     #查看任务状态  找报错
+
+sed -i '1d' <file>   #删除文件第一行  
+
+words = re.findall(r'\w+', string) #查找所有word
+ 
+lower_words = [word.lower() for word in words] #小写word
+  
+word_counts = Counter(lower_words) #计数
+
+
+
+#=============================错误处理===============================
+import sys  
+try:  
+   block  
+except:  
+   info=sys.exc_info()  
+   print info[0],":",info[1]  
+
+
+
+#====================================================================
+
+print str.startswith( 'this' );
+print str.startswith( 'is', 2, 4 );
+print str.startswith( 'this', 2, 4 );
+
+#=================按字节的大小读取文件===============================
+BLOCK_SIZE=1024
+with open(file) as ON:
+        while True:
+                block=ON.read(BLOCK_SIZE)
+                if block:
+                        print(block)
+                        print('\n')
+                        time.sleep(1)
+                else:
+                        break
+#====================================================================
+无穷大是inf
+字典键是否存在？？
+dict.get(key)==None
+
+归一化：找到输入队列最大值max，最小值min。对任意一个自变量x，它的归一化数值为(x-min/max-min)。
+
+
+
+#========================xml.dom.minidom========================================
+root.childNodes
+
+
+
+
+#===============================================================================
+
+enumerate  #遍历所有元素 及下标
+
+file.readline()
+file.readlines()[0:N] 读取文件前几行
+
+import commands
+(status, output) = commands.getstatusoutput('cat /proc/cpuinfo')   #获得系统输出
+print status, output
+output = os.popen('cat /proc/cpuinfo')
+print output.read()
+
+s=[]
+s.extend([1,2,3])
+
+a=[].set()
+
+保存变量到本地(序列化)
+import pickle 
+value = ['Liu zong is sexy.', 'Liu zong is hot.'] 
+pickle.dump(value, open('C:/Users/sliu/Desktop/tmp.txt', 'wb')) 
+getback = pickle.load(open('C:/Users/sliu/Desktop/tmp.txt', 'rb'))
+
+
+
+
+
+x=re.search('A','abc',re.I)  #匹配忽略大小写
+bool(x)
+
+
+fig.add_axes([0.1,0.55,0.8,0.25])
+
+
+
+
+
+When using figures, you can easily change the spine color with:
+
+ax.spines['bottom'].set_color('#dddddd')
+ax.spines['top'].set_color('#dddddd') 
+ax.spines['right'].set_color('red')
+ax.spines['left'].set_color('red')
+
+Use the following to change only the ticks:
+
+ax.tick_params(axis='x', colors='red')
+ax.tick_params(axis='y', colors='red')
+
+And the following to change only the label:
+
+ax.yaxis.label.set_color('red')
+ax.xaxis.label.set_color('red')
+
+And finally the title:
+
+ax.title.set_color('red')
+
+re.compile('pattern', re.I | re.M)
+
+x=re.sub('.+(\d+)$','hs\g<1>','Chr34',re.I)
+
+os.makedirs()
+
+
+执行unix命令，输出
+import subprocess   #http://www.cnblogs.com/vamei/archive/2012/09/23/2698014.html
+pl=subprocess.Popen(['pwd'])
+
+pl.poll()==None  #正在运行
+pl.poll()==0  	 #运行完成
+pl.poll()！=0    #运行失败
+
+a=subprocess.check_output(['pwd'])
+out=a.decode('utf-8')
+
+proc = subprocess.Popen('python3 xxxx.py xx xx', shell=True)
+time.sleep(3) # <-- There's no time.wait, but time.sleep.
+pid = proc.pid # <-
+export LD_LIBRARY_PATH='/annoroad/share/software/package/package/pastis/ipopt/Ipopt-3.12.4/build/lib/':$LD_LIBRARY_PATH
+
+
+re.sub('<(.+)>','<b>\\1</b>',a)
+
+>>> import ConfigParser
+>>> conf=ConfigParser.ConfigParser()
+>>> conf.read('test.conf')
+['test.conf']
+>>> conf.sections()   #获得所有区域
+['first', 'second']
+
+self.cf.has_option('base', 'configVersion')  
+self.cf.set('base', 'defaultP', 'tumortest')
+self.cf.has_section('project')
+self.cf.add_section('project')
+
+
+
+
+>>> for sn in conf.sections():
+...     print conf.options(sn)       #打印出每个区域的所有属性
+...
+['w', 'v', 'c']
+['sw', 'test']
+
+
+num是10进制的字数
+bin(num)=========>将10进制转换成2进制【不能出现0-9以外的字符】
+oct(num)=========>将10进制转换成8进制【不能出现0-9以外的字符】
+hex(num)=========>将10进制转换成16进制【不能出现0-9以外的字符】
+
+
+import gzip
+with gzip.open('/home/joe/file.txt.gz', 'rb') as f:
+    for  i in f:
+	line=i.decode('utf-8')
+
+import gzip
+content = b"Lots of content here"
+content = "Lots of content here".encode('utf-8')  # 必须将字符串转化的二进制
+with gzip.open('/home/joe/file.txt.gz', 'wb') as f:
+    f.write(content)
+
+x=re.search('dsada',i)
+当没有匹配上时，返回None
+
+outFile = os.path.join(outDir,'{0}_{1}_bin.pdf'.format(sample,resolution))
+
+random.sample(range(10),4)
+int(random.uniform(0, numSamples)) 
+删除指定值的元素
+li.remove(4)
+# li = [1,2,5]
+
+
+list.append(obj)
+在列表末尾添加新的对象
+list.count(obj)
+统计某个元素在列表中出现的次数
+list.extend(seq)
+在列表末尾一次性追加另一个序列中的多个值（用新列表扩展原来的列表）
+list.index(obj)
+从列表中找出某个值第一个匹配项的索引位置
+list.insert(index, obj)
+将对象插入列表
+list.pop(obj=list[-1])
+移除列表中的一个元素（默认最后一个元素），并且返回该元素的值
+list.remove(obj)
+移除列表中某个值的第一个匹配项
+list.reverse()
+反向列表中元素
+list.sort([func])
+对原列表进行排序
+
+open('dsadsa','a').close()  #创建一个文件
+
+os.readlink（）  #查看文件的链接文件
+#==========================pymonitor=================================================
+import socket
+socket.gethostname()
+'c0038.local'
+socket.gethostname().find('compute') > -1:
+
+import logging  #日志文件模块
+handler = logging.FileHandler(os.environ['PYMONITOR_LOG_PATH'])
+打开一个日志文件句柄  
+PYMONITOR_LOG_PATH 是环境变量，配置如下：
+export PYMONITOR_LOG_PATH=~/.pymonitor.log   #export是配置系统环境的方式
+
+os.environ['PYMONITOR_CONF_PATH']  #系统环境变量
+
+os.path.expanduser(path)  #把path中包含的"~"和"~user"转换成用户目录
+
+import ConfigParser
+SafeConfigParser对象中的方法
+SafeConfigParser类实现了ConfigParser相同的接口，新增如下方法：
+set(section, option, value) 
+如果给定的section存在，给option赋值；否则抛出NoSectionError异常。
+.add_section('project') #增加一个section
+.has_option('project','x')  #判断project中是否有x项
+.has_section('project')    #判断是否有project项
+用法：
+config=ConfigParser.SafeConfigParser()
+增加section：
+config.add_section('project')
+增加一系列选项：
+config.set('project','option','result')
+判断是否有section：
+config.has_section()
+判断是否有option:
+config.has_option()
+所有的options
+config.options()
+将config写进文件
+config.write(handle)
+
+
+cfgfile = open(self.File, 'w')
+self.cf.write(cfgfile)  #将配置好的self.cf写入cfgfile中
+cfgfile.close()
+
+import drmaa    #qsub
+DrmaaSessionObj = drmaa.Session()   #必须
+DrmaaSessionObj.initialize()	    #必须	
+try:
+	DrmaaSessionObj.control(self.jobid, operation)          #控制jobid的任务状态（暂停，恢复，暂停或释放它）
+	self.Status = DrmaaSessionObj.jobStatus(self.jobid)     #查看任务的状态
+except:
+	pass
+投递任务：
+jt = DrmaaSessionObj.createJobTemplate()
+jt.remoteCommand = self.FileName
+jt.workingDirectory = os.path.dirname(self.FileName)
+jt.nativeSpecification = "-b no -shell yes -l vf=50G -P hic -q sci.q + self.Parameter
+self.jobid = DrmaaSessionObj.runJob(jt)  #投递  返回jobID
+DrmaaSessionObj.deleteJobTemplate(jt)    #投递完清空
+
+
+数据库  #这个数据库可以存变量
+import ZODB
+from ZODB import FileStorage, DB
+from BTrees.OOBTree import OOBTree     #可以存储大的字典和复杂的类，并且快速找到他，可以和ZODB数据库合用
+import persistent
+from persistent import Persistent    #大数据快速的存储list 可以和ZODB合用
+import transaction
+
+x=OOBTree()  #此时x就类似一个字典,提升运行速度，减少内存，有逼格的字典存储
+x['a']=1
+
+x=persistent.list.PersistentList()    #此时x就是一个list，大数据，快速的list存储方式
+x.append(1)
+x=persistent.mapping.PersistentMapping()  # 此时x是字典
+x[1]=0
+
+#--------------------ZODB---------------------------------
+import ZODB
+from ZODB import FileStorage, DB 
+import transaction
+from persistent import Persistent
+
+class MyZODB:
+	def __init__(self,path):
+		self.storage = FileStorage.FileStorage(path)  
+		self.db = DB(self.storage)  
+		self.connection = self.db.open()  
+		self.dbroot = self.connection.root()
+	def close(self):  
+		self.connection.close()  
+		self.db.close()  
+		self.storage.close()
+
+class a(Persistent):
+	A=1
+	B={'a':1,'b':2}
+	C=[1,2,3]
+	def __init__(self):
+		pass
+
+db=MyZODB('./Data.fs')
+dbroot=db.dbroot
+A=dbroot['class']
+print(A.A,A.B,A.C)
+
+db.close()
+
+'''
+A=a()
+db = MyZODB('./Data.fs')
+dbroot=db.dbroot
+dbroot['class']=A
+dbroot['array']=[1,2,3]
+transaction.commit()
+db.close()
+'''
+#------------------------------------------------------
+ex:
+conn=db.open()
+dbroot=conn.root()
+dbroot['element']=OOBTree()
+这样就可以存储了
+x=dbroot['element']
+x['dada']=321313
+
+
+#=========================================================================================================================
+try:
+
+except Exception as e:
+抛出所有异常
+
+#边遍历字典，边对字典键进行操作，会引起错误！！！！！！
+用以下方式，就可以了
+a={1:1,2:1,3:1,4:1,5:1}
+b=list(a.keys())
+for i in b:
+        del a[i]
+        b=list(a.keys())
+
+int('31.51')   #会报错！！！
+int(float('31.51'))
+
+import time
+time clock() 函数以浮点数计算的秒数返回当前的CPU时间。用来衡量不同程序的耗时，比time.time()更有用
+time.clock()
+time.sleep(3)
+print('run:%fs'%(time.clock()))
+run:3.003s
+
+sys.stderr.write('dsadadda')
+sys.stderr.flush() 立即刷新缓冲区
+
+sys.stdout.write('\r    adsadaa') #\r换行  在屏幕刷新当前显示
+
+
+
+sys.getsizeof(v)  #查看变量占用空间大小
+
+def help():
+	'''
+	dsdasddasdda
+	ddadadsadsada
+	dadadaddad
+	'''
+	print(help.__doc__)
+
+__doc__用法
+
+dict.get('a')
+get()方法返回给定键的值。如果键不可用，则返回默认值None。
+
+from scipy.interpolate import UnivariateSpline
+spl = UnivariateSpline(x, y)
+xs = np.linspace(-3, 3, 1000)
+plt.plot(xs, spl(xs), 'g', lw=3)
+spl.set_smoothing_factor(0.5)
+plt.plot(xs, spl(xs), 'b', lw=3)
+plt.show()
+
+
+import getpass
+getpass.getuser()  获得当前用户名
+
+
+import gzip
+import io
+
+out=open('xx.gz','wb')
+out1=io.TextIOWrapper(out,encoding='utf-8')
+out1.write('dsadsadsadasd')
+
+on=open('xx.gz','rb')
+on1=io.TextIOWrapper(on,encoding='utf-8')
+on1.readline()
+		
+io.TextIOWrapper(gzip.open(options.fragsfile),encoding='utf-8')
+
+
+
+空间变量名
+locals().keys()
+
+
+a=time.time()
+time.sleep(4)
+b=time.time()
+b-a
+
+
+import termios    #http://blog.chinaunix.net/uid-10747583-id-97303.html
+import os
+import sys
+
+fd = sys.stdin.fileno()
+old_ttyinfo = termios.tcgetattr(fd)
+new_ttyinfo = old_ttyinfo.copy()		      #很重要！！！
+new_ttyinfo[3] = new_ttyinfo[3] & ~termios.ICANON     #使用非规范模式(索引3是c_lflag 也就是本地模式)
+new_ttyinfo[3] = new_ttyinfo[3] & ~termios.ECHO       #关闭回显(输入不会被显示)
+termios.tcsetattr(fd, termios.TCSANOW, new_ttyinfo)   #使设置生效
+os.read(fd,999)					      #读取终端，输出的是b''
+
+% 余数
+7%3=1
+// 取小数点前面的数
+7//3=2
+
+
+StopIteration
+
+
+
+import copy
+a=[1,2,3,[1,2,3]]
+b=a.deepcopy()       #嵌套结构的变量要用深拷贝
+
+
+isinstance(a,list)   判断value类型
+
+import itertools
+排列组合
+print list(itertools.permutations([1,2,3,4],2))
+[(1, 2), (1, 3), (1, 4), (2, 1), (2, 3), (2, 4), (3, 1), (3, 2), (3, 4), (4, 1), (4, 2), (4, 3)]
+
+sql = "SELECT * FROM tb_third_menu WHERE menu_name='{0}.{1}.{2}{3}'".format(m_order,s_order,t_order,name)
+cursor.execute(sql)
+result=cursor.fetchall()  #接收返回结果
+
+科学计数法
+x=format(0.2521,'.2e')
+
+
+
+pool.apply_async(func=func,args=(3))  #错误
+pool.apply_async(func=func,args=(3，))  #正确！！！！
+
+
+装饰器
+class A:
+	def __init__(self):
+		self._a=12
+
+	@property
+	def a(self):
+		return(self._a)
+
+	@a.setter
+	def a(self,value):
+		raise(Exception('Not Assignment to a!'))
+
+x=A()
+print(x.a)
+x.a=22
+print(x.a)
+
+
+from bx.intervals.intersection import Intersecter, Interval
+
+
+安装Python包
+export PYTHONPATH=$PYTHONPATH:/annoroad/data1/bioinfo/PROJECT/RD/Cooperation/Hic/ngs_bioinfo/hic-13/malixiang/reseach/HiC_WGS_Analysis/workdir/bin/ZODB/
+
+
+buer
+parser.add_argument('-s','--show',help='show',action='store_true',default=False)
+parser.add_argument('-s','--show',help='show',action='store_false',default=True)
+
+
+
+#--------------mysql---------------------
+conn = mysql.connector.connect(host='192.168.60.97', user='root',passwd='annoroad',db='knotreports')
+cursor = conn.cursor()
+cursor.execute(sql)  执行sql语句
+cursor.fetchall()    查看返回
+
+show databases   #显示所有数据库
+use knotreports  #进入数据库 
+DROP TABLE IF EXISTS `tb_table_detail`  删除数据表
+创建数据表
+CREATE TABLE `tb_table_detail` (
+  `table_id` int(10) NOT NULL AUTO_INCREMENT,
+  `table_field` varchar(300) NOT NULL COMMENT '字段以,号分隔',
+  `field_summary` varchar(300) DEFAULT NULL COMMENT '字段描述',
+  PRIMARY KEY (`table_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=106 DEFAULT CHARSET=utf8;
+
+InnoDB 的设计目标是处理大容量数据时最大化性能，它的 CPU 利用率是其他所有基于磁盘的关系数据库引擎中最有效率的。
+auto_increment 就是对主键 id 自动增加编号的  AUTO_INCREMENT=106 必须要加
+
+
+插入
+INSERT INTO tb_main_menu VALUES ('','{2}_{0}','{0}', '{1}', '{2}');
+cursor.execute('commit')   必须的
+
+是用数据库
+use table
+
+查看数据表的详细情况
+desc table
+
+
+查询
+SELECT * FROM tb_main_menu WHERE menu_name='{0}'
+SELECT * FROM tb_object_type WHERE cn_name = '{0}' AND en_name='{1}'
+select film_id,title from film_text where film_id = 1001;
+select film_id,title from film where film_id = 1001;
+更新
+UPDATE tb_sub_menu SET display_order='{0}' WHERE menu_id='{1}'
+
+删除
+DELETE FROM tb_object_type where cn_name='{0}' AND  en_name='{1}'
+
+当出现 Lock wait timeout exceeded  是因为在你commit的时候，有其他别人的任务在锁，由于你等待锁超时，所以退出了。解决方法杀掉那个人的任务
+cursor.execute('select * from information_schema.innodb_trx')
+x=cursor.fetchall()
+print(x)
+#cursor.execute('kill 537887')
+#cursor.execute('commit')
+
+
+
+conn.close()
+#---------------------------------------------
+
+
+
+如果要使用中文
+#!/usr/bin/python
+#-*-coding:utf-8-*-
+
+
+#------重载新世界--------------------------------
+
+class a:
+	def __init__(self):
+		pass
+
+	def read(self,file):
+		element=file.split('\n')
+		for i in element:
+			if i.startswith('a'):
+				self.func(i)
+
+	def func(self,data):
+		pass
+
+class b(a):
+	def __init__(self):
+		a.__init__(self)
+
+	def func(self,data):	
+		print(data)
+
+txt='''
+a:1111
+b:2222
+a:3333
+'''
+my=b()
+my.read(txt)
+
+$python3 test.py 
+a:1111
+a:3333
+
+
+重载父类方法：
+def feed(self,file):
+	html=''
+	with open(file) as on:
+	for i in on:
+		html+=i.strip()
+	HTMLParser.feed(self,html)
+
+#-----------------------------------------------
+
+'as' in 'dsdasfa'
+ True
+
+#python socket 搭建 服务器------------------------------------
+
+
+
+
+
+
+
+
+#python 奇技淫巧----------------------------------------------
+format  使用惊叹号！后接a 、r、 s，声明 是使用何种模式， acsii模式、引用__repr__ 或 __str__
+class A():
+    def __init__(self,ax,bx):
+        self.a = ax
+        self.b = bx
+    def f(self):
+        print (self.__dict__)
+    def __getattr__(self,name):
+        print ("__getattr__")
+    def __setattr__(self,name,value):
+        print ("__setattr__")
+        self.__dict__[name] = value
+
+
+
+a = A(1,2)
+a.f()
+a.x
+a.x = 3
+a.f()
+
+__setattr__
+__setattr__
+{'a': 1, 'b': 2}
+__getattr__
+__setattr__
+{'a': 1, 'x': 3, 'b': 2}
+
+注意 getattr只有在访问不存在的成员才会调用
+
+
+pat1=re.compile('^\s+$')
+
+
+
+
+#-------------------------------------------------------------
+enumerate
+
+parser.add_argument('-s','--stat',help='rmlow stat file',dest='stat',type=open,required=True,nargs='+')
+#‘+’表示多个文件  
+例如：Python3 aaa.py -p a,b,c
+此时 p表示 [a,b,c] 
+
+
+print(r'dasdsa\na')
+
+
+当pull冲突时
+git fetch --all
+git reset --hard origin/master
+
+更改组别
+chgrp EPI ./*
+
+不提交设置
+git remote set-url --push origin no_push
+
+
+
+#-------------PyObject-----------------------------
+		模块名_函数名
+static PyObject* addList_add(PyObject* self, PyObject* args)
+int n;
+char *s;
+PyObject* list;
+PyArg_ParseTuple(args, "siO", &n, &s, &list);
+Py_BuildValue("i", sum);
+#build the modules
+
+from distutils.core import setup, Extension
+setup(name='addList', version='1.0',  \
+      ext_modules=[Extension('addList', ['adder.c'])])
+
+python setup.py install
+
+
+#-----------------列表操作---------------------------------
+PyObject * listObj; 定义一个对象
+listObj=PyList_New(5)
+PyList_SetItem(listObj,0,)
+long length = PyList_Size(listObj); 获得list对象的长度
+length=PySequence_Length(PyObject) 获得长度
+PyObject* temp = PyList_GetItem(listObj, i); 获得listObj
+temp = PySequence_GetItem(sequence, i);
+long elem = PyInt_AsLong(temp);  将python int对象转化为long
+PyObject* index=PyInt_FromLong(elem);
+if (PyObject_SetItem(target, index, item) < 0) {
+     Py_DECREF(index);
+     return -1;
+}
+ if (!PyInt_Check(item)) continue; /* Skip non-integers */ 检查是不是int
+
+#----------------字典操作-----------------------------------
+
+
+
+
+#-------标准输出存储-------------
+from io import StringIO
+sys.stdout = StringIO()
+a=sys.stdout.getvalue()
+sys.stdout.truncate()
+
+
+#-----添加类新属性----
+setattr( A, 'd', 1)
+A.__dict__.update({'a':1,'b':2})
+
+
+soup.find_all("meta", {"name":"City"})
+findAll('td', text = re.compile('your regex here'), attrs = {'class' : 'pos'})
+
+python  setup.py install  --prefix=~/local 
+
+#--------退出时 调用-------
+def exitfunc():
+    print "world"
+
+sys.exitfunc = exitfunc  # 设置捕获时调用的函数
+
+
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+# User specific aliases and functions
+PS1='[\[\e[35;1m\]\u@\h \[\e[35;1m\]\w\[\e[0m\]]\n$'
+
+export PATH=/usr/local/cuda-9.0/bin/:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-9.0/lib64/:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=/data/lib64/:${LD_LIBRARY_PATH}
+
+dos2unix chr_matrix_heatmap.sh 
+
+
+#---zip---------------------
+    mat=[]
+    zipf = zipfile.ZipFile(args.icedAsisMatrix)
+    with zipf.open(zipf.namelist()[0]) as on:
+        for i in on:
+            element = i.decode('utf-8').strip().split('\t')
+            mat.append([str(j) for j in element])
+#-----raise---------------------------
+try:
+...     raise Exception("dadda")
+... except Exception:
+...     print("111")
+...     raise
+
+
