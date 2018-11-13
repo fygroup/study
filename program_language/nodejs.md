@@ -164,7 +164,12 @@ fs.writeFile('xxxxx','hello world',{'flag':'a'},function(err){   //flag传值，
 fs.open(path,flags[,mode],callback(err,fd));
 
 path 文件路径
-flags打开文件的方式(r ：读取文件，文件不存在时报错；r+ ：读取并写入文件，文件不存在时报错；rs ：以同步方式读取文件，文件不存在时报错；rs+ ：以同步方式读取并写入文件，文件不存在时报错；w ：写入文件，文件不存在则创建，存在则清空；wx ：和w一样，但是文件存在时会报错；w+ ：读取并写入文件，文件不存在则创建，存在则清空；wx+ ：和w+一样，但是文件存在时会报错；a ：以追加方式写入文件，文件不存在则创建；ax ：和a一样，但是文件存在时会报错；a+ ：读取并追加写入文件，文件不存在则创建；ax+ ：和a+一样，但是文件存在时会报错。)
+flags打开文件的方式(r ：读取文件，文件不存在时报错；r+ ：读取并写入文件，文件不存在时报错；
+rs ：以同步方式读取文件，文件不存在时报错；rs+ ：以同步方式读取并写入文件，文件不存在时报错；
+w ：写入文件，文件不存在则创建，存在则清空；wx ：和w一样，但是文件存在时会报错；
+w+ ：读取并写入文件，文件不存在则创建，存在则清空；wx+ ：和w+一样，但是文件存在时会报错；
+a ：以追加方式写入文件，文件不存在则创建；ax ：和a一样，但是文件存在时会报错；
+a+ ：读取并追加写入文件，文件不存在则创建；ax+ ：和a+一样，但是文件存在时会报错。)
 [mode] 是文件的权限（可行参数，默认值是0666）
 callback 回调函数
 
@@ -243,6 +248,7 @@ a instanceof A  //true
 ```
 
 #### stream
+```
 服务器的请求和process.stdout都属于流操作，流都是运作在字符串和 Buffer（或 Uint8Array）上。
 
 四种类型
@@ -254,10 +260,12 @@ Transform - 在读写过程中可以修改或转换数据的 Duplex 流（例如
 
 混合使用 on('data')、on('readable')、pipe() 或异步迭代器，会导致不明确的行为
 建议使用流的.pipe()方法，这样就不用自己监听”data” 和”end”事件了，也不用担心读写不平衡的问题了
-![stream events function](../picture/3.png)
+```
+<img src='../picture/3.png' height=200 width=300 alt='stream events function'/>
 
 * readStream:
-暂停模式 <-->  流动模式
+```
+暂停模式 <-->  流动模式 (相互转换)
 'data':'data' 事件会在流将数据传递给消费者时触发
 'readable': 事件将在流中有数据可供读取时触发（流（缓存）有了新数据会触发）
 'readable':可读流有数据可以读取时，会触发此事件，然后调用read()读取缓存数据
@@ -267,15 +275,19 @@ readable.read() 且有数据块返回时，也会触发 'data' 事件（当缓�
 push(): 压入流（缓冲）
 read()：读取缓存中的数据，当读到尾部时，返回null
 _read(); 内部从文件读取函数，注意和read()区分
-unpipe() pause(): 暂停从资源库读取数据，但 不会 暂停数据生成，暂停
-pipe() resume(): 正在从资源库中读取数据，监听 'data' 事件 ,恢复
+unpipe() pause(): 暂停从资源库读取数据，但 不会 暂停数据生成,pause暂停流的读入。
+pipe() resume(): 正在从资源库中读取数据，监听 'data' 事件 ,恢复流的读入
+```
 
 * writeStream:
+```
 'drain': 当可写流可以接收事件的时候被触发，即当缓冲区可写的时候
 'finish'：当所有数据被接收时被触发
 write(): 向流(缓存)中写入数据
 a._readableState.highWaterMark = 222222 设置缓存
 writable.writableBuffer 或 readable.readableBuffer获得缓存内容
+```
+**注意: 一定要注意可读流和可写流读和写之间的平衡,如果可写流的写速度比较慢，会导致大量的buff缓存在内存，所以尽量用pipe**
 
 例子：
 * (1)读
@@ -296,7 +308,26 @@ readStream.on('readable',function(){    //当缓存满的时候，先激发reada
 readStream.on('end',function(){});
 ```
 
-* (2)写
+* (2)写(注意读写平衡)
+```
+http.createServer(function (req, res) {
+    var stat = fs.statSync(filename);
+    res.writeHeader(200, {"Content-Length": stat.size});
+    var fReadStream = fs.createReadStream(filename);
+    fReadStream.on('data', function (chunk) {
+        if(!res.write(chunk)){//判断写缓冲区是否写满(node的官方文档有对write方法返回值的说明)
+            fReadStream.pause();//如果写缓冲区不可用，暂停读取数据
+        }
+    });
+    fReadStream.on('end', function () {
+        res.end();
+    });
+    res.on("drain", function () {//写缓冲区可用，会触发"drain"事件
+        fReadStream.resume();//重新启动读取数据
+    });
+});
+
+```
 
 * (3)自定义
 ```
@@ -363,9 +394,11 @@ const ls = spawn('ls',['-lh','./']);  //注意如果这块用ll，会报错
 #### 事件观察者
 **事件的执行先后**
 `idle > IO > check`
+```
 idle: procss.nextTick(callback)  //事件保存在一个数组中，会将数组中的事件执行完，进行下一轮Tick
 IO:
 check: setTimeOut() setInterval() //事件保存在一个链表中，执行完当前一个，进行下一轮Tick
+```
 
 #### apply call
 call直接使用参数列表，apply使用参数数组
@@ -517,3 +550,61 @@ pool.push(function(){    //结束时的函数
 
 #### stream 读取长度限制
 `fs.createReadStream('txt',{highWaterMark:11})`
+
+#### 传输层(TCP/UDP)
+* TCP
+TCP服务分为服务器事件和连接事件（不是客户端事件），
+```
+服务器事件：
+listening:绑定端口后触发, server.listen(3134,()=>{})
+connection:客户端套接字连接到服务端时触发
+close:服务器关闭时触发，server.close()
+error:
+
+连接事件：stream对象，比如
+data: 一端调用write()时，另一端会触发data事件(socket.on('data') client.on('data') socket.write('dada') client.write('dadad'))
+end: 任意一端发送FIN数据，会触发此事件
+connect: net.connect()
+drain: 任意一端调用write发送数据时，触发此事件,当writeStream可写时触发事件
+error:
+close:套接字完全关闭时触发
+timeout:一定时间后连接不再活跃时触发。
+```
+
+(1)服务端
+```
+var net = require('net');
+var server = net.createServer();
+server.on('connection',(socket)=>{
+	socket.on('data',(data)=>{
+		console.log(data.toString());
+		socket.write('你好');  //向套接字里写入 用于发送
+	});
+	socket.on('end',()=>{
+		console.log('连接断开')
+	})
+})
+server.listen(8124);
+```
+
+(2)客户端
+```
+var net = require('net');
+var client = net.connect({host:'localhost',port:8124},()=>{
+	console.log("client connect!");
+	client.write('hello');  //发送内容
+})
+client.on('data',(data)=>{
+	console.log(data.toString());
+	client.end();
+})
+client.on('end',()=>{
+	console.log('client disconnect!');
+})
+```
+`net.client({path:'/tmp/echo.sock'})`
+(3)pipe操作
+```
+套接字时stream,可以利用pipe()
+
+```
