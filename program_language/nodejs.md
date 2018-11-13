@@ -1,9 +1,11 @@
 #### 镜像安装定义
 `npm.cmd install -g cnpm --registry=https://registry.npm.taobao.org`
 
+---
 #### 安装包
 `cnpm install express --save`
 
+---
 #### for
 ```
 for (i of [1,2,3]) console.log(i)
@@ -16,6 +18,7 @@ for (i in [1,2,3]) console.log(i)
 2
 ```
 
+---
 #### 灵活性
 ```
 a={}
@@ -26,6 +29,7 @@ b=new a()
 b.a //undefined
 ```
 
+---
 #### 闭包
 ```
 for(i=0;i<5;i++){
@@ -37,6 +41,7 @@ for(i=0;i<5;i++){
 }
 ```
 
+---
 #### hasOwnProperty
 ```
 a={1:1,2:2}
@@ -50,6 +55,7 @@ b.hasOwnProperty('a') //true
 b.hasOwnProperty('b') //false
 ```
 
+---
 #### arguments
 ```
 function a(x){
@@ -62,6 +68,7 @@ a(1,2)
 [Arguments] { '0': 1, '1': 2 }
 ```
 
+---
 #### events
 ```
 const events = require('events')
@@ -82,6 +89,7 @@ eventEmitter.addListener('name',listen)
 eventEmitter.addListener('name',listen)
 ```
 
+---
 #### TypedArray(原生javascript)
 ```
 var buffer = new ArrayBuffer(12)   //创建一块12字节的内存
@@ -99,6 +107,7 @@ Float32Array：数组每一个元素的类型为32位浮点数。
 Float64Array：数组每一个元素的类型为64位浮点数。
 ```
 
+---
 #### buffer
 ```
 Node.js 可以在一开始就使用 --zero-fill-buffers 命令行选项强制所有使用  新分配的 Buffer 实例在创建时自动用 0 填充
@@ -123,6 +132,7 @@ const buf2 = Buffer.from(arr.buffer);
 const buf = Buffer.alloc(11, 'aGVsbG8gd29ybGQ=', 'base64');  //(size[, fill[, encoding]])
 ```
 
+---
 #### fs
 `var fs = require('fs')`
 * 1、删除文件
@@ -240,6 +250,7 @@ fs.stat(path,function(err,stat){
 * 8、读取目录
 `fs.readdir(path,callback(err,files)) //err 为错误信息，files 为 目录下的文件数组列表。`
 
+---
 #### instanceof
 ```
 function A(){}
@@ -247,6 +258,7 @@ a=new A();
 a instanceof A  //true
 ```
 
+---
 #### stream
 ```
 服务器的请求和process.stdout都属于流操作，流都是运作在字符串和 Buffer（或 Uint8Array）上。
@@ -364,6 +376,7 @@ aa.on('end',function(){
 })
 ```
 
+---
 #### 按行读取
 ```
 var readline = require('readline')
@@ -379,21 +392,24 @@ r1.on('line',function(line){
 })
 ```
 
+---
 #### glob
 
-
+---
 #### async_hooks 异步钩子
 
-
+---
 #### console.log
 这是异步操作！！！！！
 
+---
 #### child_process
 ```
 const {spawn} = require('child_process');
 const ls = spawn('ls',['-lh','./']);  //注意如果这块用ll，会报错
 ```
 
+---
 #### 事件观察者
 **事件的执行先后**
 `idle > IO > check`
@@ -403,6 +419,7 @@ IO:
 check: setTimeOut() setInterval() //事件保存在一个链表中，执行完当前一个，进行下一轮Tick
 ```
 
+---
 #### apply call
 call直接使用参数列表，apply使用参数数组
 使用call()和apply()方法时，就会改变this的指向
@@ -434,6 +451,7 @@ var my = new dog('malx')
 my.speak()
 ```
 
+---
 #### util.inherits
 `uitl.inherits(sub, super);  `
 注意：sub仅仅继承super.prototype的内容
@@ -451,6 +469,7 @@ my.funa1() //正确
 ```
 如果要利用此函数做继承，见下一条
 
+---
 #### 继承作用域
 ```
 function pet(){
@@ -465,6 +484,7 @@ my.func();
 ```
 所以说：除了用inherits继承super的prototype,还要继承super的作用域！！！
 
+---
 #### promise
 ```
 var a = new Promise(function(resolve,reject){
@@ -481,6 +501,7 @@ a.then(function(data){
 ```
 如果返回promise，它会在异步操作完成后发信号给下一个then。返回值并不是非promise不可，不管返回什么，都会传给下一个onFulfilled做参数：
 
+---
 #### Q
 ```
 var a = function(file){
@@ -497,6 +518,7 @@ a.all([a(file1),a(file2)]).then(x){
 }
 ```
 
+---
 #### async
 ```
 async.series([
@@ -532,6 +554,7 @@ async.parallelLimit(pool,2000,function(err,data){
 })
 ```
 
+---
 #### bagpipe(此包我已经修改，详见报的注解)
 ```
 var pool = new bagpipe(2000);
