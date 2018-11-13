@@ -100,8 +100,9 @@ Float64Array：数组每一个元素的类型为64位浮点数。
 ```
 
 #### buffer
-Node.js 可以在一开始就使用 --zero-fill-buffers 命令行选项强制所有使用  新分配的 Buffer 实例在创建时自动用 0 填充
 ```
+Node.js 可以在一开始就使用 --zero-fill-buffers 命令行选项强制所有使用  新分配的 Buffer 实例在创建时自动用 0 填充
+
 const buf = Buffer.alloc(10, 1);
 const buf = Buffer.from([1, 2, 3]);
 const buf = Buffer.from('test');
@@ -111,9 +112,9 @@ buf.write("dadasfafafagag"); //写([encoding[, start[, end]]])
 buf.toString() //读 buf.toString('ascii',0,5)
 JSON.stringify(Buffer.from("12345"))  //'{"type":"Buffer","data":[49,50,51,52,53]}'
 Buffer.concat([buf1,buf2]) //合并
-```
+
 buffer具有compare copy slice的功能
-```
+
 const arr = new Uint16Array(2);
 // 拷贝 `arr` 的内容
 const buf1 = Buffer.from(arr);
@@ -159,13 +160,16 @@ fs.writeFile('xxxxx','hello world',{'flag':'a'},function(err){   //flag传值，
 ```
 
 * 4、open、read、write
-`fs.open(path,flags[,mode],callback(err,fd));`
+```
+fs.open(path,flags[,mode],callback(err,fd));
+
 path 文件路径
 flags打开文件的方式(r ：读取文件，文件不存在时报错；r+ ：读取并写入文件，文件不存在时报错；rs ：以同步方式读取文件，文件不存在时报错；rs+ ：以同步方式读取并写入文件，文件不存在时报错；w ：写入文件，文件不存在则创建，存在则清空；wx ：和w一样，但是文件存在时会报错；w+ ：读取并写入文件，文件不存在则创建，存在则清空；wx+ ：和w+一样，但是文件存在时会报错；a ：以追加方式写入文件，文件不存在则创建；ax ：和a一样，但是文件存在时会报错；a+ ：读取并追加写入文件，文件不存在则创建；ax+ ：和a+一样，但是文件存在时会报错。)
 [mode] 是文件的权限（可行参数，默认值是0666）
 callback 回调函数
-`fs.close(fd,callback);`
-`fs.read(fd,buffer,offset,length,position,callback);`
+
+fs.close(fd,callback);
+fs.read(fd,buffer,offset,length,position,callback);
 fd 文件描述符，必须接收fs.open()方法中的回调函数返回的第二个参数。
 buffer 是存放读取到的数据的Buffer对象。
 offset 指定 向buffer中存放数据的起始位置。
@@ -175,15 +179,15 @@ callback 回调函数，参数如下
     err 用于抛出异常
     bytesRead 从文件中读取内容的实际字节数。
     buffer 被读取的缓存区对象。
-```
+
 fs.open('xxx','r',function(err,fd){
     var buf = Buffer.alloc(30);
     fs.read(fd,buf,0,30,0,function(err,bytesRead,buffer){
         console.log(bytesRead,buffer.slice(0,bytesRead).toString());
     })
 })
-```
-`fs.write(fd,buffer,offset,length,position,callback(err,bytesWritten,buffer))接收6个参数。`
+
+fs.write(fd,buffer,offset,length,position,callback(err,bytesWritten,buffer))接收6个参数。
 fd 文件描述符，必须接收fs.open()方法中的回调函数返回的第二个参数。
 buffer 是存放 将被写入的数据，buffer尺寸的大小设置最好是8的倍数，效率较高。
 offset  buffer写入的偏移量。
@@ -193,6 +197,7 @@ callback 回调函数，参数如下
 err 用于抛出异常
 bytesWritten从文件中读取内容的实际字节数。
 buffer 被读取的缓存区对象。
+```
 
 * 5、文件信息
 ```
