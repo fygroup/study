@@ -2,7 +2,7 @@ git reflog   #你所有的操作
 git cherry-pick  0cba81c   #会退到这个状态
 //---初键库---------------------------------
 (1)创建云端仓库
-    git init --bare --share
+    git init --bare --share  //bare表示空库
 (2)克隆云端仓库
     git clone ./**
     git add -A 
