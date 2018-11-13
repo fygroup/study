@@ -307,7 +307,7 @@ readStream.on('readable',function(){    //当缓存满的时候，先激发reada
 });
 readStream.on('end',function(){});
 ```
-
+ 
 * (2)写(注意读写平衡)
 ```
 http.createServer(function (req, res) {
