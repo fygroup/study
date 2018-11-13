@@ -264,6 +264,7 @@ Transform - 在读写过程中可以修改或转换数据的 Duplex 流（例如
 <img src='../picture/3.png' height=200 width=300 alt='stream events function'/>
 
 * readStream:
+<img src='../picture/4.png' height = 200 width=250 alt='reastream 图示'/> <img src='../picture/5.png' height = 200 width=250 alt='reastream 图示'/> 
 ```
 暂停模式 <-->  流动模式 (相互转换)
 'data':'data' 事件会在流将数据传递给消费者时触发
@@ -275,11 +276,12 @@ readable.read() 且有数据块返回时，也会触发 'data' 事件（当缓�
 push(): 压入流（缓冲）
 read()：读取缓存中的数据，当读到尾部时，返回null
 _read(); 内部从文件读取函数，注意和read()区分
-unpipe() pause(): 暂停从资源库读取数据，但 不会 暂停数据生成,pause暂停流的读入。
+unpipe() pause(): 暂停从资源库读取数据，但不会暂停数据生成,pause暂停流的读入。
 pipe() resume(): 正在从资源库中读取数据，监听 'data' 事件 ,恢复流的读入
 ```
 
 * writeStream:
+<img src='../picture/6.png' alt='writable 图例' height = 200 width = 250 />
 ```
 'drain': 当可写流可以接收事件的时候被触发，即当缓冲区可写的时候
 'finish'：当所有数据被接收时被触发
@@ -307,7 +309,7 @@ readStream.on('readable',function(){    //当缓存满的时候，先激发reada
 });
 readStream.on('end',function(){});
 ```
- 
+
 * (2)写(注意读写平衡)
 ```
 http.createServer(function (req, res) {
@@ -332,6 +334,7 @@ http.createServer(function (req, res) {
 * (3)自定义
 ```
 var Readable = require('stream').Readable;
+var Writable = require('stream').Writable;
 class myread extends Readable{
 	constructor(opt){
 		super(opt);
@@ -542,17 +545,20 @@ pool.push(function(){    //结束时的函数
 })
 ```
 
+---
 #### v8内存限制
 ```
 --max-old-space-size 1000   //单位Mb 老生代
 --max-new-space-size 1000   //单位Kb 新生代
 ```
 
+---
 #### stream 读取长度限制
 `fs.createReadStream('txt',{highWaterMark:11})`
 
+---
 #### 传输层(TCP/UDP)
-* TCP
+##### TCP
 TCP服务分为服务器事件和连接事件（不是客户端事件），
 ```
 服务器事件：
@@ -603,8 +609,56 @@ client.on('end',()=>{
 })
 ```
 `net.client({path:'/tmp/echo.sock'})`
+
 (3)pipe操作
 ```
 套接字时stream,可以利用pipe()
+echo 服务器
+服务端
+var net = require('net');
+var server = net.createServer((socket)=>{
+	socket.write('Echo server\r\n');
+	socket.pipe(socket);
+});
+server.on('listening',function(){
+	console.log('listen:8111')
+})
+server.listen(8111)
 
+客户端
+var client = net.connect({port:8111},function(){
+	console.log('connect server');
+})
+process.stdout.setEncoding('utf-8');
+client.pipe(process.stdout)
+process.stdin.on('data',(data)=>{
+	client.write(data)
+})
 ```
+##### UDP
+(1)服务端
+```
+var dgram = require('dgram')
+var server= dgram.createSocket('udp4')
+server.on('message',(mes,info)=>{   //info 携带地址和port
+	console.log(msg)
+	console.log(info.adress,info.port)
+})
+server.on('listening',()=>{
+	let address = server.address() 
+	console.log('server listen',address.address,address.port)
+})
+server.bind(8142)
+```
+
+(2)客户端
+```
+var message = Buffer.from('fafafafafafaa')
+var client = dgram.createSocket('udp4')
+client.send(message,0,message.length,8142,"localhost",(err,bytes)=>{ //bytes为发送了多少字节
+	client.close()
+})
+```
+
+---
+#### 
