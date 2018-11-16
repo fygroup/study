@@ -411,7 +411,7 @@ const ls = spawn('ls',['-lh','./']);  //注意如果这块用ll，会报错
 
 ---
 #### 事件观察者
-**事件的执行先后**
+**事件的执行先后** 
 `idle > IO > check`
 ```
 idle: procss.nextTick(callback)  //事件保存在一个数组中，会将数组中的事件执行完，进行下一轮Tick
@@ -684,4 +684,235 @@ client.send(message,0,message.length,8142,"localhost",(err,bytes)=>{ //bytes为�
 ```
 
 ---
-#### 
+#### http
+http报文分文三个部分
+第一部分
+`经典的TCP的3次握手`
+第二部分
+`完成握手后，客户端向服务端发送报文`
+第三部分
+`服务器完成处理后，向客户端发送响应内容，包括响应头和响应体（post请求）`
+##### 服务器
+```
+(1)http.Server      //server = http.createServer()或server = http.createServer((req,res)=>{})
+server.on('request',(req,res)=>{})     //当客户端请求到来时，该事件被触发,提供两个参数req和res
+server.on('connection',(socket)=>{})   //当TCP连接建立时，该事件被触发，提供一个参数socket
+server.on('close')                     //当服务器关闭时，触发事件（注意不是在用户断开连接时）
+server.on('upgrade',(req,socket,head)=>{})
+
+(2)http.IncomingMessage      //request
+req.on('data',(chunk)=>{})   //当请求体数据到来时，该事件被触发
+req.on('end')                //当请求体数据传输完毕时，该事件会被触发
+req.on('close')              //用户当前请求结束时，该事件被触发
+
+(3)http.ServerResponse      //reponse
+res.writeHead(statusCode,[heasers])
+res.write(data,[encoding])
+res.end([data],[encoding])
+```
+
+##### 客户端
+http.request和http.get
+```
+(1)http.request
+options={
+	hostname:'localhost',
+	port:8111
+}
+var req = http.request(options,(res)=>{
+	res.setEncoding('utf-8')
+	res.on('data',(chunk)=>{})
+	res.on('end',()=>{
+		console.log('传输结束')
+	})
+	res.on('close',()=>{
+		console.log('连接结束')
+	})
+	res.pause()     //暂停结束数据和发送事件，方便实现下载功能 ???
+	res.resume()    //从暂停的状态中恢复	
+	res.statusCode  //状态码 200 404 500
+	res.headers     //http请求头
+	res.trailers    //http请求尾
+	res.httpVersion //http协议版本 1.0或1.1
+})
+var req = http.request(options)
+req.on('response',(res)=>{})
+
+(2)http.ClientRequest //http.request返回的对象
+req.write('aaaaaa')
+req.end()             //所有写操作都必须调用end函数来通知服务器，否则请求无效
+```
+
+---
+#### WebSocket
+比http协议更好，html5的重要特性，解决HTTP协议本身的单向性问题，优点包括：
+```
+(1)客户端与服务端只建立一个TCP连接，可以使用更少的连接
+(2)websocket服务器可以推送数据向客户端，比http轮询的方式更灵活更快
+(3)更轻及的协议头，减少数据传送量
+注意：WebSocket不是替代http，而是http的补充。
+```
+```
+if(window.WebSocket != undefined) { //判断浏览器是否支持websocket
+  var ws = new WebSocket('ws://localhost:1740');
+}
+ws.readyState //表示连接状态
+0： 正在连接
+1： 连接成功
+2： 正在关闭
+3： 连接关闭
+```
+websocket先进行握手，将普通的http协议升级为websocket协议，然后再进行数据传输
+
+---
+#### Socket.io (websocket模块)
+详情见[socket.io文档](https://www.w3cschool.cn/socket/)
+服务端
+```
+const io = require('socket.io')(server, {
+  path: '/test',  //捕获路径test
+  serveClient: false,
+  // below are engine.IO options
+  pingInterval: 10000,
+  pingTimeout: 5000,
+  cookie: false
+})
+
+(1)http方式
+var httpServer = require('http').createServer()
+var io = require('socket.io')(httpServer) //require('socket.io')(8111)
+httpServer.on(...)
+httpServer.listen(8111)
+
+io.on('connection',(socket)=>{
+	socket.emit('news',{hello:'world'});
+	socket.on('my other event',(data)=>{
+		console.log(data.toString())
+	});
+	scoket.on('disconnection')
+})
+
+(2)express方式
+var app = require('express')()
+var server = require('http').Server(app)
+var io = require('docket.io')(server)
+server.listen(8111)
+io.on(....)
+```
+客户端
+```
+var io = require('socket.io-client')
+var socket = io.connect('http://localhost:8111')
+
+socket.on('client_new',(data)=>{
+	console.log(data.toString())
+	socket.emit('server_new','>>>'+data.toString())
+})
+```
+
+---
+#### TLS/SSL
+数字证书的生成
+```
+CA机构
+openssl genrsa -out ca.key 1024  //生成私钥
+openssl req -new -key ca.key -out ca.csr  //此过程会提示输入信息
+openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt  //生成CA证书,然后将ca证书和私钥通过安全的方式发送给服务器端
+
+服务器端
+openssl genrsa -out server.key 1024 //生成密钥
+openssl req -new -key server.key -out server.csr //此过程会提示输入信息，注意common Name要匹配服务器域名，否则认证过程会出错
+openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt //利用CA证书和私钥颁发一个带有CA签名的证书。
+证书=公钥+申请者与颁发者信息+签名
+```
+
+---
+#### https
+服务端
+```
+var https = require('https')
+var fs = require('fs')
+
+var options = {
+	path: '/ab',
+	key: fs.readFileSync('server.key'),
+	cert: fs.readFileSync('server.crt')
+}
+
+server = https.createServer(options,(req,res)=>{
+	//req.on(..)
+	res.writeHead(200,{'Content-Type':'text/plain'});
+	res.write('hello world\n') 
+	res.end()
+})
+
+server.listen(8111)
+
+server.on('listening',()=>{
+	address = server.address()
+	console.log(address.address,address.port)
+
+})
+```
+客户端
+```
+var https = require('https')
+var fs = require('fs')
+
+var options = {
+	hostname: 'localhost',
+	port: 8111,
+	path: '/ab',
+	method: 'GET',
+	key: fs.readFileSync('client.key'),
+	cert: fs.readFileSync('client.crt'),
+	ca: [fs.readFileSync('ca.crt')],
+	rejectUnauthorized: false //不保证服务器端的证书是否伪造
+}
+
+options.agent = new https.Agent(options) //注释这一句也能运行，不知为啥？？？
+
+var req = https.request(options,(res)=>{
+	res.setEncoding('utf-8')
+	res.on('data',(data)=>{
+		console.log(data.toString())
+	})
+})
+
+req.end()
+req.on('error',(e)=>{
+	console.log(e)
+})
+```
+
+---
+#### Web应用
+#####基础功能
+```
+请求方法
+req.method  //post or get
+
+路径解析
+req.url = 'http://user:pass@host.com:8080/p/a/t/h?a=3&b=ewf'
+x=url.parse(req.url,true)
+Url {
+  protocol: 'http:',
+  slashes: true,
+  auth: 'user:pass',
+  host: 'host.com:8080',
+  port: '8080',
+  hostname: 'host.com',
+  hash: null,
+  search: '?a=3&b=ewf',
+  query: { a: '3', b: 'ewf' },
+  pathname: '/p/a/t/h',
+  path: '/p/a/t/h?a=3&b=ewf',
+  href: 'http://user:pass@host.com:8080/p/a/t/h?a=3&b=ewf' }
+
+Cookie
+
+
+
+
+
+```

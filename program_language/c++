@@ -1052,7 +1052,7 @@ int a[20]={2,4,1,23,5,76,0,43,24,65},i;
 sort(a,a+20,compare);
 //---函数对象-----------------------------
 template<typename T, typename... argvs>
-class base<T(argv...)>
+class base<T(argvs...)>
 {
 }
 
@@ -1128,6 +1128,25 @@ a = "dafgsfaaafag";
 numeric_limits<double>::max() 
 numeric_limits<double>::min() 
 
+---
+#### execv
+```
+const char* job[] = {"sh","-c","echo \'fafafafa\'",NULL};
+execv("/bin/sh",(char* const*)job); //注意(char* const*),而不是(const* char*)!!!
+```
+
+---
+#### 信号量
+System V信号量与POSIX信号量
+```
+都是用于线程和进程同步的。
+Posix信号量是基于内存的，即信号量值是放在共享内存中的，与文件系统中的路径名对应的名字来标识的。
+System v信号量测试基于内核的，它放在内核里面。
+
+```
+
+
+#### 共享内存
 
 
 
