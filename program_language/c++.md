@@ -1,3 +1,4 @@
+```
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -342,10 +343,24 @@ if(NULL == freopen("xxxxx","a+",stdout)){
 	return -1;
 }
 
-//---waitpid---------------------
-pid_t pid=fork();
-//pid > 0时是主进程，<0是子进程。
-waitpid(pid,NULL,0); //pid>0，等待pid的子进程完成。
+//---wait waitpid---------------------
+```
+#include <sys/wait.h>
+
+pid_t wait(int *statloc);
+pid_t waitpid(pid_t pid,int *statloc, int options);
+//statloc指向终止进程的终止状态，如果不关心终止状态可指定为空指针
+//pid有四种情况：
+//1.pid==-1 等待任意子进程
+//2.pid>0 等待进程ID与pid相等的子进程
+//3.pid==0 等待组ID等于调用进程组ID的任意子进程
+//4.pid<-1 等待组ID等于pid绝对值的任意子进程
+pid_t wait(int *statloc)
+{
+    return waitpid(-1, statloc, 0);
+}
+```
+
 
 //---RPC传输：PCFproto传输架构和protobuf序列化策略--------
 1、protobuf序列化协议（非常好非常快）
@@ -867,17 +882,22 @@ while((ptr = readdir(dir)) != NULL){
 ptr->d_name
 ptr->d_type //8 file 10 linkfile 4 dir
 }
+
 //--------sort----------------------------------------------------------------------
 把list改成vector因为list的iterator不是random的而std::sort需要random的iterator
-//--------特化 偏特化---------------------------------------------------------------
+```
 
-//模板函数
+---
+#### 特化 偏特化
+(1)模板函数
+```
 template<typename T, class N> void func(T num1, N num2)
 {
     //cout << "num1:" << num1 << ", num2:" << num2 <<endl;
 }
- 
-//模板类
+```
+(2)模板类
+```
 template<typename T, class N> class Test_Class
 {
 public:
@@ -886,92 +906,140 @@ public:
         return (num1<num2)?true:false;
     }
 };
- 
-//全特化，模板函数
+```
+(3)全特化和模板函数
+```
 template<> void func(int num1, double num2)
 {
     cout << "num1:" << num1 << ", num2:" << num2 <<endl;
 }
- 
-//偏特化，模板类
-template<typename N> class Test_Class<int, N>
+```
+()偏特化和模板类
+```
+template<typename N> 
+class Test_Class<int, N>
 {
 public:
     static bool comp(int num1, double num2)
     {
         return (num1<num2)?true:false;
     }
-
+```
 特化 > 偏特化 > 模板类
-//--------处理模板化基类内的名称---------------------------------------------------
+
+---
+#### 处理模板化基类内的名称
+```
 template<typename T>
 class LoggingMsgSender:public MsgSender<T>
 {
 public:	
-using MsgSender<T>::sendClear;  //必须先要声明，否则编译器不知道MsgSender是否有sendclear函数，或者
-typedef typename T::mytype mytype; //定义 T的vector
-typedef typename std::vector<T> T_vector;
+    using MsgSender<T>::sendClear;  //必须先要声明，否则编译器不知道MsgSender是否有sendclear函数，或者
+    typedef typename T::mytype mytype; //定义 T的vector
+    typedef typename std::vector<T> T_vector;
 }
 
 template<typename T>  
 void func(const T & t){
-typename T::const_iterator iter(t.begin());      //重要
+    typename T::const_iterator iter(t.begin());      //重要
 }
+```
 
+---
+#### for_each waitpid
+```
+#include <algorithm>
+#include <sys/wait.h>
+for_each(vec.begin(),vec.end(),[](pid_t & pd){waitpid(pd,NULL,0);});
+```
 
+---
+#### 模板元编程 type mapping
 
-//--------模板元编程 type mapping--------------------------------------------------
-
-
-
-//--------pthread_cond_timedwait ---------------------------------------------------------
+---
+#### pthread_cond_timedwait
+```
 pthread_cond_timedwait (pthread_cond_t * _cond,pthread_mutex_t * _mutex,_const struct timespec * _abstime);
-比函数pthread_cond_wait()多了一个时间参数，经历abstime段时间后，即使条件变量不满足，阻塞也被解除。
-//--------static class struct------------------------------------------------------------------------------------
+//比函数pthread_cond_wait()多了一个时间参数，经历abstime段时间后，即使条件变量不满足，阻塞也被解除
+```
+
+---
+#### class static初始化
+```
 class my
 {
 public:
-typedef struct _my_{}mystruct;
-static list<mystruct*> a;
-....
+    typedef struct _MY{}MY;
+    static list<MY*> a;
 };
 
-list<my::mystruct*> my::a;  
-//--------operator 重载 template---------------------------------------------------------------------------
+list<my::MY*> my::a;  
+```
+
+---
+#### operator重载template
+```
 template<typename T>
 class {
-template<typename T1>
-friend my<T1> & operator *(my<T1> & my1, my<T1> & my2){  //friend 
-	my1.i *= my2.i;
-	return(my1);
+    template<typename T1>
+    friend my<T1> & operator *(my<T1> & my1, my<T1> & my2){  //friend 
+	    my1.i *= my2.i;
+	    return(my1);
+    }
 }
-}
-//-------func指针---------------------------------------------------------------------------
-void (*func)(void*);
-void func1(void*){....}
+```
 
-&(func1) 等价于 func
-//------static  头文件------------------------------------------------------------------
-satic 变量最好都写在cpp文件中，除非hpp用到的那个static变量
+---
+#### 函数指针
+```
+typedef (int*)(*func)(int,char);
+int* myfunc(int,char){}
+func = myfunc;
+//&(func) 等价于 func
+```
 
-//------makefile .o 文件有依赖时，是有顺序的
+---
+#### static变量
+static 变量最好都写在cpp文件中，除非hpp用到的那个static变量
+
+---
+#### makefile .o 文件有依赖时，是有顺序的
+```
 all: fz16.o fastqz.o libzpaq.o FastqReader.o FileOpt.o muti_Process.o
 	$(CXX) -o $(TARGET) $^ $(FLAGS) $(LIBS)
 fastqz.o依赖于muti_Process.o，muti_Process.o要写在fqstqz.o的后面
-//---ostringstream--------------------------------------------------------
+```
+
+---
+#### ostringstream
+```
 std::ostringstream str;
 str << "abc" << 2 << "dda";
-格式化一个字符串，但通常并不知道需要多大的缓冲区
-//---构造函数私有化--------------------------------------------------------------------------------
+//格式化一个字符串，但通常并不知道需要多大的缓冲区
+```
+
+---
+#### 构造函数私有化
 对于class本身，可以利用它的static公有成员，因为它们独立于class对象之外，不必产生对象也可以使用它们
-//---获取文件绝对路径------------------------------------------------------------------------------
+
+---
+#### 获取文件绝对路径
+```
 realpath(file_name, abs_path_buff)
 返回值为0表示错误
-//----判断文件夹是否存在，不存在创建文件夹--------------------------------------------------
+```
+
+---
+#### 判断文件夹是否存在，不存在创建文件夹
+```
 if (access(tarDir,F_OK)!=0){
-ASSERT_ERROR(mkdir(tarDir,S_IRWXU),"mkdir tmp wrong");
+    ASSERT_ERROR(mkdir(tarDir,S_IRWXU),"mkdir tmp wrong");
 }
-//--------文件夹 操作-----------------------------------------------------------------------------------
+```
+
+---
+#### 文件夹操作
+```
 #include <sys/types.h>   
 #include <dirent.h>
 DIR* dir = opendir(path);
@@ -985,60 +1053,105 @@ S_ISCHR(st_mode)：是否是一个字符设备.
 S_ISBLK(st_mode)：是否是一个块设备
 S_ISFIFO(st_mode)：是否 是一个FIFO文件.
 S_ISSOCK(st_mode)：是否是一个SOCKET文件 
-//-------指针集------------------------------------------------------------------------
+```
+
+---
+#### 指针数组
+```
 const char* a[5] = {"aa","ab","ada","dadad","fddgds"};
-//--------模板特例化-----------------------------------------------------------
+```
+
+---
+#### 模板特例化
+```
 template<>
 class a<int>{};
-clas
-//------typename---------------------------------------------------------------------
+```
+
+---
+#### typename
+```
+//在类中用未定义的T,必须以下这么用！！！
 typename base<T>::Nest temp;
 typedef typename iterator_traits<T>::value_type value_type;
 valuetype tmp(xxx)
-//-----虚函数-------------------------------------------------------------------------
-继承必须是指针或引用才能动态编译。
-//------模板类初始化-------------------------------------------------------------------------------------
-a<b> x = a<b>();
-//-------优先队列----------------------------------------------------------------------
-priority_queue<element> seq;
-	seq.push(element(4,"aaa"));
-	seq.push(element(2,"bbb"));
-	seq.push(element(5,"ccc"));
+```
 
-	while(!seq.empty()){
-		element c = seq.top();  //注意这里是值，不能是引用，如果要提高性能，可以把element改为指针
-		cout << c.i << endl;
-		cout << c.name << endl;
-		seq.pop();
-	}
-//-----deque queue----------------------------------------------------------------------
+---
+#### 虚函数
+继承必须是指针或引用才能动态编译。
+
+---
+#### 模板类初始化(构造函数里)
+```
+template<typename T>
+class X
+{
+   a<T> x;
+   X(){
+       x = a<int>();
+   }
+}
+```
+
+---
+#### 优先队列
+```
+priority_queue<element> seq;
+seq.push(element(4,"aaa"));
+seq.push(element(2,"bbb"));
+seq.push(element(5,"ccc"));
+
+while(!seq.empty()){
+    element c = seq.top();  //注意这里是值，不能是引用，如果要提高性能，可以把element改为指针
+    cout << c.i << endl;
+    cout << c.name << endl;
+    seq.pop();
+}
+```
+
+---    
+#### deque queue array
 deque是双端队列
 queue是容器适配器，底层由deque存储
-//-----array-------------------------------------------------------------
-长度固定
-//-----类函数指针--------------------------------------------------------------
+array长度固定
+
+---
+#### 类函数指针
+```
 class CA
 {  
  public:  
     int caAdd(int a, int b) {return a+b;}  
     int caMinus(int a, int b){return a-b;};  
 };  
-定义类函数指针类型
-    typedef int (CA::*PtrCaFuncTwo)(int ,int);  
-指针赋值
-    PtrCaFuncTwo pFunction = &CA::caAdd;  
-使用指针，注意使用括号
-    CA ab;  
-    int c = (ab.*pFunction) (1,2);  
+//定义类函数指针类型
+typedef int (CA::*PtrCaFuncTwo)(int ,int);  
+//指针赋值
+PtrCaFuncTwo pFunction = &CA::caAdd;  
+//使用指针，注意使用括号
+CA ab;  
+int c = (ab.*pFunction) (1,2);  
+```
 
-//---静态类------------------------------------------
+---
+#### 静态类
 静态类所必须的初始化在类外进行（不应在.h文件内实行），而前面不加static，以免与外部静态变量(对象)相混淆
-//---参数传递--------------------------------------
+
+---
+#### 参数传递(string &)
+```
 void func(string a){} //此处 不能是&！！！！！
-func("aaaa"); 
-//---explicit------
+func("aaaa");
+```
+
+--- 
+#### explicit
 C++提供了关键字explicit，可以阻止不应该允许的经过转换构造函数进行的隐式转换的发生, 
-//---access---目录是否存在
+
+---
+#### access(目录是否存在)
+```
 #include <unistd.h>
 int access(const char * pathname, int mode)
 成功执行时，返回0。失败返回-1
@@ -1046,35 +1159,42 @@ R_OK      测试读许可权
 W_OK      测试写许可权
 X_OK      测试执行许可权
 F_OK      测试文件是否存在
-//---sort----------------------------------
-bool compare(int a,int b)
-int a[20]={2,4,1,23,5,76,0,43,24,65},i;
+```
+
+---
+#### sort
+```
+bool compare(int & a,int & b)
+int a[20]={2,4,1,23,5,76,0,43,24,65};
 sort(a,a+20,compare);
-//---函数对象-----------------------------
-template<typename T, typename... argvs>
-class base<T(argvs...)>
-{
-}
+```
 
-1.#include <functional> //c++11
-std::function<size_t>
+---
+#### 函数对象
+```
+#include <functional>  //c++11
+template<typename T, typename... Args> //T 返回 argvs参数
+static void forkRun(function<T(Args...)> func, Args... args);
+```
 
-
-
-//---智能指针转换---------------------------
-初始化
+---
+#### 智能指针转换
+```
+//初始化
 shared_ptr<int> sptr1( new int );
 // 使用make_shared 来加速创建过程
 // shared_ptr 自动分配内存，并且保证引用计数
- // 而make_shared则是按照这种方法来初始化
- shared_ptr<int> sptr2 = make_shared<int>( 100 );
-普通指针到智能指针的转换
+// 而make_shared则是按照这种方法来初始化
+shared_ptr<int> sptr2 = make_shared<int>( 100 );
+
+//普通指针到智能指针的转换
 int* iPtr = new int(42);
 shared_ptr<int> p(iPtr);
-智能指针到普通指针的转换
-       int* pI = p.get();
-shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存。每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁。
-例如：
+//智能指针到普通指针的转换
+int* pI = p.get();
+
+//shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存。每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁。
+//例如：
 void func(shared_ptr<int> & a){       //引用 不会改变计数
 	cout << a.use_count() << endl;
 }
@@ -1084,8 +1204,12 @@ void func(shared_ptr<int> a){		//复制 会改变计数
 shared_ptr<int> a = make_shared<int>(10);
 cout << a.use_count() << endl;	
 func(a);
-cout << a.use_count() << endl;	
-//---lambda 捕获------------------------------
+cout << a.use_count() << endl;
+```
+
+---
+#### lambda
+```
 int main()
 {
     int a = 123;
@@ -1093,7 +1217,7 @@ int main()
     a = 321;
     f(); // 输出：123
 }
-以传值方式捕获外部变量，则在Lambda表达式函数体中不能修改该外部变量的值。
+//以传值方式捕获外部变量，则在Lambda表达式函数体中不能修改该外部变量的值。
 int main()
 {
     int a = 123;
@@ -1102,14 +1226,14 @@ int main()
     f(); // 输出：321
 }
 
-[=]表示以值捕获的方式捕获外部变量，[&]表示以引用捕获的方式捕获外部变量
+//[=]表示以值捕获的方式捕获外部变量，[&]表示以引用捕获的方式捕获外部变量
 int main()
 {
     int a = 123;
     auto f = [=] { cout << a << endl; };    // 值捕获
     f(); // 输出：123
 }
-隐式引用捕获示例：
+//隐式引用捕获示例：
 int main()
 {
     int a = 123;
@@ -1117,16 +1241,37 @@ int main()
     a = 321;
     f(); // 输出：321
 }
-//---std::sort---------------------------------
+```
+
+---
+#### std::sort
+```
 vector<xxx> a;
-sort(a.begin(),a.end(),[](const xxx & x, const xxx & y){return(x>y);}); //const注意
-//---const char* 初始化-------------------------------------
+sort(a.begin(),a.end(),[](const xxx & x, const xxx & y){return(x>y);}); //注意const!!!
+
+//qsort
+int x[10];
+qsort(x,10,sizeof(int),func);
+int func(const void* a, const void* b){
+	return((*(int*)a)-(*(int*)b));
+}
+```
+
+---
+#### const char*(初始化)
 c++允许先初始化再赋值
+```
 const char* a；
 a = "dafgsfaaafag";
-//---<limits>-----------------------------------
+```
+
+---
+#### limits
+```
+#include <limits>
 numeric_limits<double>::max() 
 numeric_limits<double>::min() 
+```
 
 ---
 #### execv
@@ -1136,24 +1281,347 @@ execv("/bin/sh",(char* const*)job); //注意(char* const*),而不是(const* char
 ```
 
 ---
+#### random
+```
+#include <random>
+std::default_random_engine e;
+std::uniform_real_distribution<int> u(0,100)  //随机数分布
+int a = u(e) ;   //产生随机数
+```
+
+---
+#### sstream
+```
+#include <sstream>
+default_random_engine e;
+uniform_real_distribution<int> u(numeric_limits<int>::min(), numeric_limits<int>::max);
+stringstream ss;
+ss << u(e) << ".sm";
+string x(ss.str());
+const char* y = ss.str().c_str();
+```
+
+---
+#### 多参数
+```
+template<typename T, typename... Args> //T 返回 argvs参数
+static void forkRun(function<T(Args...)> func, Args... args){
+    T x = func(args...);
+    cout << x << endl;
+}
+
+int add(int a, int b){
+    return(a+b);
+}
+
+int main(){
+    function<int(int,int)> f = add;
+    forkRun(f,2,3);
+
+}
+```
+
+---
+#### \_\_func\_\_
+当前函数名称
+
+---
+#### 函数指针map
+```
+typedef void(*f)(int,int);
+void add(void){}
+map<void*,string> mp;
+mp[(void*)add] = "add";
+```
+
+---
+#### 进程间通信
+Posix函数有下划线分隔，SystemV函数没有
+(1)POSIX IPC：
+```
+//涉及的库
+#include <semaphore.h>
+#include <sys/mman.h>
+#include <sys/stat.h>        /* For mode constants */
+#include <fcntl.h>           /* For O_* constants */
+
+//信号量
+sem_open(const char*)   sem_close(sem_t*)   sem_unlink(const char*)  
+sem_wait(sem_t*)   sem_post(sem_t*)
+//共享内存
+int fd=shm_open(const char*)  shm_unlink(const char*) close(fd)
+ftruncate(fd,10)
+mmap()
+```
+(2)System V IPC:
+```
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+//信号量
+ftok   //ftok把一个已存在的路径名和一个整数标识符转换成一个key_t值，称为IPC键值
+semget  semctl semop
+shmget  shmctl shmat shmdt
+```
+
+---
 #### 信号量
-System V信号量与POSIX信号量
+POSIX信号量与System V信号量
 ```
 都是用于线程和进程同步的。
 Posix信号量是基于内存的，即信号量值是放在共享内存中的，与文件系统中的路径名对应的名字来标识的。
 System v信号量测试基于内核的，它放在内核里面。
+```
+(1)POSIX信号量
+```
+//一个进程创建POSIX信号量
+#include <semaphore>
+#define FILE_MODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
+int main(){
+    sem_unlink("file");  //防止所需的信号量已存在
+    sem_t* mutex;
+    if (mutex = sem_open("file",O_CREAT|O_EXCL,FILE_MODE,1) == SEM_FAILED){
+        error("mutex");
+        exit(-1);
+    }
+    sem_close(mutex);   //关闭
+}
+//另外一个进程运用POSIX信号量
+#include <semaphore.h>
+
+int main(){
+    sem_t* mutex;
+    if ((mutex = sem_open("file",0)) == SEM_FAILED){ //打开信号量
+        error;
+    }
+    sem_wait(mutex);        //加锁
+    ...
+    sem_post(mutex);        //释放锁
+}
+```
+(2)System V信号量
+```
+#include <sys/sem.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int sem_id;
+int set_semvalue(){
+    union semun sem_union;
+    sem_union.val = 1;
+    if (semctl(sem_id,0,SETVAL,sem_union) == -1) return(0);
+    return(1);
+}
+void del_semvalue(){
+    union semun sem_union;
+    if (semctl(sem_id,0,IPC_RMID,sem_union) == -1) perror();
+}
+int semaphore_p(){
+    struct sembuf sem_b;
+    sem_b.sem_num = 0;
+    sem_b.sem_op = -1; //P()
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(sem_id,&sem_b,1) == -1)return(0);
+    return(1);
+}
+int semaphore_v(){
+    struct sembuf sem_b;
+    sem_b.sem_num = 0;
+    sem_b.sem_op = 1; //V()
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(sem_id,&sem_b,1) == -1)return(0);
+    return(1);
+}
+
+int main(){
+    key_t key = ftok("file",3);
+    sem_id = semget(key,1,0666|IPC_CREAT); //创建信号量
+    if (!set_semvalue()) perror();  //初始化信号量
+
+    if (!semaphore_p()) perror;  //进入临界区
+    ...
+    if (!semaphore_v()) perror; //离开临界区
+
+    del_semvalue();
+}
 ```
 
-
+---
 #### 共享内存
+分两种
+System V的shmget()得到一个共享内存对象的id，用shmat()映射到进程自己的内存地址
+POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
+<img src="../picture/7.png" alt="shm_open+mmap" height=300 width=500/>
+注意：以上两种方式要用信号量同步
+(1)shmget
+```
+//进程一 read
+#include<sys/shm.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#define MEM_KEY (1234)
 
+typedef struct _shared{
+    int text[10];
+}shared;
 
+int main(){
+    key_t key = ftok("file",0x03); //proj_id是一个1－255之间的一个整数值，典型的值是一个ASCII值
+    int shmid = shmget((key_t)MEM_KEY, sizeof(shared),0666|IPC_CREAT|IPC_EXCL); //创建共享内存,如果存在则报错
+    //int shmid = shmget(key,sizeof(shared,IPC_CREAT|0666));
+    if (shmid == -1) perror();
+    void* shm = shmat(shmid,0,0); //连接当前进程地址空间
+    if（shm == (void*)-1）perror();
+    shared* my = (shared*)shm;
+    printf("%d\n",my->text[1]);
+    if (shmdt(shm) == -1) perror();    //把共享内存从当前进程分离
+    if (shmctl(shmid,IPC_RMID, 0) == -1) perror //删除共享内存
+}
 
+//进程二 write
+#include<sys/shm.h>
+#define MEM_KEY (1234)
 
+typedef struct _shared{
+    int text[10];
+}shared;
 
+int main(){
+    int shmid = shmget((key_t)MEM_KEY, sizeof(shared),0666|IPC_CREAT); //创建共享内存
+    if (shmid == -1) perror();
+    shm = shmat(shmid, 0, 0);
+    if（shm == (void*)-1）perror();
+    shared* my = (shared*)shm;
+    my->text[1] = 5;
+    if (shmdt(shm) == -1) perror();
+}
+```
+(2)shm_open+mmap
+```
+//server
+#include <sys/mmap.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#define  FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
 
+typedef struct __ST{
+     char text[5];
+}ST;
 
+int main(){
+    shm_unlink("file");  //防止file已存在
+    int fd = shm_open("file",O_RDWR|O_CREAT,FILE_MODE);
+    if (fd == -1) perror();
+    ftruncate(fd,sizeof(ST));
+    ST* ptr;
+    ptr = mmap(NULL,sizeof(ST),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+    if (ptr == SEM_FAILED) perror();
+    ptr->text[1] = 'a';
+    close(fd);
 
+}
 
+//client
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+typedef struct _ST{
+    char text[5];
+}ST;
 
+int main(){
+    int fd = shm_open("file",O_RDWR,FILE_MODE);
+    ptr = mmap(NULL,sizeof(ST),PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+    printf("%c",ptr->text[1]);
+    close(fd);
+}
+```
+
+---
+#### pipe(无名管道)
+父子进程互相传递信号
+```
+#include <unistd.h>
+
+int fd[2]; //0:读  1:写
+int ret = pipe(fd);
+if (ret==-1)perror();
+pid_t pt = fork();
+if (pt>0){
+    close(fd[0]);       //关闭读
+    write(fd[1]...);    
+}else{
+    close(fd[1]);       //关闭写
+    read(fd[0]...);
+}
+```
+
+---
+#### FIFO(有名管道)
+不同进程互相传递信号
+```
+#include <sys/stat.h>
+mkfifo("file",0755);
+int fd = open("file",O_RDONLY); //O_WRONLY
+close(fd);
+```
+
+---
+#### 类静态成员初始化
+静态成员需要一开始初始化，
+```
+template<typename T>
+class SysIpc
+{
+public:
+	SysIpc(){}
+	~SysIpc(){}
+	const static size_t n = 10; //如果不给n赋值，就会报错
+	static T list[n];
+};
+
+template<typename T>
+T SysIpc<T>::list[SysIpc<T>::n];
+```
+
+---
+#### sys/time.h
+```
+#include <sys/time.h>
+struct timeval tv;
+gettimeofday(&tv,NULL);
+sprintf(tarDir,"%s/tmp%ld%ld/",tarDir,tv.tv_sec,tv.tv_usec);
+```
+
+---
+#### 子进程退出
+推荐用_exit(1)
+```
+WEXITSTATUS(status) //获取退出值
+WIFEXITED(status)   //判断是否正常推出
+WIFSIGNALED(status) //判断是否被杀死
+```
+
+---
+#### fd设置
+fd非阻塞
+```
+int val;
+if ((val = fcntl(fd[0], F_GETFL, 0)) < 0){
+	cout << "[error]: fcntl" << endl;
+	exit(-1);
+}
+val |= O_NONBLOCK;                          //先取出val,再设置
+if (fcntl(fd[0], F_SETFL, val) < 0){
+	cout << "[error]: fcntl" << endl;
+	exit(-1);
+}
+```
+
+---
+#### 

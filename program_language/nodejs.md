@@ -886,8 +886,66 @@ req.on('error',(e)=>{
 ```
 
 ---
+#### ssh2
+[ssh2实例](https://github.com/mscdex/ssh2#user-content-client-methods)
+sftp
+```
+var Client = require('ssh2').Client;
+
+var conn = new Client();
+conn.on('ready', function() {
+  console.log('Client :: ready');
+  conn.sftp(function(err, sftp) {
+    if (err) throw err;
+    sftp.readdir('/seq_dir', function(err, list) {
+      if (err) throw err;
+      console.dir(list);
+      conn.end();
+    });
+  });
+})
+
+conn.connect({
+  host: '192.168.100.100',
+  port: 22,
+  username: 'frylock',
+  password: 'nodejsrules'
+});
+
+```
+exec
+```
+var Client = require('ssh2').Client;
+
+var conn = new Client();
+conn.on('ready', function() {
+  console.log('Client :: ready');
+  conn.exec('uptime', function(err, stream) {
+    if (err) throw err;
+    stream.on('close', function(code, signal) {
+      console.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
+      conn.end();
+    })
+	stream.on('data', function(data) {
+      console.log('STDOUT: ' + data);
+    })
+	stream.on('err', function(err) {
+      console.log('STDERR: ' + err);
+    });
+  });
+})
+conn.connect({
+  host: '10.100.6.20',
+  port: 22,
+  username: 'root',
+  password: 'berry.com'
+  //privateKey: require('fs').readFileSync('/here/is/my/key')
+});
+```
+
+---
 #### Web应用
-#####基础功能
+##### 基础功能
 ```
 请求方法
 req.method  //post or get
