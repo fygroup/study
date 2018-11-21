@@ -1445,7 +1445,9 @@ int main(){
 分两种
 System V的shmget()得到一个共享内存对象的id，用shmat()映射到进程自己的内存地址
 POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
+
 <img src="../picture/7.png" alt="shm_open+mmap" height=300 width=500/>
+
 注意：以上两种方式要用信号量同步
 (1)shmget
 ```
