@@ -686,12 +686,9 @@ client.send(message,0,message.length,8142,"localhost",(err,bytes)=>{ //bytes为�
 ---
 #### http
 http报文分文三个部分
-第一部分
-`经典的TCP的3次握手`
-第二部分
-`完成握手后，客户端向服务端发送报文`
-第三部分
-`服务器完成处理后，向客户端发送响应内容，包括响应头和响应体（post请求）`
+第一部分:经典的TCP的3次握手
+第二部分:完成握手后，客户端向服务端发送报文
+第三部分:服务器完成处理后，向客户端发送响应内容，包括响应头和响应体（post请求）
 ##### 服务器
 ```
 (1)http.Server      //server = http.createServer()或server = http.createServer((req,res)=>{})
@@ -946,11 +943,13 @@ conn.connect({
 ---
 #### Web应用
 ##### 基础功能
+(1)请求方法
 ```
-请求方法
 req.method  //post or get
+```
 
-路径解析
+(2)路径解析
+```
 req.url = 'http://user:pass@host.com:8080/p/a/t/h?a=3&b=ewf'
 x=url.parse(req.url,true)
 Url {
@@ -966,11 +965,45 @@ Url {
   pathname: '/p/a/t/h',
   path: '/p/a/t/h?a=3&b=ewf',
   href: 'http://user:pass@host.com:8080/p/a/t/h?a=3&b=ewf' }
+```
 
-Cookie
+(3)Cookie
+```
+var http = require('http')
 
+//生成cookie
+var serialize = function(name,val,opt){
+	var pair = [name+'='+opt]
+	opt = opt || {}          //必须要有！！！
+	if (opt.maxAge) pair.push('Max-Age='+opt.maxAge); //如果设置过期时间，关闭浏览器并不删除cookie，直到时间过期
+	if (opt.domain) pair.push('Domain='+opt.domain);
+	if (opt.path) pair.push('Path='+opt.path);//当前访问路径不满足该匹配时，浏览器不发送cookie
+	if (opt.expires) pair.push('Expires='+opt.expires.toUTCString());//设置过期时间，一般不用（时间可能不统一）
+	if (opt.httpOnly) pair.push('HttpOnly'); //告知浏览器不可更改和不显示cookie
+	if (opt.secure) pair.push('Secure'); //如果设置那么在http无效，在https才有效
+	return pair.join(';')
+}
+//解析cookie
+var parseCookie = function(cookie){
+	var cookies = {}
+	if (!cookie) return cookies;
+	var list = cookie.split(';')
+	for (let i=0;i<list.length;i++){
+		var pair = list[i].split('=')
+		cookies[pair[0].trim()] = pair[1]
+	}
+	return cookies;
+}
 
+const server = http.createServer((req,res)=>{
+	req.cookie = parseCookie(req.headers.cookie);
+	res.setHeader("Set-Cookie",serialize('isVip','1',{maxAge:'5000'}));
+});
+```
 
-
+(4)Session
+```
 
 ```
+
+

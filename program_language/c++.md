@@ -1304,20 +1304,11 @@ const char* y = ss.str().c_str();
 ---
 #### 多参数
 ```
+void func(){} 
 template<typename T, typename... Args> //T 返回 argvs参数
-static void forkRun(function<T(Args...)> func, Args... args){
-    T x = func(args...);
-    cout << x << endl;
-}
-
-int add(int a, int b){
-    return(a+b);
-}
-
-int main(){
-    function<int(int,int)> f = add;
-    forkRun(f,2,3);
-
+void func(T value, Args... args){
+    cout << value << endl;
+    func(args...);
 }
 ```
 
@@ -1602,6 +1593,9 @@ sprintf(tarDir,"%s/tmp%ld%ld/",tarDir,tv.tv_sec,tv.tv_usec);
 #### 子进程退出
 推荐用_exit(1)
 ```
+pid_t pt;
+int status;
+waitpid(pt,&status,0);
 WEXITSTATUS(status) //获取退出值
 WIFEXITED(status)   //判断是否正常推出
 WIFSIGNALED(status) //判断是否被杀死

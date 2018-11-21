@@ -151,3 +151,10 @@ Leader.prototype.constructor; //会显示 function Leader(){}
 Leader.prototype.run = function(){}
 liyi.run === qinbb.run // true
 ```
+
+---
+#### join
+```
+var a=[]
+a.join(';')
+```
