@@ -158,3 +158,26 @@ liyi.run === qinbb.run // true
 var a=[]
 a.join(';')
 ```
+
+---
+#### querystring
+```
+querystring.parse('a=3&b=4')
+{ a: '3', b: '4' }
+```
+
+---
+#### JSON
+```
+a={a:1,b:2}
+x= JSON.stringify(a)
+y= JSON.parse(x)
+```
+
+---
+#### trim
+去除string前后空字符
+```
+var a = ' dsaa '
+a.trim()
+```

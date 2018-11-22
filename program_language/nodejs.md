@@ -706,6 +706,40 @@ req.on('close')              //用户当前请求结束时，该事件被触发
 res.writeHead(statusCode,[heasers])
 res.write(data,[encoding])
 res.end([data],[encoding])
+
+(4)事件
+var http = require('http')
+var server = http.createServer()
+server.on('request',(req,res)=>{
+	console.log(">>>"+req.headers.cookie);
+	req.on('data',(data)=>{
+		console.log(data.toString())
+	})
+
+	req.on('end',()=>{
+		console.log('传输end');
+	})
+
+	req.on('close',()=>{
+		console.log('连接已断开');	
+	})
+})
+
+server.on('close',()=>{
+	console.log('服务器已关闭')
+})
+
+server.on('listening',()=>{
+	address = server.address()
+	console.log("%d",address.port);
+})
+
+
+server.on('error',(err)=>{
+	console.log(err);
+})
+
+server.listen(8111)
 ```
 
 ##### 客户端
@@ -739,6 +773,7 @@ req.on('response',(res)=>{})
 req.write('aaaaaa')
 req.end()             //所有写操作都必须调用end函数来通知服务器，否则请求无效
 ```
+
 
 ---
 #### WebSocket
@@ -967,7 +1002,7 @@ conn.connect({
 
 ---
 #### Web应用
-##### 基础功能
+##### 基础功能(路径解析、Cookie、Session、缓存、Basic)
 (1)请求方法
 ```
 req.method  //post or get
@@ -991,7 +1026,7 @@ Url {
   path: '/p/a/t/h?a=3&b=ewf',
   href: 'http://user:pass@host.com:8080/p/a/t/h?a=3&b=ewf' }
 
-x.query[key] = value //字符串键值
+x.query[key] = value //字符串键值 GET
 url.format(x)  //将x重新弄成url
 ```
 
@@ -1031,6 +1066,7 @@ const server = http.createServer((req,res)=>{
 res的writeHeader和setHeader
 
 (4)Session
+
 服务端用session ID操作session的内容，Session ID 可以使用 Cookie 和 URL 参数来传递，一般放在Cookie中。
 说白了，session就是服务器中的一个变量，但是在node会存在内存限制，加上多线程的内存不共享，所以session一般用Redis内存数据库。
 session安全就是确保session ID的安全，利用私钥进行加密签名
@@ -1047,15 +1083,135 @@ var sign = function(val, secret){
 url重定向
 
 (6)缓存
+```
+//ETag的请求和响应
+function getHash(str){    //根据str内容生成hash
+	var shasum = crypto.createHash('sha1');
+	return shasum.update(str).digest('base64');
+}
+
+var handle = function(req,res){
+	fs.readFile(filename,(err,data)=>{
+		var hash = getHash(data);
+		var noneMatch = req.headers['if-none-match']; //获得ETag的请求值
+		if (hash == noneMatch){
+			res.writeHead(304,"not modify");
+			res.end();
+		}else{
+			res.setHeader('ETag',hash);  //添加hash值
+			res.writeHead(200,"ok");
+			res.end();
+		}
+	});
+};
+
+//Cache-Control 倒计时更新文件（前提是文件存在）
+var handle = function(req,res){
+	fs.readFile(filename,(err,data)=>{
+		res.setHeader('Cache-Control',"max-age="+10*365*24*60*60*1000);
+		res.writeHead(200,"ok");
+		res.end(data);
+	})
+}
+```
 
 (7)Basic认证
+
+Basic 认证是HTTP 中非常简单的认证方式，因为简单，所以不是很安全，不过仍然非常常用。
+当一个客户端向一个需要认证的HTTP服务器进行数据请求时，如果之前没有认证过，HTTP服务器会返回401状态码，要求客户端输入用户名和密码。用户输入用户名和密码后，用户名和密码会经过BASE64加密附加到请求信息中再次请求HTTP服务器，HTTP服务器会根据请求头携带的认证信息，决定是否认证成功及做出相应的响应。
+```
+//Authorization: Basic AHV23ggCNVMsGa
+function(req,res){
+	var auth = req.headers['authorization'] || '';
+	var parts = auth.split(' ');
+	var method = parts[0]; //Basic
+	var encode = parts[1];
+	var decode = Buffer.from(encode,'base64').toString('utf-8').split(':'); //将base64转为string
+	var user = decode[0];
+	var password = decode[1];
+	if (!checkUser(user,password)){
+		res.setHeader('WWW-Authenticate','Basic realm="Secure Area"');   //设置认证头
+		res.writeHead(401);
+		res.end();
+	}
+}
 ```
 
+##### 上传(表单、文件、JSON)
+(1)表单
+```
+//<form action='/upload' method='post'>
+//表单提交，请求头中一般包含，Content-Type: application/x-www-form-urlencoded
+//报文体中的内容跟查询字符串相同，foo=bar&baz=val
+var hander = function(req,res){
+	if (req.headers['Content-Type'] === 'application/x-www-form-urlencoded'){
+		req.body = querystring.parse(req.rawBody);  //req.rawBody
+	}
+	...
+	todo(req,res);
+}
 ```
 
+(2)JSON
+```
+//Content-Type: application/json; charset=utf-8
+var mime = function(req){
+	var x = req.headers['Content-Type'] || ''
+	return x.split(';')[0].trim();
+}
+var hander = function(req, res){
+	if (mime(req) == 'application/json'){
+		req.body = JSON.parse(req.rawBody);
+	}
+}
+```
 
+(3)附件上传
+```
+//<form action='/upload' method='post' enctype='multipart/form-data'>
+//附件上传也是以post的形式上传的，不过在body中会有些不同，他会以boundary分割
+//Content-Type: multipart/form-data; boundary=AaBo3x  //在报文体中boundary是每部分的分界符，
+//Content-Length: 18231     //报文体长度
+```
+例如：
 
-
+<img src='../picture/8.png' alt='muti/form-data' width=400 height=200>
+<img src='../picture/9.png' alt='muti/form-data' width=400 height=200>
+```
+<form action='/upload' method='post' enctype='multipart/form/data'>
+	<label for='username'>UserName:</label><input type='text' name='username' id='username'/>
+	<label for='file'>FileName:</label><input type='file' name='file' id='file'/>
+	<input type='submit' name='submit' value='Submit' />
+</form>
+//报文如下：
+--AaBo3x\r\n
+Content-Disposition: form-data; name='username'\r\n
+\r\n
+Malx
+--AaBo3x\r\n
+Content-Disposition: form-data; name='file'; filename='myfile.txt'\r\n
+\r\n
+...content of myfile.txt
+--AaBo3x--
+```
+formidable模块
+```
+var formidable = require('formidable')
+function(req, res){
+	if (hasBody(req)){
+		if (mime(req) == 'multipart/form-data'){
+			var form = new formidable.IncomingForm();
+			form.parse(req, (err, fields, files)=>{ 
+				req.body = fields;  //其他数据们
+				req.files = files;  //文件们
+				handle(req,res);
+			})
+		}
+	}else{
+		handle(req,res);
+	}
+}
+```
 
 
 
