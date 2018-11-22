@@ -1177,6 +1177,7 @@ var hander = function(req, res){
 
 <img src='../picture/8.png' alt='muti/form-data' width=400 height=200>
 <img src='../picture/9.png' alt='muti/form-data' width=400 height=200>
+
 ```
 <form action='/upload' method='post' enctype='multipart/form/data'>
 	<label for='username'>UserName:</label><input type='text' name='username' id='username'/>
