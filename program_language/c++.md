@@ -896,6 +896,7 @@ template<typename T, class N> void func(T num1, N num2)
     //cout << "num1:" << num1 << ", num2:" << num2 <<endl;
 }
 ```
+
 (2)模板类
 ```
 template<typename T, class N> class Test_Class
@@ -907,6 +908,7 @@ public:
     }
 };
 ```
+
 (3)全特化和模板函数
 ```
 template<> void func(int num1, double num2)
@@ -914,7 +916,8 @@ template<> void func(int num1, double num2)
     cout << "num1:" << num1 << ", num2:" << num2 <<endl;
 }
 ```
-()偏特化和模板类
+
+(4)偏特化和模板类
 ```
 template<typename N> 
 class Test_Class<int, N>
@@ -1328,6 +1331,7 @@ mp[(void*)add] = "add";
 ---
 #### 进程间通信
 Posix函数有下划线分隔，SystemV函数没有
+
 (1)POSIX IPC：
 ```
 //涉及的库
@@ -1344,6 +1348,7 @@ int fd=shm_open(const char*)  shm_unlink(const char*) close(fd)
 ftruncate(fd,10)
 mmap()
 ```
+
 (2)System V IPC:
 ```
 #include <sys/sem.h>
@@ -1364,6 +1369,7 @@ POSIX信号量与System V信号量
 Posix信号量是基于内存的，即信号量值是放在共享内存中的，与文件系统中的路径名对应的名字来标识的。
 System v信号量测试基于内核的，它放在内核里面。
 ```
+
 (1)POSIX信号量
 ```
 //一个进程创建POSIX信号量
@@ -1392,6 +1398,7 @@ int main(){
     sem_post(mutex);        //释放锁
 }
 ```
+
 (2)System V信号量
 ```
 #include <sys/sem.h>
@@ -1443,12 +1450,14 @@ int main(){
 ---
 #### 共享内存
 分两种
+
 System V的shmget()得到一个共享内存对象的id，用shmat()映射到进程自己的内存地址
 POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
 
 <img src="../picture/7.png" alt="shm_open+mmap" height=300 width=500/>
 
 注意：以上两种方式要用信号量同步
+
 (1)shmget
 ```
 //进程一 read

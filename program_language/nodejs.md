@@ -820,8 +820,33 @@ openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt  //生成CA证书,然�
 openssl genrsa -out server.key 1024 //生成密钥
 openssl req -new -key server.key -out server.csr //此过程会提示输入信息，注意common Name要匹配服务器域名，否则认证过程会出错
 openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt //利用CA证书和私钥颁发一个带有CA签名的证书。
-证书=公钥+申请者与颁发者信息+签名
+证书:
+证书的发布机构
+证书的有效期
+公钥
+证书所有者（Subject）
+签名所使用的算法
+指纹以及指纹算法
 ```
+
+---
+#### 加密与签名
+(1)公钥与私钥
+```
+公钥加密，私钥解密。私钥加密，公钥解密
+```
+
+(2)请求过程
+```
+step1:
+客户->服务器：发送请求
+step2:
+服务器->客户：发送数字证书（包含公钥）
+step3:
+客户验证数字证书是不是服务器，有否问题。
+
+```
+
 
 ---
 #### https
@@ -965,6 +990,9 @@ Url {
   pathname: '/p/a/t/h',
   path: '/p/a/t/h?a=3&b=ewf',
   href: 'http://user:pass@host.com:8080/p/a/t/h?a=3&b=ewf' }
+
+x.query[key] = value //字符串键值
+url.format(x)  //将x重新弄成url
 ```
 
 (3)Cookie
@@ -1000,10 +1028,36 @@ const server = http.createServer((req,res)=>{
 	res.setHeader("Set-Cookie",serialize('isVip','1',{maxAge:'5000'}));
 });
 ```
+res的writeHeader和setHeader
 
 (4)Session
 ```
+服务端用session ID操作session的内容，Session ID 可以使用 Cookie 和 URL 参数来传递，一般放在Cookie中。
+说白了，session就是服务器中的一个变量，但是在node会存在内存限制，加上多线程的内存不共享，所以session一般用Redis内存数据库。
+session安全就是确保session ID的安全，利用私钥进行加密签名
+var sign = function(val, secret){
+	return val+'.'+crypto.createHmac('sha256',secret)
+						 .update(val)
+						 .digest('base64')
+						 .replace('\=+$','');
+}
+```
+
+(5)redirect
+url重定向
+
+(6)缓存
+
+(7)Basic认证
+```
 
 ```
+
+
+
+
+
+
+
 
 
