@@ -1031,10 +1031,10 @@ const server = http.createServer((req,res)=>{
 res的writeHeader和setHeader
 
 (4)Session
-```
 服务端用session ID操作session的内容，Session ID 可以使用 Cookie 和 URL 参数来传递，一般放在Cookie中。
 说白了，session就是服务器中的一个变量，但是在node会存在内存限制，加上多线程的内存不共享，所以session一般用Redis内存数据库。
 session安全就是确保session ID的安全，利用私钥进行加密签名
+```
 var sign = function(val, secret){
 	return val+'.'+crypto.createHmac('sha256',secret)
 						 .update(val)
