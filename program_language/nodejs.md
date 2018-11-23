@@ -42,17 +42,17 @@ for(i=0;i<5;i++){
 ```
 
 ---
-#### hasOwnProperty
+#### hasOwnProperty(判断自身属性)
 ```
 a={1:1,2:2}
 a.hasOwnProperty(1)
 function f(){
 	this.a=1
 }
-f.prototype.b = 1
+f.prototype.b = 1 
 var b = new f()
 b.hasOwnProperty('a') //true
-b.hasOwnProperty('b') //false
+b.hasOwnProperty('b') //false  b是继承属性
 ```
 
 ---
@@ -1214,7 +1214,302 @@ function(req, res){
 }
 ```
 
+(4)数据上传与安全
+```
+//内存限制
+//当content-length存在时
+var byte = 1024;
+function(req, res){
+	var received = 0;
+	var len = req.headers['content-length']? parseInt(req.headers['content-length'],10)::null; // parseInt
+	if (len & len > byte){
+		res.writeHead(413);
+		res.end();
+		return;
+	}
+	//当content-length不存在时，判断读入的数据长短
+	req.on('data',(chunk)=>{
+		received += chunk.length();
+		if (received > byte){
+			req.destory();
+		}
+	})
+	handle(req,res);
+}
+
+//CSRF攻击(跨站请求伪造)
+
+```
+
+---
+#### MVC
+```
+user --> Router --> Controller 
+ |   					|
+ |<-- view <-- Model <--|
+```
+
+---
+#### RESTful
+一种设计模式
+```
+POST 	/user/malx
+DELETE	/user/malx
+PUT		/user/malx
+GET		/user/malx
+
+app.post('/user/malx',addUser);
+app.delete('/user/malx',removeUser);
+app.put('/user/malx',updateUser);
+app.get('/user/malx',getUser);
+```
+
+---
+#### 中间件设计模式
+目的
+```
+app.use(querystring)         //query是中间件函数
+app.use('/a/b',querystring)
+app.use(cookie)
+app.use(session)
+app.get('/user/:username',getUser);
+app.put('/user/:username',authorize,updateUser);
+//注册的函数
+var querystring = function(req,res,next){
+	req.query = url.parse(req,url,true).query;
+	next();
+}
+
+var cookie = function(req,res,next){
+	var cookie = req.headers.cookie;
+	var cookies = {}
+	if (cookie){
+		var list = cookie.split(';')
+		for (let i=0;i<list.length;i++){
+			let x = list[i].split('=')
+			cookies[x[0].trim()] = x[1].trim()
+		}
+	}
+	req.cookie = cookies;
+	next();
+}
+```
+
+实现
+```
+var routes = {'all':[]}
 
 
+//解析url
+const urlreg = require('path-to-regexp') //url正则模块
+var pathRegexp = function(path){
+	var regexp = urlreg(path)
+	var keys = []
+	var reparse = urlreg.parse(path)
+	for (let i=0;i<reparse.length;i++){
+		if (typeof reparse[i] === 'object'){
+			keys.push(reparse[i].name)
+		}
+	}
+	return {keys: keys,
+			regexp: regexp
+		}
+}
+
+//注册函数
+app.use = function(path){
+	var handle;
+	if (typeof path === 'string'){
+		handle = {
+			path: pathRegexp(path),
+			stack:Array.prototype.slice.call(arguments,1)  //！！！请看javascript.md
+		}
+	}else{
+		handle = {
+			path: pathRegexp('/'),
+			stack:Array.prototype.slice.call(arguments,0)
+		}
+	}
+	route.all.push(handle);
+}
+
+['get','post','delete','put'].forEach((method)=>{
+	route[method] = []    //针对method，要使用非'all'的属性
+	app[method] = function(path){
+		var handle;
+		if (typeof path === 'string'){
+			handle = {
+				path: pathRegexp(path),
+				stack: Array.prototype.slice.call(arguments,1)
+			}
+		}else{
+			//error
+		}
+		routes[method].push(handle)
+	}
+})
+
+//url match匹配
+var match = function(pathname, cRoutes){
+	var stacks = []
+	for (let i=0;i<cRoutes.length;i++){
+		var cRoute = CRoutes[i];
+		var reg = cRoute.path.regexp;
+		var matched = reg.exec(pathname);
+		if (matched){
+			var params = {}
+			var keys = cRoute.path.keys;
+			for (let i=0;i<keys.length;i++){
+				var value = matched[i+1];     //是否多余
+				if(value) params[keys[i]] = value;
+			}
+			req.params = params;
+			stacks = stacks.concat(cRoute.stack);
+		}
+	}
+}
+
+//执行handle
+var handle = function(req,res,stack){
+	var next = function(){
+		var middleware = stack.shift()  //取得中间件函数
+		if (middleware){
+			middleware(req,res,next);
+		}
+	}
+	next();     //递归执行，知道stack为空
+}
+
+//最终的执行分发函数
+http.createServer((req,res)=>{
+	var pathname = url.parse(req.url).pathname;  //注意这里处理的是pathname
+	var method = url.method.toLowerCase();  //method变小写
+	var stacks = match(pathname, routes.all);
+	if (routes.hasOwnPerperty(method)){
+		stacks = stacks.concat(match(pathname, routes[method]))
+	}
+
+	if (stacks.length){
+		handle(req,res,stacks);
+	}else{
+		handle404(req,res);
+	}
+})
+
+```
+
+---
+#### 异常处理
+```
+var handle = function(req,res,stack){
+	var next = function(err){
+		if (err){
+			return(handle500(err,req,res,stack))
+		}else{
+			var middleware = stack.shift()
+			if (middleware){
+				try{
+					middleware(req,res,next)
+				}catch(ex){
+					next(ex)
+				}
+			}
+		}
+	}
+	next();
+}
+
+//捕获异常的中间件
+var middleware = function(err,req,res,next){
+	//...
+	next();
+}
+
+//区分普通中间件与异常中间件
+var handle500 = function(err,req,res,stack){
+	stack = stack.filter((el)=>{
+		return el.length == 4;
+	})
+	var next = function(){
+		var middleware = stack.shift()
+		if (middleware){
+			middleware(err,req,res,stack);
+		}
+	}
+	next();
+}
+
+```
+
+---
+#### 中间件性能
+编写高效中间件、合理使用路由
+```
+//针对静态文件的访问，没必要next
+var staticFile = function(req,res,next){
+	var pathname = url.parse(req.url).pathname;
+	fs.readFile(path.join(ROOT,pathname),(err,data)=>{
+		if (err) return next();
+		res.writeHead(200);
+		res.end(data);
+
+	})
+}
+
+app.use(staticFile); 
+app.use('/public',staticFile); //最好加上一个路径，否则误伤率太高，每次访问都要读盘
+
+```
+
+---
+#### 响应
+res Header
+```
+Content-Encoding: gzip
+Content-Length: 21107
+Content-Type: text/javascript;charset=utf-8
+Content-Type: text/plain;charset=utf-8
+Content-Type: text/html;charset=utf-8
+Content-Type: application/json;charset=utf-8
+
+var mime = require('mime')
+mime.lookup('aaa.txt')  //'text/plain'
+mime.lookup('aaa.html')  // 'text/html'
 
 
+```
+
+附件下载
+```
+Content-Disposition: attachment; filename = 'filename.txt'
+//附件下载API
+res.sendile = function(filepath){
+	fs.stat(filepath,(err,stat)=>{
+		var stream = fs.createReadStream(filepath)
+		res.setHeader('Content-Type',mime.lookup(filepath))
+		res.setHeader('Content-Length',stat.size)
+		res.setHeader('Content-Disposition','attachment;filename=\"'+path.basename(filepath)+'\"')
+		res.writeHead(200);
+		stream.pipe(res);
+	})
+}
+```
+
+发送JSON
+```
+res.json = function(json){
+	res.setHeader('Content-Type','application/json;charset=utf-8')
+	res.writeHead(200)
+	res.end(JSON.stringify(json))
+
+}
+```
+
+跳转
+```
+res.redirect = function(url){
+	res.setHeader('Location',url)
+	res.writeHead(302)
+	res.end('redirect to '+ url)
+}
+```

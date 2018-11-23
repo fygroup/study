@@ -2,14 +2,29 @@
 javascript是基于phototype的，不是基于类的。
 ![javascript prototype图](../picture/1.png)
 
+```
 在 JavaScript 中，不会创建类，也不会通过类来创建对象（就像在其他面向对象的语言中那样）。通过prototype.constructor()来实例化类。
 添加内容供实例访问，原型对象包含函数实例共享的方法和属性，其中 prototype.constructor()可以当作函数的构造函数用
 实例的__proto__ 指向函数的prototype
+prototype可以理解为函数的一个属性，即Object.prototype,他也是实例化的东西
+prototype属性中含有两个属性constructor和__proto__
+任何对象都有一个__proto__属性 
+任何方法都有一个prototype属性，prototype也是一个对象 ，所以其中也有一个___proto__
+使用Object.getPrototypeOf()代替__proto__
+原型链可以理解为：Object.prototype.__proto__.prototype.__proto__.....
+继承是通过原型链一层一层的向上延续（找属性）
+
+```
+
 ```
 function Person(name){
-           this.name=name;
+    this.name=name;     //this代表实例的属性
 }
-Person.prototype.share=[];
+
+typeof Person.prototype // 'object'
+
+Person.prototype.share=[];   
+
 Person.prototype.printName=function(){
        alert(this.name);
 }
@@ -18,9 +33,17 @@ var person2=new Person('Frank');
 
 person1.__proto__ === Person.prototype  //true
 
+typeof person1.__proto__  //'object'
+
 person1.share.push(1);
 person2.share.push(2);
 console.log(person2.share); //[1,2] 可以理解为prototype创建的对象是全局的。
+
+my = function(){
+    this.a = 1;
+}
+my.b=1;             //注意这里仅仅是个my添加了一个b属性，不影响后续的操作
+my.prototype.b=1;
 ```
 <img src="../picture/2.png" width=500 height=300 alt='原型链'/>
 原型链
@@ -32,6 +55,7 @@ JavaScript 实际上执行的是：
 var o = new Object();
 o.__proto__ = Foo.prototype;
 Foo.call(o);
+
 ```
 
 #### Object.creat(类似于继承)
@@ -180,4 +204,81 @@ y= JSON.parse(x)
 ```
 var a = ' dsaa '
 a.trim()
+```
+
+---
+#### exec正则匹配
+```
+m = /\d+/
+m.exec('42ds')
+[ '42', index: 0, input: '42ds', groups: undefined ]
+```
+
+---
+#### RegExp
+```
+a=new RegExp('\\w+','i')
+/\w+/i
+```
+
+---
+#### argument
+```
+function func(){
+    console.log(arguments)
+}
+
+func(1,2)
+//[Arguments] { '0': 1, '1': 2 } 这个虽然是个object,但是它包含length属性
+//[Arguments] { '0': 1, '1': 2, 'length' : 2}
+
+Array.prototype.slice.call(arguments,0) //[1,2]
+//如果没有length属性的话
+a={0:0,1:1}
+Array.prototype.slice.call(a,0) //[]
+a={0:0,1:1,'length':2}
+Array.prototype.slice.call(a,0) //[0,1]
+```
+
+---
+#### Array操作
+```
+(1)indexof(查找元素位置)
+var arr = ['apple','orange','pear'];
+console.log("found:", arr.indexOf("orange") != -1);
+
+(2)filter(创建新的符合过滤条件的数组)
+var arr = [
+    {"name":"apple", "count": 2},
+    {"name":"orange", "count": 5},
+    {"name":"pear", "count": 3},
+    {"name":"orange", "count": 16},
+];
+var newArr = arr.filter(function(item){
+    return item.name === "orange";
+});
+console.log("Filter results:",newArr);
+
+(3)forEach
+arr.forEach(function(item,index){
+    console.log(item);
+});
+
+(4)map
+var oldArr = [{first_name:"Colin",last_name:"Toh"},{first_name:"Addy",last_name:"Osmani"},{first_name:"Yehuda",last_name:"Katz"}];
+
+function getNewArr(){
+    return oldArr.map(function(item,index){
+        item.full_name = [item.first_name,item.last_name].join(" ");
+        return item;
+    });
+}
+console.log(getNewArr());
+```
+
+---
+#### 函数参数长度
+```
+var func = function(x,y){}
+func.length   //2
 ```
