@@ -87,6 +87,8 @@ eventEmitter.emit('eventName',argv1,argv2) //依次调用上面的两个函数
 var listen = function(){}
 eventEmitter.addListener('name',listen)
 eventEmitter.addListener('name',listen)
+
+eventEmitter.removeAllListeners('eventName')  //删除事件
 ```
 
 ---
@@ -635,7 +637,7 @@ client.on('end',()=>{
 
 (3)pipe操作
 ```
-套接字时stream,可以利用pipe()
+套接字是stream,可以利用pipe()
 echo 服务器
 服务端
 var net = require('net');
@@ -689,6 +691,7 @@ http报文分文三个部分
 第一部分:经典的TCP的3次握手
 第二部分:完成握手后，客户端向服务端发送报文
 第三部分:服务器完成处理后，向客户端发送响应内容，包括响应头和响应体（post请求）
+
 ##### 服务器
 ```
 (1)http.Server      //server = http.createServer()或server = http.createServer((req,res)=>{})
@@ -710,9 +713,9 @@ res.end([data],[encoding])
 (4)事件
 var http = require('http')
 var server = http.createServer()
-server.on('request',(req,res)=>{
+server.on('request',(req,res)=>{          //注意事件是'request',不是'connection'
 	console.log(">>>"+req.headers.cookie);
-	req.on('data',(data)=>{
+	req.on('data',(data)=>{				//注意 只有请求为'post'时，才会启发这个data事件，所以客户端请求必须是method:'post'
 		console.log(data.toString())
 	})
 
@@ -720,9 +723,6 @@ server.on('request',(req,res)=>{
 		console.log('传输end');
 	})
 
-	req.on('close',()=>{
-		console.log('连接已断开');	
-	})
 })
 
 server.on('close',()=>{
@@ -747,8 +747,14 @@ http.request和http.get
 ```
 (1)http.request
 options={
+	method: 'POST',      //注意
 	hostname:'localhost',
 	port:8111
+	path: '/a/b',
+	headers: {
+        "connection": "keep-alive",
+    	"content-type": "text/plain; charset=utf-8"
+    }
 }
 var req = http.request(options,(res)=>{
 	res.setEncoding('utf-8')
@@ -768,12 +774,121 @@ var req = http.request(options,(res)=>{
 })
 var req = http.request(options)
 req.on('response',(res)=>{})
-
-(2)http.ClientRequest //http.request返回的对象
-req.write('aaaaaa')
-req.end()             //所有写操作都必须调用end函数来通知服务器，否则请求无效
+req.write('dafafagagagaga')
+req.end()					//所有写操作都必须调用end函数来通知服务器，否则请求无效
 ```
 
+##### request和response
+```
+(1)http.ClientRequest
+属性：
+ReadableState：该属性是一个ReadableState类型的对象，保存了Readable实例的重要信息，如读取模式（是否为对象模式）objectMode、highWaterMask（缓冲区存放的最大字节数）、缓冲区、flowing模式等
+domain:捕捉异步回调中出现的异常。
+headers:HTTP请求头，主要记录了主机地址(host),用户代理(user-agent),以及文件类型(content-type),以及接受的文件类型(accept)等等
+trailers:HTTP 请求尾（不常见）
+connection:当前 HTTP 连接套接字，为 net.Socket 的实例
+url:记录访问网站的路径及参数
+method:记录请求方法
+statusCode:HTTP请求状态码
+statusMessage:HTTP请求状态信息
+socket:connection 属性的别名
+client:client 属性的别名
+complete：客户端请求是否已经发送完成
+httpVersion：HTTP 协议版本，通常是 1.0 或 1.1
+事件：
+end:当请求体数据传输完成时，该事件被触发，此后将不会再有数据到来。
+data:当请求体数据到来时，该事件被触发。该事件提供一个参数
+close:用户当前请求结束时，该事件被触发。不同于end，如果用户强制终止了传输，也还是调用close。
+chunk:表示接收到的数据。如果该事件没有被监听，那么请求体将会被抛弃。该事件可能会被调用多次。
+error:用户当前请求发生异常错误的时候调用
+drain:数据的长度大于 highWaterMark的时候，那么 Stream.write 就会返回 false，也就会触发 drain 事件了
+函数：
+request.abort() 终止正在发送的请求
+request.setTimeout(timeout,[callback]) 设置请求超时时间，timeout为毫秒数，当请求超时后，callback将会被调用
+
+(2)http.ClientResponse
+http.ClientReponse是与http.ServerResponse相似，提供三个事件，data、end和close，分别在数据到达，传输结束和连
+接结束时触发，其中data事件传递一个参数chunk，表示接受到的数据属性，表示请求的结果状态
+statusCode   HTTP状态码，如200，404，500
+httpVersion：HTTP协议版本
+headers：HTTP请求头
+trailers：HTTP请求尾
+函数：
+response.setEncoding([encoding])：设置默认的编码，当data事件被触发时，数据将以encoding编码。默认值为null，以buffer的形式存储。
+response.pause()：暂停接受数据和发送事件，方便实现下载功能。
+response.resume()：以暂停的状态中恢复
+```
+
+##### http echo服务器
+```
+//client
+var res = http.request(options)
+res.on('response',(res)=>{
+
+  res.on('data',(chunk)=>{
+    console.log(chunk.toString())
+  })
+
+})
+//process.stdin.pipe(res) 推荐用这个
+process.stdin.on('data',(chunk)=>{
+  res.write(chunk)
+})
+
+//server
+server.on('request',(req,res)=>{
+	req.on('data',(data)=>{
+		console.log('request data')
+		res.write(data)
+	})
+	req.on('end',()=>{
+		console.log('request end');
+	})
+	//req.pipe(res)   推荐用这个
+
+})
+```
+
+---
+#### http与TCP
+http模块时tcp的connection到http的request进行的封装
+```
+server.on('connection',(socket)=>{
+	socket.on('data',(chunk)=>{})   //输出的是header和body
+	socket.on('end',()=>{})			
+	socket.on('close',()=>{})
+})
+
+server.on('request',(req,res)=>{
+	req.on('data',(data)=>{})    //只输出body
+	req.on('end',()=>{})	
+	req.on('close',()=>{})
+})
+//每一次客户的访问会有以下过程
+TCP data
+request data
+request end
+TCP end
+TCP close
+
+```
+
+---
+#### http客户端代理连接
+客户端：请求-->代理-->结束
+```
+var agent = new http.Agent({
+	maxSockets:10
+})
+//客户端同时对一个服务器发起10次请求，由于代理池的存在，实质只有5个处于并发状态，这与浏览器对同一域名有下载连接数的限制时相同的行为
+var options = {
+	hostname:'127.0.0.1',
+	port:8111,
+	path:'/',
+	method:'post',
+	agent: agent   //如果为false,脱离代理池的管理，不受并发限制
+}
+```
 
 ---
 #### WebSocket
@@ -1399,7 +1514,7 @@ http.createServer((req,res)=>{
 ```
 
 ---
-#### 异常处理
+#### 中间件异常处理
 ```
 var handle = function(req,res,stack){
 	var next = function(err){
@@ -1512,4 +1627,289 @@ res.redirect = function(url){
 	res.writeHead(302)
 	res.end('redirect to '+ url)
 }
+```
+
+---
+#### 异常处理
+```
+//domain
+var domain = require('domain')
+var EventEmitter = require('events').EventEmitter
+var emitter = new EventEmitter()
+var d = domain.create()
+d.add(emitter)		//显示添加
+d.on('error',(err)->{
+	//err.message
+})
+emitter.emit('error',new Error('aaaaa'))  //注意emitter没有绑定error事件，但是它在domain域中运行，所以会触发d的error事件
+
+d.run(()=>{						//隐式添加
+    setTimeout(function () {
+        throw new Error('async error'); // 抛出一个异步异常
+    }, 1000);
+});
+
+d.on('error', function (err) {
+    console.log('catch err:', err); // 这里可以捕获异步异常
+});
+
+//uncaughtException
+//捕获整个进程的error
+```
+
+---
+#### child_process
+(1)基础用法
+```
+var cp = require('child_process')
+cp.exec('node test.js',function(er,stdout,stderr){}) 
+cp.fork('./test.js')
+
+//进程间通信
+//parent.js
+var n = cp.fork(__dirname + '/sub.js')
+n.on('message',function(m){})  //接收
+n.send({hello:'world'})			//发送
+//sub.js
+process.on('message',function(m){})
+process.send({foo:'bar'})
+
+//句柄传递(主进程接受分配请求，子进程处理请求)
+client			server
+客户------>|----->port<----监听----Node
+				|--发送---child1.js
+				|--发送---child2.js
+				|--发送---child3.js
+//parent.js
+var net = require('net')
+var child1 = cp.fork('child.js')
+var child2 = cp.fork('child.js')
+var server = net.createServer()
+server.listen(1337,()=>{
+	child1.send('server',server)
+	child2.send('server',server)
+	server.close()
+})
+//child.js
+var http = require('http')
+var server = http.createServer()    //connection:当前 HTTP 连接套接字，为 net.Socket 的实例
+server.on('request',(req,res)=>{    //详见http与TCP章节（tcp-->http | connection request）
+	res.writeHead(200,{'Content-Type':'text/plain'})
+	res.end('pid is ' + process.pid)
+})   
+process.on('message',(m,tcp)=>{
+	if (m === 'server'){
+		tcp.on('connection',(socket)=>{
+			server.emit('connection',socket)
+		})
+	}
+})
+```
+
+(2)进程事件和函数
+```
+work = fork()
+1、exit
+work.on('exit',(code,signal)=>{})
+子进程退出时触发，如果正常退出code是退出码，否则为null。如果子进程被kill杀死，会得到signal信号
+2、close
+子进程标准IO中断时触发
+3、disconnect
+调用父进程的或子进程的 process.disconnect() 后会触发
+4、message
+
+//子进程
+child = fork(...)
+child.kill([signal])
+//当前进程
+pid = process.pid
+process.kill(pid,[signal])
+//例子
+process.on('SIGTERM',()=>{
+	console.log("Got SIGTERM, exiting...")
+	process.exit(1)
+})
+process.kill(process.pid,'SIGTERM')
+//注意kill方法并不是真正杀死子进程，他只是给子进程发送系统信号
+```
+
+(3)进程重启与限量重启
+```
+//master.js
+var fork = require('child_process').fork
+var server = require('http').createServer()
+server.listen(8111)
+
+var workers = {}
+var restart = []
+var limit = 5
+var durning = 10000
+
+var isTooFrequently = function(){
+	var time = Date.now()
+	var length = restart.push(time)
+	if (length > limit){
+		restart = restart.slice(-1*limit)
+	}
+	return restart.length >= limit && restart[restart.length-1] - restart[0] < durning
+}
+
+var createWork = function(){
+	var worker = fork(__dirname + '/work.js')
+	worker.on('message',(m)=>{
+		if (m.act == 'suicide'){
+			createWorker()
+		}
+	})
+
+	worker.on('exit',()=>{
+		console.log('Worker '+worker.pid + ' exit')
+		delete workers[worker.pid]
+	})
+
+	worker.send('server',server)
+	workers[worker.pid] = worker
+	console.log('create worker '+worker.pid)
+}
+
+for (let i =0;i<10;i++){
+	createWork()
+}
+
+process.on('exit',()=>{
+	for (let pid in workers){
+		workers[pid].kill()
+	}
+})
+
+//work.js
+var http = require('http')
+
+var server = http.createServer((req,res)=>{
+	res.writeHead(200,{'Content-Type':'text/plain;charset=utf-8'})
+	res.end('work id '+ process.pid)
+	throw new Error('error Exception')
+})
+
+var worker
+process.on('message',(m,tcp)=>{
+	if (m == 'server'){
+		worker = tcp
+		tcp.on('connection',(socket)=>{
+			server.emit('connection',socket);
+		})
+	}
+})
+
+process.on('uncaughtException',(err)=>{
+	console.log('worker '+ process.pid +  ' err: '+err )
+	process.send({act:'suicide'})
+	worker.close(()=>{
+		process.exit(1)
+	})
+	setTimeout(()=>{
+		process.exit(1)
+	},5000)
+})
+```
+
+---
+#### Cluster
+cluster和worker对象
+```
+//cluster对象
+cluster.setttings:配置集群参数对象
+cluster.isMaster:判断是不是master节点
+cluster.isWorker:判断是不是worker节点
+Event: 'fork': 监听创建worker进程事件
+Event: 'online': 监听worker创建成功事件
+Event: 'listening': 监听worker向master状态事件
+Event: 'disconnect': 监听worker断线事件
+Event: 'exit': 监听worker退出事件
+Event: 'setup': 监听setupMaster事件
+cluster.setupMaster([settings]): 设置集群参数
+cluster.fork([env]): 创建worker进程
+cluster.disconnect([callback]): 关闭worket进程
+cluster.worker: 获得当前的worker对象
+cluster.workers: 获得集群中所有存活的worker对象 cluster.workers[pid]
+
+//worker对象
+worker.id: 进程ID号
+worker.process: ChildProcess对象
+worker.suicide: 在disconnect()后，判断worker是否自杀
+worker.send(message, [sendHandle]): master给worker发送消息。注：worker给发master发送消息要用process.send(message)
+worker.kill([signal='SIGTERM']): 杀死指定的worker，别名destory()
+worker.disconnect(): 断开worker连接，让worker自杀
+Event: 'message': 监听master和worker的message事件
+Event: 'online': 监听指定的worker创建成功事件
+Event: 'listening': 监听master向worker状态事件
+Event: 'disconnect': 监听worker断线事件
+Event: 'exit': 监听worker退出事件
+```
+
+实例
+```
+var cluster = require('cluster')
+var http = require('http')
+
+//cluster.setupMaster({
+//	exec:__dirname+'/child.js'
+//})
+
+if (cluster.isMaster){                    //cluster.isWorker === false
+	console.log('[master] '+'start...')
+	for (let i=0;i<3;i++){
+		var worker = cluster.fork()			//投递当前进程
+	}
+
+	cluster.on('fork',(worker)=>{
+		console.log('[master] '+'fork:worker '+worker.id)
+	})
+
+	cluster.on('online',(worker)=>{
+		console.log('[master] '+'online:worker '+worker.id)
+	})
+
+	cluster.on('listening',(worker,address)=>{
+		console.log('[master] '+'listening:worker '+worker.id+' pid '+worker.process.pid+' address '+address.address+':'+address.port)
+	})	
+ 
+	cluster.on('disconnect',(worker)=>{
+		console.log('[master] '+'disconnect:worker '+worker.id)
+	})
+
+	cluster.on('exit',(worker)=>{
+		console.log('[master] '+'exit:worker '+worker.id)	
+	})
+
+	for(let pid in cluster.workers){					//所有的workers
+		cluster.workers[pid].on('message',(msg)=>{
+			console.log('[master] '+'message '+msg)
+		})
+	}
+
+	setInterval(()=>{
+		for(let pid in cluster.workers){
+			cluster.workers[pid].send('[master] '+'send msg to worker' + cluster.workers[pid].id)
+		}		
+	},10000)
+
+}else if(cluster.isWorker){                                 //'NODE_UNIQUE_ID in process.env'
+	var server = http.createServer((req,res)=>{
+		res.writeHead(200,{'Content-Type':'text/plain'})
+		res.end('worker:'+cluster.worker.id+ ' pid:'+process.pid + '\n')
+	})
+
+	server.listen(8111)
+
+	process.on('message',(msg)=>{
+		console.log('[worker] '+msg)
+		process.send('[worker] worker'+cluster.worker.id+' received!')  //cluster.worker 子进程worker
+	})
+}
+```
+
+---
+#### c++扩展
+```
 ```

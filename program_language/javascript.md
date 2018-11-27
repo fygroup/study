@@ -282,3 +282,11 @@ console.log(getNewArr());
 var func = function(x,y){}
 func.length   //2
 ```
+
+---
+#### Object.keys()
+```
+var a={1:1,2:2,3:3}
+Object.keys(a)
+>>>[1,2,3]
+```

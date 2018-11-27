@@ -66,3 +66,27 @@ https连接过程
 SSL加密建立………
 
 
+
+---
+#### 分层协议
+```
+应用层：
+
+HTTP（Hypertext Transfer Protocol 超文本传输协议，显示网页）
+DNS（Domain Name System）
+FTP（File Transfer Protocol）
+SFTP（SSH File Transfer Protocol，和FTP不一样）
+SCP（Secure copy，based on SSH）
+SSH （Secure Shell）
+通信层：
+
+TCP（Transmission Control Protocol 三次握手传输协议）
+UDP
+网络层：
+
+IP（Internet Protocol）
+ICMP（Internet Control Message Protocol，主要用于路由发送错误报告）
+链接层：
+
+MAC（media access control）
+```
