@@ -1059,6 +1059,33 @@ req.on('error',(e)=>{
 
 ---
 #### ssh2
+基础功能
+```
+/**
+* 描述：连接远程机器
+* 参数：server,远程机器凭证；
+*       then,回调函数
+*/
+ssh2.connect(server, then)
+
+/**
+* 描述：断开远程连接
+* 参数：then,回调函数
+*/
+ssh2.disconnect(then)
+
+/**
+* 描述：执行shell命令
+* 参数：cmd,要执行的命令；
+*       then,回调函数
+* 回调：then(err, data):data 运行命令之后的返回信息
+*/
+ssh2.exec(cmd, then)
+
+
+
+```
+
 [ssh2实例](https://github.com/mscdex/ssh2#user-content-client-methods)
 sftp
 ```
