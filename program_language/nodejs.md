@@ -778,6 +778,81 @@ req.write('dafafagagagaga')
 req.end()					//所有写操作都必须调用end函数来通知服务器，否则请求无效
 ```
 
+##### 模仿浏览器访问
+```
+const options = {
+  hostname: 'nodejs.cn',
+  port: 80,             //http 默认端口是80
+  path: '/api/http.html#http_http_request_options_callback',
+  method: 'GET',
+  headers: {
+      "Connection": "keep-alive",
+      //"Content-Length": 111,
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+  }
+};
+
+const req = http.request(options, (res) => {
+  console.log(`状态码: ${res.statusCode}`);
+  console.log(`响应头: ${JSON.stringify(res.headers)}`);
+  res.setEncoding('utf8');
+  res.on('data', (chunk) => {
+    console.log(`响应主体: ${chunk}`);
+  });
+  res.on('end', () => {
+    console.log('响应中已无数据。');
+  });
+});
+
+req.on('error', (e) => {
+  console.error(`请求遇到问题: ${e.message}`);
+});
+
+// 写入数据到请求主体并发送
+req.end();
+```
+
+重定向处理
+```
+var http = require('http')
+
+var option = {
+    hostname:'localhost',
+    port:8080,
+    path:'/cnv-dev'
+}
+
+var reqs = []
+
+var client = function(option){
+    this.req = http.request(option)
+    reqs.push(this.req)
+    this.req.on('response',(res)=>{
+        console.log(res.statusCode)
+        if (res.statusCode == 302){
+            console.log(res.headers.location);
+            option.path = res.headers.location
+            new client(option)
+            return
+        }
+
+        res.on('data',(body)=>{
+            console.log(body.toString())
+        })
+    })
+
+    this.req.end()
+}
+new client(option)
+
+
+setTimeout(()=>{
+    console.log(reqs.length)
+},2000)
+
+```
+
 ##### request和response
 ```
 (1)http.ClientRequest
@@ -874,7 +949,7 @@ TCP close
 ```
 
 ---
-#### http客户端代理连接
+#### http客户端代理连接（不是代理服务）
 客户端：请求-->代理-->结束
 ```
 var agent = new http.Agent({
@@ -1935,6 +2010,9 @@ if (cluster.isMaster){                    //cluster.isWorker === false
 	})
 }
 ```
+
+
+
 
 ---
 #### c++扩展

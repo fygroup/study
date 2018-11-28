@@ -10,6 +10,9 @@ cd /usr/local/mysql
 或者 ./bin/mysql -S .sock -u root -p
 //停止------
 ./bin/mysqladmin -uroot -S /data_dir/malx/sqldata/mysql.sock shutdown
+//登陆数据库,会提示你输入密码
+mysql -u root -p   //这里默认的是/usr/local/mysql/my.cnf
+mysql --defaults-file=my.cnf -u malx -p
 //打开数据库
 /usr/local/mysql/bin/mysql --defaults-file=/usr/local/mysql/my.cnf -u root -p  //root 超级权限用户
 //无需登录，打开服务-------
@@ -34,3 +37,4 @@ set password for root@localhost = password('123456')
 
 
 //创建数据表
+
