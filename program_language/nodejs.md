@@ -3,7 +3,12 @@
 
 ---
 #### 安装包
-`cnpm install express --save`
+```
+export NODE_HOME=/usr/local/node-v10.12.0-linux-x64/
+export PATH=$NODE_HOME/bin:$PATH
+cnpm install express --save
+npm install -g express //安装到全局路径
+```
 
 ---
 #### for
@@ -752,7 +757,7 @@ options={
 	port:8111
 	path: '/a/b',
 	headers: {
-        "connection": "keep-alive",
+        "connection": "keep-alive",     //长连接
     	"content-type": "text/plain; charset=utf-8"
     }
 }
