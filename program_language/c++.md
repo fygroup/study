@@ -1,3 +1,6 @@
+C++笔记
+|编译器为我们做了大量的优化工作，不要以为什么都理所应当
+
 ```
 #include <iostream>
 #include <string>
@@ -466,7 +469,7 @@ class A
 public:
 virtual int print1(){ cout<<"This is A"<<endl;}
 };
-sizeof(A)=1;//多了虚函数指针
+sizeof(A)=8;//多了虚函数指针
 
 struct A
 {
@@ -1629,4 +1632,203 @@ if (fcntl(fd[0], F_SETFL, val) < 0){
 ```
 
 ---
-#### 
+#### 拷贝构造函数
+```
+A a;    //构造
+A b(a); //拷贝构造创建对象b
+A b=a;  //拷贝构造创建对象b
+//强调：这里b对象是不存在的，是用a 对象来构造和初始化b的！！
+```
+
+---
+#### 右值引用的深思
+编译选项-fno-elide-constructors用来关闭返回值优化效果
+
+1、值优化的重要性
+```
+//值传递实例（关闭值优化）
+class A
+{
+    A(){
+        cout << "construct" << endl;
+    }
+
+    A(const A& a){
+        cout << "copy" << endl;
+    }
+    ~A(){
+        cout << "deconstruct" << endl;
+    }
+};
+
+A GetA(){
+    return A();
+}
+
+int main(){
+    A a = GetA();
+}
+
+//结果
+construct
+copy construct
+deconstruct
+copy construct
+deconstruct
+deconstruct
+
+//当开启值优化时
+construct
+deconstruct
+
+//由此可见值优化非常重要！！！
+```
+
+2、指针悬挂与深拷贝
+```
+
+```
+
+3、左值引用与常量左值引用
+
+```
+//左值引用
+int a;
+int& b = a; //正确
+int& b = 1; //错误 
+//注意：所有的引用都是左值引用，即右边必须是左值！！！
+
+//常量左值引用
+const int& a = 1; //正确
+int& b = a;       //错误 a还是右值,所以b不能引用右值
+
+string func(){
+    return("dddada");
+}
+string& a = func(); //错误 func返回的值已被销毁 引用的必须是左值
+const string& a = func(); //正确 常量左值引用是一个“万能”的引用类型，可以接受左值、右值、常量左值和常量右值
+```
+
+4、右值引用与类型推导判断
+
+```
+//右值引用
+int a;
+int&& b = 1; 
+int&& b = a; //错误 a是左值，必须引用右值
+//自动判断（T&& t在发生自动类型推断的时候，它是未定的引用类型）
+template<typename T>
+void func(T&& t){}
+
+func(10);  //t变成右值引用
+int x = 10;
+func(x);   //t变成左值引用
+
+template<typename T>
+class Test {
+    Test(Test&& rhs); //注意 构造函数 没有发生类型推导 rhs肯定是右值引用
+};
+
+
+```
+
+5、续命与减少拷贝
+
+```
+int func(){
+    return 1;
+}
+
+int x = func();    //需要拷贝
+int&& x = func();   //不需要拷贝 仅仅是move
+```
+
+6、移动语义（移动构造函数）
+
+```
+class A
+{
+    int* i_ptr;
+    A():i_ptr(new int(0)){
+        cout << "construct" << endl;
+    }
+    ~A(){delete i_ptr;}
+    A(const A& a):i_ptr(new int(*a.i_ptr)){ //注意 a是左值引用
+        cout << "copy" << endl;
+    }
+    A(A&& a):i_ptr(a.i_ptr){      //移动构造函数 a是右值引用 没有做深拷贝，仅仅是将指针的所有者转移到了另外一个对象
+        a.i_ptr = nullptr;      //非常重要，因为a被析构，所以要让他的内存指向一个空！！！
+        cout << "move" << endl;
+    }
+};
+//对于上面的右值引用（A(A&& a)），a是一个右值，那么里面的内容也是右值，所以i_ptr = a.i_ptr合法。
+
+A GetA(){
+    return A();
+}
+
+A a = GetA();
+//输出
+construct
+move
+move
+```
+
+7、完美转发
+
+```
+#include <utility>
+void func(string& str){}
+void func(string&& str){}
+template<typename T>
+void pfunc(T&& str){
+    func(forward<T>(str)); //自动判断str是左值还是右值
+}
+```
+
+8、std::move(移动转移所有权)
+```
+#include<utility>
+vector<int>	a = {1,2,3,4,5};
+vector<int> b = move(a);
+cout << "===" << endl;
+for_each(a.begin(),a.end(),[](int& x){cout << x << endl;});
+cout << "===" << endl;
+for_each(b.begin(),b.end(),[](int& x){cout << x << endl;});
+//输出
+===
+===
+1
+2
+3
+4
+5
+```
+
+---
+#### RTTI
+```
+//type_info类
+//typeid操作符
+//type_index类
+#include <typeinfo>
+#include <typeindex>
+
+const std::type_info &tiInt = typeid(int);
+std::cout << "tiInt.name = " << tiInt.name() << std::endl;
+
+class A{};
+std::unordered_map<std::type_index, std::string> type_names;
+type_names[std::type_index(typeid(A))] = "A";
+```
+
+---
+#### decltype
+```
+decltype和auto都可以用来推断类型，但是二者有几处明显的差异：
+1.auto忽略顶层const，decltype保留顶层const；
+2.对引用操作，auto推断出原有类型，decltype推断出引用；
+3.对解引用操作，auto推断出原有类型，decltype推断出引用；
+4.auto推断时会实际执行，decltype不会执行，只做分析
+```
+

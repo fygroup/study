@@ -158,3 +158,37 @@ localStorage生命周期是永久
 sessionStorage生命周期为当前窗口或标签页，一旦窗口或标签页被永久关闭了，那么所有通过sessionStorage存储的数据也就被清空了
 注意：服务器无法直接获取localStorage、以及sessionStorage
 ```
+
+---
+#### cookie与签名cookie
+```
+```
+
+---
+#### 浏览器缓存
+ETag、Cache-Control
+
+---
+#### X-Forwarded-For
+X-Forwarded-For: client1, proxy1, proxy2, proxy3
+
+---
+#### X-Powered-By
+隐藏响应的server
+
+---
+#### X-Requested-With 
+```
+如果 requestedWith 为 null，则为同步请求。
+如果 requestedWith 为 XMLHttpRequest 则为 Ajax 请求。
+```
+
+---
+#### SMTP POP3 IMAP
+```
+简单地说，SMTP管‘发’，POP3/IMAP管‘收’。
+POP是负责邮件程序和邮件服务器收信的通讯协定，SMTP则是负责邮件服务器与邮件服务器之间的寄信的通讯协定
+SMTP: 发送方的邮件服务器发送报文到接收方邮件服务器.
+POP3: 简单的邮件访问协议,单向的,本地对邮件的操作不会同步到邮件服务器,用来从邮件服务器取得邮件.
+IMAP: 比POP3更复杂的邮件访问协议，是双向的，对保存到本地的邮件的操作会同步到邮件服务器。
+```

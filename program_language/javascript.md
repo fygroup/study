@@ -133,6 +133,14 @@ console.log(my.b);
 prototype:
 constructor:this
 \_\_proto\_\_:object
+```
+var my = function(){}
+my.__prototype__.a = 1
+my.__prototype__ = new my1();
+my.__prototype__ = { 
+    .....
+}
+```
 
 #### 函数默认参数
 `var func=function(x,y=2){console.log(x,y);}`

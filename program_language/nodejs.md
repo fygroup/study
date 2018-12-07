@@ -257,6 +257,9 @@ fs.stat(path,function(err,stat){
 * 8、读取目录
 `fs.readdir(path,callback(err,files)) //err 为错误信息，files 为 目录下的文件数组列表。`
 
+* 9、移动文件
+`fs.renameSync('aaa','test/aaa')`
+
 ---
 #### instanceof
 ```
@@ -1401,7 +1404,7 @@ var hander = function(req, res){
 <img src='../picture/9.png' alt='muti/form-data' width=400 height=200>
 
 ```
-<form action='/upload' method='post' enctype='multipart/form/data'>
+<form action='/upload' method='post' enctype='multipart/form-data'>
 	<label for='username'>UserName:</label><input type='text' name='username' id='username'/>
 	<label for='file'>FileName:</label><input type='file' name='file' id='file'/>
 	<input type='submit' name='submit' value='Submit' />
@@ -1709,6 +1712,7 @@ res.sendile = function(filepath){
 	fs.stat(filepath,(err,stat)=>{
 		var stream = fs.createReadStream(filepath)
 		res.setHeader('Content-Type',mime.lookup(filepath))
+		//res.setHeader('Content-Type','application/octet-stream') //任何类型下载
 		res.setHeader('Content-Length',stat.size)
 		res.setHeader('Content-Disposition','attachment;filename=\"'+path.basename(filepath)+'\"')
 		res.writeHead(200);
@@ -1946,7 +1950,7 @@ worker.process: ChildProcess对象
 worker.suicide: 在disconnect()后，判断worker是否自杀
 worker.send(message, [sendHandle]): master给worker发送消息。注：worker给发master发送消息要用process.send(message)
 worker.kill([signal='SIGTERM']): 杀死指定的worker，别名destory()
-worker.disconnect(): 断开worker连接，让worker自杀
+worker.disconnect(): 断开worker连接，让他从集群中离开，让worker自杀,
 Event: 'message': 监听master和worker的message事件
 Event: 'online': 监听指定的worker创建成功事件
 Event: 'listening': 监听master向worker状态事件
@@ -2016,8 +2020,22 @@ if (cluster.isMaster){                    //cluster.isWorker === false
 }
 ```
 
-
-
+---
+#### 跨域
+```
+app.all("*",function(req,res,next){
+    //设置允许跨域的域名，*代表允许任意域名跨域
+    res.header("Access-Control-Allow-Origin","*");
+    //允许的header类型
+    res.header("Access-Control-Allow-Headers","content-type");
+    //跨域允许的请求方式 
+    res.header("Access-Control-Allow-Methods","DELETE,PUT,POST,GET,OPTIONS");
+    if (req.method.toLowerCase() == 'options') //当浏览器准备跨域时，他会给原服务器发送个options请求来验证需要访问的跨域网址
+        res.send(200);  //让options尝试请求快速结束
+    else
+        next();
+}
+```
 
 ---
 #### c++扩展
