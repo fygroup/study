@@ -5,6 +5,8 @@ mysqladmin is a maintainance or administrative utility  # 运维和管理工具
 chown -R mysql:mysql /data_dir/malx/sqldata
 cd /usr/local/mysql
 ./script/mysql_install_db --defaults-file=my.ini  --user=mysql
+//远程连接----------
+mysql -h 192.168.5.116 -P 3306 -u root -p123456
 //启动-------
 ./bin/mysqld --defaults-file=./my.cnf -u mysql -p    //注意这是启动用户
 或者 ./bin/mysql -S .sock -u root -p
@@ -38,3 +40,9 @@ set password for root@localhost = password('123456')
 
 //创建数据表
 
+//查询
+select * from cnv_reportresult t where enable=-1 and sampleid in ("CL170407","CL170411");
+//严格模式
+[mysqld]
+sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+这是就会限制你的长度

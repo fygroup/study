@@ -298,3 +298,31 @@ var a={1:1,2:2,3:3}
 Object.keys(a)
 >>>[1,2,3]
 ```
+
+---
+#### 自动插入分号
+```
+//如果这么些
+function(){
+　　return  
+　　　　　{
+　　　　　　i=1
+　　　　　};
+}
+//解释器自动在return语句后面加上了分号。
+function(){
+    return; //返回undefined
+　   　　{
+　　 　　　i=1
+　　 　　};
+}
+```
+
+#### unicode转换
+```
+//汉字转unicode
+('00'+'吗'.charCodeAt(0).toString(16)).slice(-4)
+
+//unicode转汉字
+unescape('\u5417\u6211')
+```

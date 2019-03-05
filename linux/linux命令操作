@@ -23,3 +23,11 @@ passwd malx         //设置用户密码
 usermod -G gitgroup malx //为用户分配组
 chgrp -R gitgroup /home/data/git/  //修改文件夹的组
 //---环境---------------------------------------------
+
+
+//---最大进程数---------------------------------------
+-bash: fork: retry: Resource temporarily unavailable错误
+ulimit -a来查看当前Linux系统的一些系统参数
+ulimit -u 4096 修改max user processes的值
+修改/etc/security/limits.d/90-nproc.conf文件中的值（永久生效）
+*          soft    nproc    4096

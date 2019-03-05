@@ -192,3 +192,48 @@ SMTP: 发送方的邮件服务器发送报文到接收方邮件服务器.
 POP3: 简单的邮件访问协议,单向的,本地对邮件的操作不会同步到邮件服务器,用来从邮件服务器取得邮件.
 IMAP: 比POP3更复杂的邮件访问协议，是双向的，对保存到本地的邮件的操作会同步到邮件服务器。
 ```
+
+---
+#### go 与 epoll
+当一个goroutine读取/写入网络socket时候阻塞，系统会自动使用epoll/kqueue/iocp 来处理，这个对用户是全透明的。
+
+```
+epoll -> go server
+https://blog.csdn.net/yxw2014/article/details/79375384
+```
+
+---
+#### 三次握手
+```
+服务器端在调用listen之后，内核会建立两个队列，SYN队列和ACCEPT队列，其中ACCPET队列的长度由backlog指定。
+服务器端在调用accpet之后，将阻塞，等待ACCPT队列有元素。
+客户端在调用connect之后，将开始发起SYN请求，请求与服务器建立连接，此时称为第一次握手。
+服务器端在接受到SYN请求之后，把请求方放入SYN队列中，并给客户端回复一个确认帧ACK，此帧还会携带一个请求与客户端建立连接的请求标志，也就是SYN，这称为第二次握手
+客户端收到SYN+ACK帧后，connect返回，并发送确认建立连接帧ACK给服务器端。这称为第三次握手
+服务器端收到ACK帧后，会把请求方从SYN队列中移出，放至ACCEPT队列中，而accept函数也等到了自己的资源，从阻塞中唤醒，从ACCEPT队列中取出请求方，重新建立一个新的sockfd，并返回。
+```
+
+---
+### 服务器的核心功能 
+功能模块:
+配置文件解析
+数据库
+
+中间件：
+parser  
+compress  
+cookie
+session
+安全（CORS、防止多次递交表单、session劫持防范、CSRF、XSS、SQL注入、加密解密，反爬机制，防止暴力破解账号密码）
+static
+logger
+
+增加的功能:
+websocket
+RPC
+
+---
+### 浏览器存储持久化 
+```
+sessionStorage.setItem("annotation_url","<%=annotation_url%>");
+```
