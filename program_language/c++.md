@@ -1880,6 +1880,64 @@ struct epitem{
 
 2、异步IO
 
+---
+#### 容器中存不同类型变量
+```
+
+```
+
+---
+#### 友元类与友元变量
+```
+//友元类
+class Node
+{
+private:
+    int data;
+public:
+    friend class BinaryTree;
+};
+
+class BinaryTree
+{
+private:
+    Node x;
+public:
+    int find(){
+        x.data ;//可以访问Node的private
+    }
+}
+
+//友元函数
+class Node
+{
+private:
+    int data;
+public:
+    friend int BinaryTree::find(); //这样find方法就可以直接访问Node中的私有成员变量了，而BinaryTree中的其他的方法去不能够直接的访问Node的成员变量
+};
+
+//友元的继承
+class A
+{
+    struct A_S{};
+    friend class A_S;
+private:
+    int a;
+};
+
+class B:public A:A_S
+{
+public:
+    void func(){
+        a = 1; //继承了A_S,可以访问class A的private
+    }
+}
+
+
+
+```
+
 
 
 

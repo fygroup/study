@@ -237,3 +237,185 @@ RPC
 ```
 sessionStorage.setItem("annotation_url","<%=annotation_url%>");
 ```
+
+---
+### http代理head知识
+```
+//代理路径
+X-Forwarded-For: client, proxy1, proxy2
+只能作为参考
+
+//代理认证（客户端与代理服务器之间的认证,）
+Proxy-Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+用户名和密码通过:拼接后进行base64编码而成(QWxhZGRpbjpvcGVuIHNlc2FtZQ==)
+
+//remoteAddress
+//例如：client->IP1->IP2->IP3->service
+//服务器收到的头
+RemoteAddress: IP3
+X-Forwarded-For: client,IP0, IP1, IP2
+注意RemoteAddress无法伪造，x-Forwarded-For可以伪造
+
+//浏览器启用正向代理后，会对 HTTP 请求报文做一些修改
+//浏览器代理前->代理后的改变
+GET / HTTP/1.1
+Host: www.example.com
+Connection: keep-alive
+ 
+GET http://www.example.com/ HTTP/1.1
+Host: www.example.com
+Proxy-Connection: keep-alive
+注意：
+    有了代理就麻烦了，代理不知道GET / HTTP /1.0  这个请求发给哪个主机，所以HTTP 1.0 又要求浏览器给代理发送的时候必须发送完整的路径名称
+    GET http://www.example.com/ HTTP/1.0
+    HTTP 1.1 规定了必须包含Host主机名这个字段。所以 HTTP 1.1 可以是
+    GET / HTTP/1.1
+    Host: www.example.com
+    但是由于不清楚代理是1.0 还是1.1的 也许代理不认识Host这个头。 所以http 1.1 发给代理的最后格式就变为
+    GET http://www.example.com/ HTTP/1.1
+    Host: www.example.com
+
+//代码    
+var http = require('http');
+var net = require('net');
+var url = require('url');
+function request(cReq, cRes) {
+    var u = url.parse(cReq.url);
+    var options = {
+        hostname : u.hostname, 
+        port     : u.port || 80,
+        path     : u.path,       
+        method     : cReq.method,
+        headers     : cReq.headers
+    };
+    var pReq = http.request(options, function(pRes) {
+        cRes.writeHead(pRes.statusCode, pRes.headers);
+        pRes.pipe(cRes);
+    }).on('error', function(e) {
+        cRes.end();
+    });
+    cReq.pipe(pReq);
+}
+http.createServer().on('request', request).listen(8888, '0.0.0.0');
+```
+
+---
+### https代理（隧道代理）
+```
+//普通的http代理是不能用作https代理的，没有证书无法与服务器建立TLS链接
+//假如我通过代理访问 A 网站，浏览器首先通过 CONNECT 请求，让代理创建一条到 A 网站的 TCP 连接；一旦 TCP 连接建好，代理无脑转发后续流量即可。所以这种代理，理论上适用于任意基于 TCP 的应用层协议，HTTPS 网站使用的 TLS 协议当然也可以。这也是这种代理为什么被称为隧道的原因。
+//代码
+var http = require('http');
+var net = require('net');
+var url = require('url');
+function connect(cReq, cSock) {
+    var u = url.parse('http://' + cReq.url);
+    var pSock = net.connect(u.port, u.hostname, function() {
+        cSock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+        pSock.pipe(cSock);
+    }).on('error', function(e) {
+        cSock.end();
+    });
+
+    cSock.pipe(pSock);
+}
+http.createServer().on('connect', connect).listen(8888, '0.0.0.0');
+
+```
+
+
+---
+### 短连接与长连接
+```
+短连接：短连接是指服务端与客户端每次完成通讯后，就断开连接套接字Socket ConnectSocket的连接，同时每次需要服务端与客户端产生通讯的时候，都要重新创建连接套接字Socket ConnectSocket，最典型的短连接应该就是HTTP了吧（当然从HTTP/1.1起，HTTP默认使用长连接）
+长连接：用于对于客户端来说，其只需要一个连接套接字Socket ConnectSocket就能完成与服务端所有的通讯，因此对于长连接来说，客户端只需在最开始创建一个连接套接字Socket ConnectSocket，便可以和服务端反复通讯多次。而当一个连接套接字Socket ConnectSocket长时间存在，其便会出现两个问题：1、当Socket ConnectSocket的连接如果被中断后，我们再去使用这个Socket ConnectSocket进行通讯时，其便会出错；2、如果服务端不断地接收客户端的连接并创建相应的连接套接字Socket ConnectSocket，却又不去关闭已经失效的Socket ConnectSocket，那么服务端迟早将会挂掉。由于会出现以上这两个问题，为此便引申出了KeepAlive机制。
+KeepAlive机制：简单地来讲就是让一台主机每隔一段时间不停地向另一台远程主机发送连接请求（心跳包），以确认对方是否仍处于连接状态，如果发现对方长时间不应答，便关闭与对方连接。理论上来说服务端和客户端都可以向对方发送心跳包，但一般来说都是由客户端向服务端发送心跳包。在TCP中，KeepAlive机制默认是如果对方2小时不应答，则会断开连接，但是由于2小时时间过长，因此一般我们都要重写该机制。
+```
+
+---
+### 代理协议(加密)
+```
+//代理协议
+HTTPS，SOCKS5-TLS 和 shadowsocks
+
+//代理级数
+(1) 透明代理
+在透明代理中，代理服务器将客户端的信息转发至目标访问对象，并没有完全隐藏客户端真实的身份。即服务器知道客户端使用了代理IP，并且知道客户端的真实IP地址。
+(2) 普通匿名代理
+在普通匿名代理中，代理服务器用自己的IP代替了客户端的真实IP，但是告诉了目标访问对象这是代理访问。
+(3) 欺骗匿名代理
+在欺骗匿名代理中，目标访问对象同样可以察觉客户端使用代理访问，但是代理服务器会用一个随机的IP代替客户端真实的IP。
+(4) 高匿代理
+在高匿代理中，代理服务器良好地伪装了客户端，不但用一个随机的IP代替了客户端的IP，也隐藏了代理信息，服务器不会察觉到客户端是通过代理实现访问的，即用户仿佛就是直接使用代理服务器作为自己的客户端。
+通常，服务器通过获取HTTPRequest的头部信息的相关字段来判断客户端是否使用了代理。该字段包括REMOTE_ADDR、HTTP_VIA、HTTP_X_FORWARDED_FOR等。
+
+//识别ip代理
+对于透明代理和普通匿名代理，代理服务器一般会在HTTP头上加入一些信息，可以通过判断HTTP头来校验是否是通过代理访问。对于高匿代理，代理服务器会直接转发请求，不会有任何附加信息，这种情况下，只能通过IP反查来判断是否是代理服务器（你得到当前访问的IP后，反向发送请求回这个IP对各端口进行扫描来判断是否是代理；当然，也有很多第三方的商用反网络欺诈服务提供商，你可以在他们的数据库中查询当前访问的IP是否是一个他们已知的代理服务器）
+
+//tcp代理（socks5和shadowsocks都属于tcp代理）
+（1）socks
+    浏览器<--->代理服务器<--->饿了么网站
+（2）shadowsocks
+    浏览器<--->SSlocal<--->SSServer<--->网站
+    SSlocal 会将浏览器发来的数据加密，发送给 SSServer ， SSServer 把数据解密后发给网站。
+
+//抗识别
+单纯的socks5代理很容易被识别，一般不用。
+用shadowsocks吧
+
+```
+
+---
+### 内网穿透和隧道
+```
+这个和上面的代理不一样，代理是客户端用代理服务器进行上网，而内网穿透是通过公网ip服务器与内网ip服务器建立一个隧道，外部访问公网ip，相当于访问内网ip
+```
+
+---
+### MSS
+```
+TCP的最大报文段大小
+1460Bytes(1500BytesMTU - 20Bytes(IP Header) - 20Bytes(TCP Header))
+```
+
+---
+### Seq和Win
+```
+
+```
+
+---
+### 滑动窗口
+```
+```
+
+--- 
+### MTU和ip total length
+```
+
+```
+
+--- SYN ACK Seq
+```
+```
+
+---
+### tcp滑动窗口
+```
+
+```
+---
+### 再认跨域
+```
+之前全理解错了！！！
+应该是防止别的url访问本服务器，所以应该在本服务器设置access头
+
+在aaa.com页面中需要跨域访问bbb.com，bbb.com只允许自己的域访问，所以aaa.com连接不通bbb.com.
+只有在bbb.com服务端设置access头才能实现aaa.com对bbb.com的访问
+
+``` 
+
+### User-Agent
+```
+
+```

@@ -279,6 +279,7 @@ func main() {
 
 #### interface
 interface{}类型的变量也被当作go语言中的void\*指针来使用interface{}类型的变量也被当作go语言中的void\*指针来使用
+其实 interface就是个协议，无论你输入指针，还是非指针，都一样
 ```
 //interface == void*
 type Human interface{
@@ -344,7 +345,7 @@ type Handler interface{
 
 type HandlerFunc func(res, *req)
 
-func (h HandlerFunc) ServeHTTP(res, *req){
+func (h HandlerFun  c) ServeHTTP(res, *req){
     h(res, *req)
 }
 
@@ -757,4 +758,163 @@ func c() (i int) {
     return 1
 }
 
+```
+
+### serveFile
+```
+type Dir string
+func (d Dir) Open(name string) (File, error) {
+  // ...
+}
+type FileSystem interface {
+  Open(name string) (File, error)
+}
+http.FileServer()
+http.FileServer() 方法返回的是 fileHandler 实例，而 fileHandler 结构体实现了 Handler 接口的方法 ServeHTTP()。ServeHTTP 方法内的核心是 serveFile() 方法。
+// 所属文件: src/net/http/fs.go, 690-716行
+type fileHandler struct {
+  root FileSystem
+}
+func FileServer(root FileSystem) Handler {
+  return &fileHandler{root}
+}
+func (f *fileHandler) ServeHTTP(w ResponseWriter, r *Request) {
+  upath := r.URL.Path
+  if !strings.HasPrefix(upath, "/") {
+    upath = "/" + upath
+    r.URL.Path = upath
+  }
+  serveFile(w, r, f.root, path.Clean(upath), true)
+}
+// 所属文件: src/net/http/server.go, 82行
+type Handler interface {
+  ServeHTTP(ResponseWriter, *Request)
+}
+
+//实例
+var rootPath = "/data_dir/malx/test/"
+
+func down(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(">>>")
+	mpath := path.Join(rootPath,r.URL.Path)
+	fmt.Println(mpath)
+	http.ServeFile(w, r, mpath)
+}
+
+http.HandleFunc("/",down)
+```
+
+### url
+```
+r.URL *url.URL
+```
+
+### 查看GC
+```
+GODEBUG=gctrace=1 go run cmd/agent_bin.go
+```
+
+### pprof
+```
+//pprof是golang程序一个性能分析的工具，可以查看堆栈、cpu信息等。
+_ "net/http/pprof"
+go tool pprof http://localhost:8080/debug/pprof/heap
+
+```
+
+### GC调优
+```
+1、减少对象分配
+2、函数尽量不要返回map， slice对象, 这种频繁调用的函数会给gc 带来压力。
+小对象要合并。
+3、函数频繁创建的简单的对象，直接返回对象，效果比返回指针效果要好。
+4、避不开，能用sync.Pool 就用，虽然有人说1.10 后不推荐使用sync.Pool，但是压测来看，确实还是用效果，堆累计分配大小能减少一半以上。
+5、类型转换要注意，官方用法消耗特别大，推荐使用雨痕的方式。
+6、避免反复创建slice。
+7、建议多用unsafe.pointer
+8、对于一些短小的对象，复制成本远小于在堆上分配和回收操作。
+9、预定义make大小 make(map[string]string,10000)
+
+
+//小对象的操作
+避免使用make及指针的操作，可以让他在栈中生成，减少堆内存的分配
+对于小对象，直接将数据交由 map 保存，远比用指针高效。这不但减少了堆内存分配，关键还在于垃圾回收器不会扫描非指针类型 key/value 对象。
+函数返回对象指针时，必然在堆上分配。
+
+//mutex和chan
+channel 算是一种很 “重” 的实现。在小粒度层面，其性能真算不得好，不如用mutex
+
+//接口的调用
+接口调用和普通调用存在很大差别
+首先，相比静态绑定，动态绑定性能要差很多；其次，运行期需额外开销，比如接口会复制对象，哪怕仅是个指针，也会在堆上增加一个需 GC 处理的目标。
+
+//sync.Pool
+对于可能反复创建的变量可以用缓存池
+for i:=0;i<10000;i++{
+    a = make([]int,1000)
+}
+
+//map诟病
+1、slice的gc时间是远远快于map的，而map存储指针则是最慢的，不推荐。
+2、避免使用大map
+即使映射键和值类型不包含指针，并且映射在GC运行之间没有更改，也会发生这种情况
+3、map 不会收缩 “不再使用” 的空间。就算把所有键值删除，它依然保留内存空间以待后用。map=nil
+
+```
+
+### array和slice
+```
+array在栈上
+slice在堆上
+```
+
+### cgo
+```
+cgo针对该场景定义了专门的规则：在CGO调用的C语言函数返回前，cgo保证传入的Go语言内存在此期间不会发生移动，C语言函数可以大胆地使用Go语言的内存！
+
+Go调用C Code时，Go传递给C Code的Go指针所指的Go Memory中不能包含任何指向Go Memory的Pointer。
+不能嵌套其他指向Go Memory的指针
+
+func C.CString(string) *C.char
+func C.CBytes([]byte) unsafe.Pointer
+func C.GoString(*C.char) string
+func C.GoStringN(*C.char, C.int) string
+func C.GoBytes(unsafe.Pointer, C.int) []byte
+
+dir := make([]*C.char,2)
+for i,_ := range dir{
+    dir[i] = (*C.char)(C.malloc(10))
+    defer C.free(unsafe.Pointer(dir[i]))
+}
+C.fill_array1((**C.char)(unsafe.Pointer(&dir[0])))
+clen := C.strlen(dir[0])
+
+x:=C.GoBytes(unsafe.Pointer(dir[0]),10)
+fmt.Println(x)
+
+dir := make([]*C.char,2)
+C.fill_array1((**C.char)(unsafe.Pointer(&dir[0])))
+// void fill_array1(char* array[2]){
+//      array[0] = (char*)malloc(10);
+//}
+defer C.free(unsafe.Pointer(dir[0]))
+x:=C.GoBytes(unsafe.Pointer(dir[0]),10)
+fmt.Println(x)
+
+a := "dadad"
+b := []byte(a)
+C.fill_array((*C.char)(unsafe.Pointer(&b[0])))
+
+
+//注意要活学活用
+func C.GoString(*C.char) string
+func C.GoStringN(*C.char, C.int) string
+func C.GoBytes(unsafe.Pointer, C.int) []byte
+
+```
+
+### go build -a
+```
+强行对所有涉及到的代码包（包含标准库中的代码包）进行重新构建，即使它们已经是最新的了。
+cgo中非常重要
 ```
