@@ -2041,3 +2041,69 @@ app.all("*",function(req,res,next){
 #### c++扩展
 ```
 ```
+
+#### 响应式编程
+```
+let data = { price: 5, quantity: 2 }
+let target = null
+
+class Dep { // Stands for dependency 
+	constructor () {
+	  this.subscribers = [] // 依赖数组，当 notify() 调用时运行
+	}
+
+	depend () {
+	  if (target && !this.subscribers.includes(target)) {
+	    // target 存在并且不存在于依赖数组中，进行依赖注入
+	    this.subscribers.push(target)
+	  }
+	}
+
+	notify () { // 替代之前的 replay 函数
+	  this.subscribers.forEach(sub => sub()) // 运行我们的 targets，或者观察者函数
+  }
+}
+
+// 遍历数据的属性
+Object.keys(data).forEach(key => {
+  let internalValue = data[key]     //闭包
+	//或者直接给个变量
+	// 每个属性都有一个依赖类的实例
+  const dep = new Dep()
+
+  Object.defineProperty(data, key, {
+	  get () {
+      dep.depend()
+      return internalValue
+	  },
+	  set (newVal) {
+	    internalValue = newVal
+		dep.notify()
+	  }
+  })
+})
+
+// watcher 不再调用 dep.depend
+// 在数据 get 方法中运行
+function watcher (myFunc) {
+	target = myFunce
+	target()
+	target = null
+}
+
+watcher(()=> {
+	data.total = data.price * data.quantity
+})
+
+data.total
+// => 10
+data.price = 20
+// => 20
+data.total
+// => 40
+data.quantity = 3
+// => 3
+data.total
+// => 60
+
+```

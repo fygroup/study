@@ -1085,6 +1085,17 @@ class a<int>{};
 ```
 
 ---
+#### 宏
+```
+__LINE__：在源代码中插入当前源代码行号；
+__FILE__：在源文件中插入当前源文件名；
+__DATE__：在源文件中插入当前的编译日期
+__TIME__：在源文件中插入当前编译时间；
+__STDC__：当要求程序严格遵循ANSI C标准时该标识被赋值为1；
+__cplusplus：当编写C++程序时该标识符被定义。
+```
+
+---
 #### typename
 ```
 //在类中用未定义的T,必须以下这么用！！！
@@ -1937,6 +1948,80 @@ public:
 
 
 ```
+
+---
+#### c++异步编程
+c++11的promise、async、future属于多线程异步，所以单线程异步只能用协程和异步callback
+异步是协程的一种实现方式，协程是异步的封装方法
+```
+1、promise、async的多线程异步回调（异步工作流）
+2、协程（更优雅）
+```
+
+
+
+
+
+---
+#### hook
+由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
+```
+//my_hook.c
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdint.h>
+#include <dlfcn.h>
+
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#define TRY_LOAD_HOOK_FUNC(name) if (unlikely(!g_sys_##name)) {g_sys_##name = (sys_##name##_t)dlsym(RTLD_NEXT,#name);}
+
+typedef void* (*sys_malloc_t)(size_t size);
+static sys_malloc_t g_sys_malloc = NULL;
+void* malloc(size_t size)
+{
+    TRY_LOAD_HOOK_FUNC(malloc);
+    void *p = g_sys_malloc(size);
+    printf("in malloc hook function ...\n");
+    return p;
+}
+
+typedef void (*sys_free_t)(void *ptr);
+static sys_free_t g_sys_free = NULL;
+void free(void *ptr)
+{
+    TRY_LOAD_HOOK_FUNC(free);
+    g_sys_free(ptr);
+    printf("in free hook function ...\n");
+}
+
+gcc -fPIC -shared -o libmyhook.so my_hook.c -ldl
+gcc -o main main.c ./main
+LD_PRELOAD=./libmyhook.so ./main
+
+//LD_PRELOAD
+能够影响程序运行时候动态链接库的加载，可以通过设置其来优先加载某些库，进而覆盖掉某些函数
+
+//内联优化
+由于编译器存在内联优化，不会调用库中的目标函数，所以必须关闭目标函数优化
+-fno-builtin-strcmp，关闭 strcmp 函数的优化 
+gcc -o main main.c -fno-builtin-strcmp
+
+```
+
+#### 有栈协程相关模块
+```
+云风的coroutine库
+libgo
+golang
+```
+
+#### 无栈协程相关模块
+```
+c++20的coroutine
+知乎朱元的库
+Es6的async/wait模型
+```
+
 
 
 

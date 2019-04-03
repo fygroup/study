@@ -425,7 +425,7 @@ func TestRef(in interface{}){
 
 	for i:=0;i<Type.NumField();i++{
 		fieldType := Type.Field(i)
-		fieldValue := Value.Field(i).Interface()
+		fieldValue := Value.Field(i).Interface()  //只有转换成interface才能转换别的类型
 		fmt.Printf("%s %v = %v\n",fieldType.Name,fieldType.Type,fieldValue)
 	}
 
@@ -917,4 +917,34 @@ func C.GoBytes(unsafe.Pointer, C.int) []byte
 ```
 强行对所有涉及到的代码包（包含标准库中的代码包）进行重新构建，即使它们已经是最新的了。
 cgo中非常重要
+```
+
+### 去除struct中的点
+用到了reflect
+```
+func delStructPoint(i interface{}) error {
+	v := reflect.ValueOf(i)
+	fmt.Println(v.Kind())
+	if v.Kind() != reflect.Ptr {
+		fmt.Println("must ptr")
+		return errors.New("must ptr")
+	}
+	v = v.Elem()
+	if v.Kind() != reflect.Struct {
+		fmt.Println("must struct ptr")
+		return errors.New("must struct ptr")
+	}
+	for i := 0; i < v.NumField(); i++ {
+		curV := v.Field(i)
+		fmt.Println(curV)
+		fmt.Println(curV.Type())
+		if curV.Kind() == reflect.String && curV.String() == "." {
+			curV.SetString("")
+		}
+		if curV.Kind() == reflect.Struct {
+			delStructPoint(curV.Addr().Interface())  //重点
+		}
+	}
+	return nil
+}
 ```
