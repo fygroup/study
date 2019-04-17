@@ -1,3 +1,12 @@
+#### 原型
+```
+(1)js中一切都是对象
+(2)方法（Function）是对象，方法的原型(Function.prototype)是对象
+(3)对象具有属性__proto__, 可称为隐式原型。实例化对象-->__proto__-->构造函数的原型，保证了能够访问构造函数原型中定义的属性和方法
+(4)
+```
+
+
 #### 继承
 javascript是基于phototype的，不是基于类的。
 ![javascript prototype图](../picture/1.png)
@@ -15,7 +24,7 @@ prototype属性中含有两个属性constructor和__proto__
 继承是通过原型链一层一层的向上延续（找属性）
 
 ```
-
+实例
 ```
 function Person(name){
     this.name=name;     //this代表实例的属性
@@ -326,3 +335,121 @@ function(){
 //unicode转汉字
 unescape('\u5417\u6211')
 ```
+
+---
+#### array filter
+```
+var ages = [32, 33, 16, 40];
+ages = ages.filter(el => {return el > 20})
+```
+
+---
+#### hasOwnProperty
+```
+//判断属性是否存在
+o = new Object();
+o.prop = 'exists';
+o.hasOwnProperty('prop'); // 返回 true
+
+//Object.prototype.hasOwnProperty.call 判断一个对象是否存在一个属性
+a = {c:1}
+Object.prototype.hasOwnProperty.call(a,'c') //true
+```
+
+---
+#### apply和call
+```
+
+```
+
+#### blob
+
+```
+//blob对象表示一个不可变、原始数据的类文件对象。
+//从前端读入的file就是blob对象，可以直接操作
+//js的哲学是将文件设为blob对象，然后用FileReader处理
+
+
+//新建
+a="dada"
+blob = new Blob([a],{type:'text/plain'})
+a = ArrayBuffer(8)
+blob = new Blob([a],{type:'text/plain'})
+data = {hello: "world"};
+blob = new Blob([JSON.stringify(data)],{type : 'application/json'});
+
+
+//blob -> dataUrl
+//方法一
+reader = new FileReader()
+reader.readAsDataURL(blob) //blob文件、图片文件对象
+reader.onload(e => {
+    dataUrl = e.target.result
+})
+//方法二
+dataUrl = window.URL.createObjectURL(blob)
+
+
+//base64 to blob
+function dataURItoBlob(dataURI) {               //'data:text/plain;base64,YWFhYWFhYQ=='
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]; // mime类型
+    var byteString = atob(dataURI.split(',')[1]); //base64 解码
+    var arrayBuffer = new ArrayBuffer(byteString.length); //创建缓冲数组
+    var uintArray = new Uint8Array(arrayBuffer); 
+    for (var i = 0; i < byteString.length; i++) {
+        intArray[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([intArray], {type: mimeString});  //注意！！！必须是uint8Array
+}
+
+//blob to base64
+function blobToDataURI(blob, callback) { //图像、文件blob
+    var reader = new FileReader();
+    reader.readAsDataURL(blob)
+    reader.onload = function (e) {
+        callback(e.target.result);//data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAA
+    }
+    reader.readAsDataURL(blob);
+}
+//blob渲染到图片中
+img.src = URL.createObjectURL(blob)
+//blob下载
+var link = document.createElement("a");
+link.innerHTML = fileName;
+link.download = fileName;
+link.href = URL.createObjectURL(blob);
+```
+
+---
+#### Blob、ArrayBuffer、TypeArray(Uint8Array)、String、dataUrl(base64)
+```
+//ArrayBuffer对象用来表示通用的、固定长度的原始二进制数据缓冲区。ArrayBuffer 不能直接操作,要通过类型数组对象
+buf = new ArrayBuffer(10)
+intBuf = new Uint8Array(buf) //ArrayBuffer -> TypeArray
+
+
+//TypeArray -> string -> base64
+buffer = new ArrayBuffer()
+var bytes = new Uint8Array(buffer);
+for (var len = bytes.byteLength, i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+}
+base64 = window.btoa(binary);
+
+
+//string -> ArrayBuffer -> Uint8Array -> string -> base64
+str = "malx马立祥"
+blob = new Blob([str],{type: 'text/plain'})
+reader = new FileReader()
+reader.onload = function(e) {
+    console.log(e.target.result)  //ArrayBuffer
+    uIntBuf = new Uint8Array(e.target.result)
+    newBlob = new Blob([uIntBuf])
+    reader.readAsText(newBlob,'utf-8')
+    reader.onload = function(e) {
+        console.log(e.target.result)  //字符
+    }
+}
+reader.readAsArrayBuffer(blob)
+```
+
