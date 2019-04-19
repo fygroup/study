@@ -453,3 +453,37 @@ reader.onload = function(e) {
 reader.readAsArrayBuffer(blob)
 ```
 
+---
+#### 箭头函数
+```
+在非箭头函数下， this 指向调用其所在函数的对象，而且是离谁近就是指向谁
+
+//实例
+a=function(){
+    this.aa = 1
+    this.func = function(){
+        console.log(this.aa)
+    }
+}
+my = new a()
+my.func()  //1
+f= my.func
+f()        //undefined
+window.aa = 100
+f()        //100     
+
+a=function(){
+    this.aa = 1
+    this.func = () => {
+        console.log(this.aa)
+    }
+}
+
+my = new a()
+my.func()  //1
+f= my.func
+f()        //1
+window.aa = 100
+f()        //1     
+
+```
