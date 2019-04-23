@@ -3,6 +3,79 @@
 内核-->设备驱动-->硬件驱动-->硬件
 ```
 
+### 文件系统
+1、虚拟文件系统
+```
+vfs是所有文件系统的公共接口（最小接口），可以理解为fs的（抽象）基类；而具体的fs，例如ext2/nfts，则是vfs的一种具体实现（也可以理解为子类）。
+
+VFS(虚拟文件系统)是面向内核的，设备文件系统是vfs和硬件之间的桥梁
+基类    实现
+vfs --> Ext2
+        sysfs
+        FAT
+        设备文件
+        网络文件
+
+VFS所支持的文件系统类型可以归结为以下三大类：
+    基于磁盘的文件系统(Ext2, Ext3等)
+    网络文件系统(NFS等)
+    特殊文件系统(proc, sysfs)
+
+总结：
+            vfs的实现
+    内核 -> 虚拟文件系统（sysfs,proc,ext4）-> 设备
+
+他们之间的关系，如图：
+```
+![image](../picture/15.jpg)
+
+
+---
+### 设备
+[设备](https://www.binss.me/blog/sysfs-udev-and-Linux-Unified-Device-Model/)
+1、设备类型
+```
+块设备
+字符设备
+网络设备
+```
+2、设备文件系统（sysfs）
+```
+怎么将电脑上的设备向用户展示和使用呢？
+sysfs 是一个基于内存的虚拟的文件系统，由 kernel 提供，挂载到 /sys 目录下，负责以设备树的形式向 user space 提供直观的设备和驱动信息。
+
+从 Linux 2.6 起，devfs 被 sysfs + udev 所取代。
+
+```
+3、设备模型
+```
+//核心模型
+（1）kobject
+    核心,kobject 对象都对应于sysfs 文件系统中的一个目录.包含不同 kobj_type 的 kobject 可以看做不同的子类。通过实现相同的函数来实现多态。
+
+（2）kset
+    kobject 的容器，维护了其包含的 kobject 链表
+
+（3）device / driver / bus / class
+    Linux 设备模型的更上一层表述是 device / driver / bus / class
+    1) device 描述了一项设备
+    2) 设备依赖于 driver 来进行驱动，对应的数据结构为 device_driver
+    3) bus 设备总是插在某一条总线上的，对应的数据结构为 bus_type
+    4) 一种设备分类，对应的数据结构为 class
+    driver 用于驱动 device ，其保存了所有能够被它所驱动的设备链表。bus 是连接 CPU 和 device 的桥梁，其保存了所有挂载在它上面的设备链表和驱动这些设备的驱动链表。class 用于描述一类 device ，其保存了所有该类 device 的设备链表。
+
+sysfs 本质上就是通过 VFS 的接口去读写 kobject 的层次结构后动态建立的内存文件系统
+
+```
+4、设备驱动
+```
+设备驱动        设备文件系统
+kobject ----  操作与展示（device / driver / bus / class）
+
+
+```
+
+
 ### 驱动
 1、Linux 设备驱动
 ```
@@ -16,21 +89,15 @@
 
 3、虚拟文件系统
 ```
-VFS(虚拟文件系统)是面向内核的，设备文件系统是vfs和硬件之间的桥梁
-vfs --> Ext2
-        FAT
-        设备文件
-        网络文件
 
-相关对象
+
+//相关对象
 超级快对象
 索引节点对象
 文件对象
 目录项对象
 ```
 
-之间的关系
-![image](../picture/15.jpg)
 
 4、Linux 系统中虚拟文件系统、硬件文件及一般的设备文件与设备驱动程序之间的关系
 ![image](../picture/16.jpg)
@@ -43,6 +110,20 @@ vfs --> Ext2
 devfs（旧）、sysfs（用户空间）
 udev是一种工作在用户空间工具，根据系统中的硬件设备的状况动态更新设备文件，包括设备文件的创建，删除等。需要内核sysfs和tmpfs的支持，sysfs为udev提供设备入口和uevent通道，tmpfs为udev设备文件提供存放空间。
 
+从 Linux 2.6 起，devfs 被 sysfs + udev 所取代
+
+//sysfs
+sysfs 是一个基于内存的虚拟的文件系统，由 kernel 提供，挂载到 /sys 目录下(用 mount 查看得到 sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime))，负责以设备树的形式向 user space 提供直观的设备和驱动信息。sysfs的一个目的就是展示设备驱动模型中各组件的层次关系，其顶级目录包括block、device、bus、drivers、class、power 和firmware。
+
+//设备模型
+sysfs 的功能基于 Linux 的统一设备模型，其由以下结构构成：
+kobject     统一设备模型中最基本的对象
+kset        kobject 的容器，维护了其包含的 kobject 链表
+
+
+
+
+
 udev从kernel中收到一个设备的uevent ---> 添加设备的uevent ---> 
 
 
@@ -51,15 +132,6 @@ udev从kernel中收到一个设备的uevent ---> 添加设备的uevent --->
 
 ```
 
-### 文件系统
-```
-在Linux中，一切你看到的皆为文件
-目录:由其他文件组成的文件
-特殊文件:用于输入和输出的途径。大多数特殊文件都储存在/dev中，我们将会在后面讨论这个问题。
-链接文件:让文件或者目录出现在系统文件树结构上多个地方的机制。我们将详细地讨论这个链接文件。
-(域)套接字:特殊的文件类型，和TCP/IP协议中的套接字有点像，提供进程间网络通讯，并受文件系统的访问控制机制保护。
-命名管道 : 或多或少有点像sockets(套接字)，提供一个进程间的通信机制，而不用网络套接字协议。
-```
 
 #### 相关问题
 (1)vfs与设备驱动与硬件的关系
@@ -67,22 +139,8 @@ udev从kernel中收到一个设备的uevent ---> 添加设备的uevent --->
 (3)内核
 
 #### VFS文件系统
-VFS所支持的文件系统类型可以归结为以下三大类：
-    基于磁盘的文件系统(Ext2, Ext3等)
-    网络文件系统(NFS等)
-    特殊文件系统(proc, sysfs)
 
 
-vfs是所有文件系统的公共接口（最小接口），可以理解为fs的（抽象）基类；而具体的fs，例如ext2/nfts，则是vfs的一种具体实现（也可以理解为子类）。
-比如：
-```
-基类        继承实现            物理
-vfs-------> 字符设备驱动 ------>  键盘、文件系统
-            块驱动      -------> 文件系统  ----> 磁盘
-            网络驱动
-                        |
-                        需要实现的驱动（把物理设备抽象为 字符设备、块设备、网络设备）
-```
 
 比如write(fd, ...)系统调用，在内核里的代码就是调用filp->write(...)，这里的filp不关心文件到底是ext2还是ntfs。
 当然，它最终还是会调用到ext2_write或者是ntfs_write。

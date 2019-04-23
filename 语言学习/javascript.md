@@ -487,3 +487,11 @@ window.aa = 100
 f()        //1     
 
 ```
+
+---
+#### console.log
+```
+chrome 会对 log 的对象求一次值，打印出来是 Object ，可以继续展开的。但当你展开控制台中的 Object 的时候，chrome 又会对它求一次值，这一次是显示它的属性。所以才会有前后打印的东西不一样的情况发生，因为对象引用的实体的值改变了。
+如果把 console.log(a) 改为 console.log(JSON.stringify(a))， 这时就会输出
+{"b":{"c":1}}
+```

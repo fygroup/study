@@ -118,6 +118,19 @@ export default {
 ```
 
 ---
+### new vue中的el
+```
+<div id='id'></div>
+
+new vue({
+    el: '#id',   //新建的vue要挂载的DOM id
+    render: (h)=>{
+        h()
+    }
+})
+```
+
+---
 ### $mount
 ```
 new Vue.extend({
