@@ -980,7 +980,7 @@ pthread_cond_timedwait (pthread_cond_t * _cond,pthread_mutex_t * _mutex,_const s
 ```
 
 ---
-#### class static初始化
+#### class static struct初始化
 ```
 class my
 {

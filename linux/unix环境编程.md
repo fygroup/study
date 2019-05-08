@@ -465,3 +465,50 @@ Message Queue是异步单向的消息。发送消息设计成是不需要等待�
 服务器内进程间通信就用socket，低耦合，性能也还行，不用考虑其他乱七八糟的东西。但是如果考虑高性能，可以FIFO或者共享内存
 服务期间用rpc、socket、消息队列
 ```
+
+---
+### 系统数据文件
+1、/etc/password
+```
+存放着所有用户帐号的信息，包括用户名和密码，因此，它对系统来说是至关重要的
+格式如下：
+username:password:User ID:Group ID:comment:home directory:shell
+```
+2、/etc/shadow
+```
+存放系统的口令文件
+```
+3、/etc/group
+```
+用户组管理的文件,linux用户组的所有信息都存放在此文件中
+格式如下：
+组名:口令:组标识号:组内用户列表
+```
+4、/etc/hosts
+```
+Linux系统中一个负责IP地址与域名快速解析的文件
+例如：
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+```
+5、/etc/services
+```
+Internet 守护程序（ineted）是 Linux 世界中的重要服务。它借助 /etc/services 文件来处理所有网络服务
+格式如下：
+service-name    port/protocol   [aliases..]  [#comment]
+service-name 是网络服务的名称。例如 telnet、ftp 等。
+port/protocol 是网络服务使用的端口（一个数值）和服务通信使用的协议（TCP/UDP）。
+alias 是服务的别名。
+comment 是你可以添加到服务的注释或说明。以 # 标记开头。
+```
+6、utmp和wtmp
+```
+/var/run/utmp（二进制） 命令 who
+/var/log/wtmp（二进制） 命令 w
+utmp记录当前登录到系统的用户
+wtmp跟踪各个登陆与注销事件
+```
+7、uname和hostname
+```
+命令uname显示操作系统信息
+命令hostname显示主机的域名
+```
