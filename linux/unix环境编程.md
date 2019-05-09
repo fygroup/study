@@ -244,6 +244,9 @@ if (pt>0){
 mkfifo("file",0755);
 int fd = open("file",O_RDONLY); //O_WRONLY
 close(fd);
+
+linux保证了写管道的原子性，但是每次写不能大于pipe_buf
+
 ```
 
 ---

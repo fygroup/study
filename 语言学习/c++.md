@@ -11,6 +11,13 @@ fstream on;
 on.open(string.c_str(),ios::in)
 on.open(string.c_str(),ios::out)
 
+默认方式如下：
+ofstream out("...", ios::out);
+ifstream in("...", ios::in);
+fstream foi("...", ios::in|ios::out);
+
+
+
 字符转int atoi
 int转字符 itoa
 
@@ -61,6 +68,8 @@ fout.open(file);
 fout.is_open();
 func(fout);
 func(cout);
+
+fout.write(line,n)
 
 cout<< 12.321321113<<endl;
 ios_base::fmtflags orig = cout.setf(ios_base::fixed,ios_base::floatfield);
@@ -1675,11 +1684,48 @@ public:
 
 ```
 
+#### 类型转换
+```
+//const_cast 去掉类型的const或volatile属性
+//static_cast 基本数据类型转换，不能进行无关类型（如非基类和子类）指针之间的转换。把空指针转换成目标类型的空指针。把任何类型的表达式转换成void类型。static_cast不能去掉类型的const、volitale属性(用const_cast)。
 
+//实例 const char* ==> void*
+const char* a = "dadada";
+char* x = const_cast<char*>(a);
+void* y = static_cast<void*>(x);
+```
 
+#### enum c++11
+```
+enum class Color {red,yellow,blue};
+Color myColor = Color::red; 
+```
 
+#### 智能指针不能当右值
+```
+void* a = NULL;
+//右值Segmentation fault (core dumped)
+a =  static_cast<void*>(auto_ptr<string>(new string("sadadada")).get()); //此时智能指针是右值
+cout << *static_cast<string*>(a) << endl; //出错！ 实际上智能指针早已析构了
+//必须先存成左值
+auto_ptr<string> x = auto_ptr<string>(new string("sadadada")); //必须现存成左值
+a =  static_cast<void*>(x.get());
+cout << *static_cast<string*>(a) << endl;
+```
 
+#### 智能指针所有权（auto_ptr）
+```
+auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
+auto_ptr<string> b;
+b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
+```
 
+#### 智能指针不要与容器混合使用
+```
+STL有一条规定：
+std::auto_ptr 不能和容器混合使用。
+原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
 
-
+所以！！！auto_ptr几乎没鸡巴卵用！！！
+```
 
