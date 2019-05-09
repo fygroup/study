@@ -35,5 +35,8 @@ union文件系统：在union文件系统里，文件系统可以被装载在其�
 捕获并且提供应用输出，包括输入、输出、报错信息
 ```
 
+### linux namespace UTS namespace
+```
 
+```
 
