@@ -1729,3 +1729,16 @@ std::auto_ptr 不能和容器混合使用。
 所以！！！auto_ptr几乎没鸡巴卵用！！！
 ```
 
+#### goto
+```
+int main(){
+    goto label;
+
+    int i = 0;   //会报错，因为上面的goto会忽略这里的变量！！！所以，将变量写在goto之外
+
+    label:
+    {
+        xxxxxx;
+    }
+}
+```
