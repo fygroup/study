@@ -1,6 +1,3 @@
-unix环境编程
-|包含unix编程、网络编程及相关操作系统概念
-
 ### 异步与非阻塞
 ```
 1、讨论同步、异步、阻塞、非阻塞时，必须先明确是在哪个层次进行讨论
@@ -17,7 +14,6 @@ unix环境编程
 
 ```
 
----
 #### 异步的进化
 ```
 1、远古时代（回调函数）
@@ -188,7 +184,7 @@ struct epitem{
     struct epoll_event event; //期待发生的事件类型
 }
 
-当调用epoll_wait检查是否有事件发生时，只需要检查eventpoll对象中的rdlist双链表中是否有epitem元素即可。如果rdlist不为空，则把发生的事件复制到用户态，同时将事件数量返回给用户。
+当调用epoll_wait检查是否有事件发生时，只需要检查eventpoll对象中的rdlist双链表中是否有epitem元素即可。如果rdlist不为空，则把发生的事件复制到用户态（所以epoll不是异步），同时将事件数量返回给用户。
 
 
 ```
@@ -253,6 +249,7 @@ linux保证了写管道的原子性，但是每次写不能大于pipe_buf
 #### 信号量
 POSIX信号量与System V信号量
 ```
+用于共享内存的同步，注意区别于线程的互斥量！！！（下面有详解）
 都是用于线程和进程同步的。
 Posix信号量是基于内存的，即信号量值是放在共享内存中的，与文件系统中的路径名对应的名字来标识的。性能更优越
 System v信号量测试基于内核的，它放在内核里面。
@@ -515,3 +512,173 @@ wtmp跟踪各个登陆与注销事件
 命令uname显示操作系统信息
 命令hostname显示主机的域名
 ```
+
+---
+### 互斥量、信号量
+```
+虽然mutex和semaphore可以相互替代，可以把 值最大为1 的Semaphore当Mutex用，也可以用Mutex＋计数器当Semaphore。
+Mutex管理的是资源的使用权，而Semaphore管理的是资源的数量，有那么一点微妙的小区别。
+Mutex用途：保护资源共享
+Semaphore用途：调度线程
+简而言之，锁是服务于共享资源的；而semaphore是服务于多个线程间的执行的逻辑顺序的
+
+//semaphore实例
+int a, b, c;
+void geta()
+{
+    a = calculatea();
+    semaphore_increase();
+}
+
+void getb()
+{
+    b = calculateb();
+    semaphore_increase();
+}
+
+
+void getc()
+{
+    semaphore_decrease();
+    semaphore_decrease();
+    c = a + b;
+}
+
+t1 = thread_create(geta);
+t2 = thread_create(getb);
+t3 = thread_create(getc);
+thread_join(t3);
+
+// semaphore_increase对应sem_post
+// semaphore_decrease对应sem_wait
+
+```
+
+---
+### 终端
+```
+通过网络登录或者终端登录建立的会话，会分配唯一一个tty终端或者pts伪终端（网络登录），实际上它们都是虚拟的，以文件的形式建立在/dev目录，而并非实际的物理终端。
+
+在终端中按下的特殊按键：中断键（ctrl+c）、退出键（ctrl+\）、终端挂起键（ctrl + z）会发送给当前终端连接的会话中的前台进程组中的所有进程
+
+在网络登录程序中，登录认证守护程序 fork 一个进程处理连接，并以ptys_open 函数打开一个伪终端设备（文件）获得文件句柄，并将此句柄复制到子进程中作为标准输入、标准输出、标准错误，所以位于此控制终端进程下的所有子进程将可以持有终端
+```
+
+
+---
+### 守护进程 daemon
+```
+一个守护进程的父进程是init进程，因为它真正的父进程在fork出子进程后就先于子进程exit退出了，所以它是一个由init继承的孤儿进程。
+
+守护进程是非交互式程序，没有控制终端，所以任何输出，无论是向标准输出设备stdout还是标准出错设备stderr的输出都需要特殊处理。
+
+守护进程的名称通常以d结尾，比如sshd、xinetd、crond等
+
+特点
+1、没有控制终端，终端名设置为？号：也就意味着没有 stdin 0 、stdout 1、stderr 2
+2、父进程不是用户创建的进程，init进程或者systemd（pid=1）以及用户人为启动的用户层进程一般以pid=1的进程为父进程，而以kthreadd内核进程创建的守护进程以kthreadd为父进程
+3、守护进程一般是会话首进程、组长进程。
+4、工作目录为 \ （根），主要是为了防止占用磁盘导致无法卸载磁盘
+
+注意：
+fork子进程之后，退出父进程，如果子进程还需要继续运行，则需要处理挂断信号(SIGNUP)，否则进程对挂断信号的默认处理将是退出。
+```
+
+(1) 创建步骤
+```
+https://www.cnblogs.com/lvyahui/p/7389554.html
+1、如果是单例守护进程，结合锁文件和kill函数检测是否有进程已经运行
+2、在子进程中调用umask函数，设置进程的umask为0；umask取消进程本身的文件掩码设置，也就是设置       Linux文件权限，一般设置为000，这是为了防止子进程创建创建一个不能访问的文件（没有正确分配权      限）。此过程并非必须，如果守护进程不会创建文件，也可以不修改
+3、fork出子进程，父进程exit。这样子进程一定不是组长进程（进程id不等于进程组id）
+4、子进程调用setsid新建会话（使子进程变为会话首进程、组长进程，并断开终端）
+5、如果是单例守护进程，将pid写入到记录锁文件，一般为/var/run/xxx.pid
+6、调用chdir函数，让根目录 ”/” 成为子进程的工作目录，这是为了防止占用磁盘造成磁盘不能卸载。所以     也可以改到别的目录，只要保证目录所在磁盘不会中途卸载
+7、在子进程中关闭任何不需要的文件描述符, 重定向0，1，2到/dev/null
+8、信号处理signal(SIGCHLD, SIG_IGN)，忽略子进程退出信号，让子进程的回收交给Init，
+
+```
+
+(2) setsid
+```
+可以建立一个新的会话期：
+如果，调用setsid的进程不是一个进程组的组长，此函数创建一个新的会话期。
+1、此进程变成该对话期的首进程
+2、此进程变成一个新进程组的组长进程。
+3、此进程没有控制终端，如果在调用setsid前，该进程有控制终端，那么与该终端的联系被解除。 如果该进程是一个进程组的组长，此函数返回错误。
+4、为了保证这一点，我们先调用fork()然后exit()，此时只有子进程在运行
+```
+
+
+---
+### syslog
+```
+开机运行，由systemd启动的：
+systemctl enable rsyslog
+systemctl start rsyslog
+
+linux中存在syslogd守护进程，配置文件/etc/rsyslog.conf。
+一些大型公司会有rsyslog服务器，用于log的接收，特性：1.多线程，2.支持加密协议：ssl，tls，relp
+//例如
+rsyslog server(10.10.100.10) <-------rsyslog client(10.10.100.11)
+
+//配置
+除了一些全局配置，
+https://blog.51cto.com/11555417/2163289 
+https://blog.51cto.com/oldking/1891232
+
+还有规则配置，它的每一行的格式如下：
+facility.priority     action
+设备,级别         动作
+aexe.*  /var/log/aexe.log
+
+//实例
+https://blog.csdn.net/yuyin1018/article/details/80301274
+
+//api
+#include <syslog.h>
+void openlog(const char* ident, int option, int facility);
+    ident: 被加到日志中的程序名
+    option: 常用值LOG_PID即包含每个消息的pid
+    facility: 记录日志的程序的类型，配置文件可根据不同的登录类型来区别处理消息，常用值                   LOG_DAEMON即其它系统守护进程，一般为自己创建的守护进程
+
+void syslog(int priority, const char* format, ...);
+    priority:  优先级，说明消息的重要性，可取值如下： 
+                LOG_ERR 错误;  LOG_WARNING 警告; LOG_NOTICE 正常情况，但较为重要;    LOG_INFO 信息; LOG_DEBUG 调试信息
+
+void closelog(void);
+
+```
+
+---
+### 进程、进程组、会话
+```
+一个进程组可以包含多个进程，为了方便管理这些进程。一个会话又可以包含多个进程组。一个会话对应一个控制终端。linux是一个多用户多任务的分时操作系统，必须要支持多个用户同时登陆同一个操作系统，当一个用户登陆一次终端时就会产生一个会话。
+
+//SIGHUP 与 nohup
+sighup（挂断）信号在控制终端或者控制进程死亡时向关联会话中的进程发出，默认进程对SIGHUP信号的处理时终止程序，所以我们在shell下建立的程序，在登录退出连接断开之后，会一并退出。
+
+//nohup做了3件事情
+1、dofile函数将输出重定向到nohup.out文件
+2、signal函数设置SIGHUP信号处理函数为SIG_IGN宏（指向sigignore函数），以此忽略SIG_HUP信号
+3、execvp函数用新的程序替换当前进程的代码段、数据段、堆段和栈段。
+```
+
+### /var 目录
+```
+系统一般运行时要改变的数据.每个系统是特定的，即不通过网络与其他计算机共享.  
+/var/lib            系统正常运行时要改变的文件.
+
+/var/local          /usr/local 中安装的程序的可变数据
+
+/var/lock           锁定文件.以支持他们正在使用某个特定的设备或文件.其他程序注意到这个锁定文件，将不试图使用这个设备或文件.  
+
+/var/log            各种程序的Log文件，
+/var/log/wtmp       永久记录每个用户登录、注销及系统的启动、停机的事件。
+/var/log/lastlog    记录最近成功登录的事件和最后一次不成功的登录事件，由login生成
+
+/var/run            保存到下次引导前有效的关于系统的信息文件
+/var/run/utmp       记录著現在登入的用戶。
+
+/var/tmp            比/tmp 允许的大或需要存在较长时间的临时文件
+```
+
