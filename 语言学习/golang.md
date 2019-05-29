@@ -948,3 +948,19 @@ func delStructPoint(i interface{}) error {
 	return nil
 }
 ```
+
+### utf8
+```
+golang的string使用utf8存储的，中文字符在unicode下占2个字节，在utf-8编码下占3个字节，而golang默认编码正好是utf-8。
+
+unicode的中英文都是两个字节
+
+string <--> utf-8 <--> []byte
+
+所以string先要转换成unicode，再计算长度
+a := "你好123"
+fmt.Println(len(a))  //9 ×
+b := []rune(a)  //转换unicode
+fmt.Println(len(b))  //5 ✔
+
+```

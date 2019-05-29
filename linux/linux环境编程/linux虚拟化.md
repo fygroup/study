@@ -339,6 +339,7 @@ ip link set eth0 netns ns1就能将eth0网络设备移动到network namespace ns
 
 1、操作
 ```
+//---------------第一个shell窗口----------------------------
 （1）创建network namespace
   //记录默认network namespace ID
   readlink /proc/$$/ns/net
@@ -362,11 +363,12 @@ ip link set eth0 netns ns1就能将eth0网络设备移动到network namespace ns
   15812
 
 
+ //-----------------第二个shell窗口------------------------------
 （2）创建两个虚拟网络设备，并使他们之间可以相互通讯
   //创建新的虚拟以太网设备，让两个namespace能通讯
   sudo ip link add veth0 type veth peer name veth1
 
-  //veth1移动到上面的namespace
+  //veth1移动到第一个shell窗口的net namespace里面
   ip link set veth1 netns 15812
 
   //为veth0分配IP并启动veth0
@@ -385,7 +387,7 @@ ip link set eth0 netns ns1就能将eth0网络设备移动到network namespace ns
             collisions:0 txqueuelen:1000
             RX bytes:648 (648.0 B)  TX bytes:648 (648.0 B)
 
-  //进入上面新创建的namespace
+  //-------------第一个shell窗口的net namespace-------------------
   //为veth1分配IP地址并启动它
   ip address add dev veth1 192.168.8.2/24
   ip link set veth1 up
@@ -404,6 +406,7 @@ ip link set eth0 netns ns1就能将eth0网络设备移动到network namespace ns
 
 
 （3）netns连接外网
+  //-----------------第二个shell窗口-------------------
   //基本思路： 虚拟网卡 --> 实际网卡 -->
   //允许主机内部的虚拟网络设备进行数据转发
   cat /proc/sys/net/ipv4/ip_forward
@@ -411,11 +414,66 @@ ip link set eth0 netns ns1就能将eth0网络设备移动到network namespace ns
 
   //添加NAT规则，这里ens32是机器上连接外网的网卡（就是说发送数据必须是实际网卡的ip）
   iptables -t nat -A POSTROUTING -o ens32 -j MASQUERADE
+  此时第二个shell的虚拟网络设备veth1可以访问外网
 
+  //----------------第一个shell窗口--------------------
+  //由于veth0与veth1是联通的，只需要将veth0的网关设为veth1的ip
+  ip route add default via 192.168.8.1
 
   //查看路由表
   route -n
 
-
-
 ```
+
+2、管理net namepace
+```
+给namespace取名字其实就是创建一个文件，然后通过mount --bind将新创建的namespace文件和该文件绑定，就算该namespace里的所有进程都退出了，内核还是会保留该namespace，还可以通过这个绑定的文件来加入该namespace。
+
+//开始之前，获取一下默认network namespace的ID
+readlink /proc/$$/ns/net
+net:[4026531957]
+
+//创建一个用于绑定network namespace的文件，
+//ip netns将所有的文件放到了目录/var/run/netns下，
+//所以我们这里重用这个目录，并且创建一个我们自己的文件netnamespace1
+mkdir -p /var/run/netns
+touch /var/run/netns/netnamespace1
+
+//创建新的network namespace，并在新的namespace中启动新的bash
+unshare --net bash
+//查看新的namespace ID
+readlink /proc/$$/ns/net
+net:[4026532448]
+
+//bind当前bash的namespace文件到上面创建的文件上
+mount --bind /proc/$$/ns/net /var/run/netns/netnamespace1
+#通过ls -i命令可以看到文件netnamespace1的inode号和namespace的编号相同，说明绑定成功
+ls -i /var/run/netns/netnamespace1
+4026532448 /var/run/netns/netnamespace1
+//退出新创建的bash
+exit
+
+//可以看出netnamespace1的inode没变，说明我们使用了bind mount后
+//虽然新的namespace中已经没有进程了，但这个新的namespace还存在
+ls -i /var/run/netns/netnamespace1
+4026532448 /var/run/netns/netnamespace1
+
+//上面的这一系列操作等同于执行了命令： ip netns add netnamespace1
+//下面的nsenter命令等同于执行了命令： ip netns exec netnamespace1 bash
+
+//我们可以通过nsenter命令再创建一个新的bash，并将它加入netnamespace1所关联的namespace（net:[4026532448]）
+nsenter --net=/var/run/netns/netnamespace1 bash
+readlink /proc/$$/ns/net
+net:[4026532448]
+```
+
+
+### user namespace
+```
+用于隔离安全相关的资源，包括 user IDs and group IDs，keys, 和 capabilities。同样一个用户的 user ID 和 group ID 在不同的 user namespace 中可以不一样(与 PID nanespace 类似)。换句话说，一个用户可以在一个 user namespace 中是普通用户，但在另一个 user namespace 中是超级用户。
+
+非 root 进程也可以创建User Namespace ， 并且此用户在Namespace 里面可以被映射成root ， 且在Namespace 内有root 权限。
+```
+
+
+
