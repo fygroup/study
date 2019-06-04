@@ -179,8 +179,10 @@ nsenter -t 27668 -u -i /bin/bash
 //加入成功后将运行/bin/bash
 ```
 
-### mount namespace
+#### mount namespace
 ```
+（linux命令-mount）
+
 Mount namespace用来隔离文件系统的挂载点, 使得不同的mount namespace拥有自己独立的挂载点信息，不同的namespace之间不会相互影响，这对于构建用户或者容器自己的文件系统目录非常有用。
 
 当前进程所在mount namespace里的所有挂载信息可以在/proc/[pid]/mounts、/proc/[pid]/mountinfo和/proc/[pid]/mountstats里面找到。
@@ -188,6 +190,26 @@ Mount namespace用来隔离文件系统的挂载点, 使得不同的mount namesp
 函数clone()的flag是CLONE_NEWNS
 
 clone或者unshare函数创建新的mount namespace时,新的拷贝老的，从这之后，他们就没有关系了，通过mount和umount增加和删除各自namespace里面的挂载点都不会相互影响。
+```
+
+示例
+```
+mkdir iso
+cd iso/
+mkdir -p iso01/subdir01
+mkdir -p iso02/subdir02
+mkisofs -o ./001.iso ./iso01
+mkisofs -o ./002.iso ./iso02
+mkdir /mnt/iso1 /mnt/iso2
+mount ./001.iso /mnt/iso1/
+  mount: /dev/loop1 is write-protected, mounting read-only
+mount |grep /001.iso
+  /home/dev/iso/001.iso on /mnt/iso1 type iso9660 (ro,relatime)
+
+//#创建并进入新的mount和uts namespace
+unshare --mount --uts /bin/bash
+hostname container001
+exec bash
 ```
 
 Shared subtrees
@@ -214,7 +236,7 @@ mnt:[4026531840]
 //创建新的mount namespace
 //默认情况下，unshare会将新namespace里面的所有挂载点的类型设置成private，
 //所以这里用到了参数--propagation unchanged，让新namespace里的挂载点的类型和老namespace里保持一致。
-//--propagation参数还支持private|shared|slave类型，
+//--propagation参数还支持private|shared|slave类型（私有 共享 从属），
 //和mount命令的那些--make-private参数一样，
 unshare --mount --uts --propagation unchanged /bin/bash
 hostname container001
@@ -234,7 +256,7 @@ cat /proc/self/mountinfo |grep disk| sed 's/ - .*//'
 222 177 7:2 / /home/dev/disks/disk2 rw,relatime
 ```
 
-### PID namespace
+#### PID namespace
 ```
 用来隔离进程的ID空间，使得不同pid namespace里的进程ID可以重复且相互之间不影响。
 
@@ -319,7 +341,7 @@ root         1     0  0 7月14 pts/0   00:00:00 bash
 root        44     1  0 00:06 pts/0    00:00:00 ps -ef
 ```
 
-### network namespace
+#### network namespace
 ```
 用来隔离网络设备, IP地址, 端口等. 每个namespace将会有自己独立的网络栈，路由表，防火墙规则，socket等。
 
@@ -468,12 +490,253 @@ net:[4026532448]
 ```
 
 
-### user namespace
+#### user namespace
 ```
+权限涉及的范围非常广，所以导致user namespace比其他的namespace要复杂； 同时权限也是容器安全的基础，所以user namespace非常重要。
+
 用于隔离安全相关的资源，包括 user IDs and group IDs，keys, 和 capabilities。同样一个用户的 user ID 和 group ID 在不同的 user namespace 中可以不一样(与 PID nanespace 类似)。换句话说，一个用户可以在一个 user namespace 中是普通用户，但在另一个 user namespace 中是超级用户。
 
 非 root 进程也可以创建User Namespace ， 并且此用户在Namespace 里面可以被映射成root ， 且在Namespace 内有root 权限。
+
+//例如：子user namespace虽然是root权限，但是不能操作父user namespace的内容
+unshare --user -r /bin/bash
+hostname newname       //premisee deny, 因为此时的user namespace是不能操作父namespace的hostname
+
+//创建user namespace，并映射uid和gid
+unshare --user -r /bin/bash
+```
+
+1、和其他namespace的关系
+```
+//多namespace同时创建
+unshare(CLONE_NEWUSER | CLONE_NEW*);
+内核会保证CLONE_NEWUSER先被执行，然后执行剩下的其他CLONE_NEW*，这样就使得不用root账号而创建新的容器成为可能，这条规则对于clone函数也同样适用
+
+//和其他类型namespace的关系
+每个namespace都有一个owner（user namespace），这样保证对任何namespace的操作都受到user namespace权限的控制。
+//例如uts namespace的结构体
+struct uts_namespace {
+  struct kref kref;
+  struct new_utsname name;
+  struct user_namespace *user_ns;   //指向它属于的user namespace，其实另外namespace也有userNs
+  struct ns_common ns;
+};
+```
+
+2、不和任何user namespace关联的资源
+```
+//当和mount namespace一起用时（注意是一起用！！！），不能挂载基于块设备的文件系统，但是可以挂载下面这些文件系统
+
+//但是可以挂载一些特殊的文件系统
+  /proc (since Linux 3.8)  
+  /sys (since Linux 3.8) 
+  devpts (since Linux 3.9)    伪终端提供了一个标准接口，它的标准挂接点是/dev/pts
+  tmpfs (since Linux 3.9)       tmp文件系统
+  ramfs (since Linux 3.9)     虚拟内存文件系统
+  mqueue (since Linux 3.9)
+  bpf (since Linux 4.4)
+
+//示例
+//新建user、mount namespace
+unshare --user -r --mount bash
+//mount块设备到./mnt, 结果是mount失败
+mount /dev/mapper/ubuntu--vg-root ./mnt
+  mount: /dev/mapper/ubuntu--vg-root is write-protected, mounting read-only
+  mount: cannot mount /dev/mapper/ubuntu--vg-root read-only
+
+//由于当前pid namespace不属于当前的user namespace，所以挂载/proc失败
+mount -t proc none ./mnt
+  mount: permission denied
+//创建新的pid namespace，然后挂载成功
+unshare --pid --fork bash
+mount -t proc none ./mnt
+
+//只能通过bind方式挂载devpts，直接mount报错
+mount -t devpts devpts ./mnt
+  mount: wrong fs type, bad option, bad superblock on devpts,
+       missing codepage or helper program, or other error
+
+       In some cases useful info is found in syslog - try
+       dmesg | tail or so.
+mount --bind /dev/pts ./mnt
+mount|grep mnt|grep devpts
+  devpts on /home/dev/mnt type devpts (rw,nosuid,noexec,relatime,mode=600,ptmxmode=000)
+
+//sysfs直接mount和bind mount都不行
+mount -t sysfs sysfs ./mnt
+  mount: permission denied
+mount --bind /sys ./mnt
+  mount: wrong fs type, bad option, bad superblock on /sys,
+  
+//挂载tmpfs成功
+mount -t tmpfs tmpfs ./mnt
+mount|grep mnt|grep tmpfs
+  tmpfs on /home/dev/mnt type tmpfs (rw,nodev,relatime,uid=1000,gid=1000)
+```
+
+3、mount namespace和user namespace
+```
+//当mount namespace和user namespace一起用时，就算老mount namespace中的mount point是shared并且用unshare命令时指定了--propagation shared，新mount namespace里面的挂载点的propagation type还是slave。这样就防止了在新user namespace里面mount的东西被外面父user namespace中的进程看到。
 ```
 
 
+### cgroup
+```
+Namespace主要用于隔离资源
+Cgroups用来提供对一组进程以及将来子进程的资源限制
 
+（1）三个组件
+  >控制族群（control group）：层级中的节点。
+    Cgroups 中的资源控制都是以控制族群为单位实现。一个进程可以加入到某个控制族群，也从一个进程组迁移到另一个控制族群。一个进程组的进程可以使用 cgroups 以控制族群为单位分配的资源，同时受到 cgroups 以控制族群为单位设定的限制；
+  >层级（hierarchy）：一个或多个子系统的组合
+  >子系统（subsytem）：一个子系统就是一个资源控制器
+    cpu 子系统，主要限制进程的 cpu 使用率。
+    cpuacct 子系统，可以统计 cgroups 中的进程的 cpu 使用报告。
+    cpuset 子系统，可以为 cgroups 中的进程分配单独的 cpu 节点或者内存节点。
+    memory 子系统，可以限制进程的 memory 使用量。
+    blkio 子系统，可以限制进程的块设备 io。
+    devices 子系统，可以控制进程能够访问某些设备。
+    net_cls 子系统，可以标记 cgroups 中进程的网络数据包，然后可以使用 tc 模块（traffic control）对数据包进行控制。
+    freezer 子系统，可以挂起或者恢复 cgroups 中的进程。
+    ns 子系统，可以使不同 cgroups 下面的进程使用不同的 namespace。
+
+
+（2）关系图
+  > 每次在系统中创建新层级时，该系统中的所有任务都是那个层级的默认 cgroup（我们称之为 root cgroup，此 cgroup 在创建层级时自动创建，后面在该层级中创建的 cgroup 都是此 cgroup 的后代）的初始成员；
+  > 一个子系统最多只能附加到一个层级；
+  > 一个层级可以附加多个子系统；
+  > 一个任务可以是多个 cgroup 的成员，但是这些 cgroup 必须在不同的层级；
+  > 系统中的进程（任务）创建子进程（任务）时，该子任务自动成为其父进程所在 cgroup 的成员。然后可根据需要将该子任务移动到不同的 cgroup 中，但开始时它总是继承其父任务的 cgroup。
+
+
+  子系统                 cpu   cpu_set                                  memory
+                        |       |                                        |      
+                        |       |                                        |
+  层级      |------------+-------+----------------|     |-----------------+-----------------------|
+  控制组                 root_cgroup                                  root_cgroup
+                            |                                             |
+                    +-------+---------+                         +---------+-----------+
+                    |                 |                         |                     |       
+            cgroup1(10% cpu占有)     cgroup2(40%)          cgroup1(20% 内存占有)     cgroup2(70%)
+                                        |                         |    
+                                        +-----------+-------------+
+                                                    |
+  进程组                                         task_group
+                                                    |
+                                          +---------+----------+
+  任务                                   task1    task2      task3
+
+
+（3）相关文件
+  /proc/cgroups
+  #subsys_name    hierarchy       num_cgroups     enabled
+  cpuset          11              1               1
+  cpu             3               64              1
+  cpuacct         3               64              1
+  blkio           8               64              1
+  memory          9               104             1
+  devices         5               64              1
+  freezer         10              4               1
+  net_cls         6               1               1
+  perf_event      7               1               1
+  net_prio        6               1               1
+  hugetlb         4               1               1
+  pids            2               68              1
+
+  /proc/[pid]/cgroup
+    11:cpuset:/
+    5:devices:/system.slice/cron.service
+    4:hugetlb:/
+    3:cpu,cpuacct:/system.slice/cron.service
+    2:pids:/system.slice/cron.service
+    1:name=systemd:/system.slice/cron.service
+  > cgroup树的ID， 和/proc/cgroups文件中的ID一一对应。
+  > 和cgroup树绑定的所有subsystem，多个subsystem之间用逗号隔开。这里name=systemd表示没有和任何subsystem绑定，只是给他起了个名字叫systemd。
+  > 进程在cgroup树中的路径，即进程所属的cgroup，这个路径是相对于挂载点的相对路径。
+```
+
+1、cgroup使用
+```
+cgroup相关的所有操作都是基于内核中的cgroup virtual filesystem，使用cgroup很简单，挂载这个文件系统就可以了。一般情况下都是挂载到/sys/fs/cgroup目录下
+
+（1）创建（挂载）cgroup树（层级）
+  注意：xxx为任意字符串
+  //挂载一颗和所有subsystem关联的cgroup树到/sys/fs/cgroup
+  mount -t cgroup xxx /sys/fs/cgroup
+
+  //挂载一颗和cpuset subsystem关联的cgroup树到/sys/fs/cgroup/cpuset
+  mkdir /sys/fs/cgroup/cpuset
+  mount -t cgroup -o cpuset xxx /sys/fs/cgroup/cpuset
+
+  //挂载一颗与cpu和cpuacct subsystem关联的cgroup树到/sys/fs/cgroup/cpu,cpuacct
+  mkdir /sys/fs/cgroup/cpu,cpuacct
+  mount -t cgroup -o cpu,cpuacct xxx /sys/fs/cgroup/cpu,cpuacct
+
+  //挂载一棵cgroup树，但不关联任何subsystem，下面就是systemd所用到的方式
+  mkdir /sys/fs/cgroup/systemd
+  mount -t cgroup -o none,name=systemd xxx /sys/fs/cgroup/systemd
+  ls /sys/fs/cgroup/systemd
+    cgroup.clone_children  cgroup.procs  cgroup.sane_behavior  notify_on_release  release_agent  tasks
+    > cgroup.procs 当前cgroup中的所有进程ID，系统不保证ID是顺序排列的，且ID有可能重复
+    > tasks 当前cgroup中的所有线程ID，系统不保证ID是顺序排列的
+
+  //创建子cgroup
+  //创建并挂载好一颗cgroup树之后，就有了树的根节点，也即根cgroup，这时候就可以通过创建文件夹的方式创建子cgroup，然后再往每个子cgroup中添加进程。在后续介绍具体的subsystem的时候会详细介绍如何操作cgroup。
+  mkdir /sys/fs/cgroup/cpu,cpuacct/test
+
+
+（2）创建和删除cgroup
+  挂载好上面的cgroup树之后，就可以在里面建子cgroup了
+  cd demo && mkdir cgroup1
+  rm -r ./cgroup1
+
+（3）添加进程
+  echo 1421 > ./cgroup.procs
+
+  注意：新创建的子进程将会自动加入父进程所在的cgroup
+       在一颗cgroup树里面，一个进程必须要属于一个cgroup
+
+（4）权限
+  注意：从一个cgroup移动一个进程到另一个cgroup时，只要有目的cgroup的写入权限就可以了，系统不会检查源cgroup里的权限。
+  cd /cgroup/demo
+  mkdir permission
+  chown -R dev:dev ./permission/
+  echo 1421 > ./permission/cgroup.procs //1421属于root cgroup，可以将它移动到新的cgroup下，但是反过来不行
+
+（5）cgroup的清理
+  当一个cgroup里没有进程也没有子cgroup时，release_agent将被调用来执行cgroup的清理工作。
+```
+
+3、资源的限制
+```
+（1）cpu限制
+  子系统有cpusets、cpuacct和cpu
+  cpusets: cpuset主要用于设置CPU的亲和性，可以限制cgroup中的进程只能在指定的CPU上运行，或者不能在指定的CPU上运行
+  cpuacct: 当前cgroup所使用的CPU的统计信息，信息量较少
+  cpu: 
+    > cpu.cfs_period_us & cpu.cfs_quota_us
+      1.限制只能使用1个CPU（每250ms能使用250ms的CPU时间）
+          # echo 250000 > cpu.cfs_quota_us /* quota = 250ms */
+          # echo 250000 > cpu.cfs_period_us /* period = 250ms */
+      2.限制使用2个CPU（内核）（每500ms能使用1000ms的CPU时间，即使用两个内核）
+          # echo 1000000 > cpu.cfs_quota_us /* quota = 1000ms */
+          # echo 500000 > cpu.cfs_period_us /* period = 500ms */
+      3.限制使用1个CPU的20%（每50ms能使用10ms的CPU时间，即使用一个CPU核心的20%）
+          # echo 10000 > cpu.cfs_quota_us /* quota = 10ms */
+          # echo 50000 > cpu.cfs_period_us /* period = 50ms */
+    > cpu.stat
+      nr_periods： 表示过去了多少个cpu.cfs_period_us里面配置的时间周期
+      nr_throttled： 上面的这些周期中，有多少次受到了限制（即cgroup中的进程在指定的时间周期中用光了它的配额）
+      throttled_time: cgroup中的进程被限制使用CPU持续了多长时间(纳秒)
+    > 示例
+      echo 50000 > cpu.cfs_period_us
+      echo 10000 > cpu.cfs_quota_us
+      echo $$ > cgroup.procs 
+      while :; do echo test > /dev/null; done  //理论应是100%
+      top
+          PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+          5456 dev       20   0   22640   5472   3524 R  20.3  1.1   0:04.62 bash
+```
+
+
+### docker

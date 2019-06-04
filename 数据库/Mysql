@@ -1,10 +1,39 @@
 mysqld is the server executable (one of them)   #服务执行工具    
 mysql is the command line client  # 客户端工具   查询用
 mysqladmin is a maintainance or administrative utility  # 运维和管理工具
-//初始化-----
-chown -R mysql:mysql /data_dir/malx/sqldata
+//初始化-----（以下都是在root权限下）
+https://blog.csdn.net/github_39533414/article/details/80144890 新版本
+
+#初始化
+groupadd mysql    //创建mysql组
+useradd -g mysql mysql //创建mysql用户，并加入mysql组
 cd /usr/local/mysql
-./script/mysql_install_db --defaults-file=my.ini  --user=mysql
+mkdir ./data
+chown -R mysql:mysql ./
+vi /etc/my.cnf     https://www.cnblogs.com/langdashu/p/5889352.html 配置mysql
+bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data //初始化数据库
+
+#建立服务
+cp mysql.server /etc/init.d/mysqld
+chmod +x /etc/init.d/mysqld 
+chkconfig --add mysqld      添加到系统服务
+chkconfig  --list mysqld   检查服务是否生效  
+
+#配置全局环境变量
+vi /etc/profile
+在 profile 文件底部添加如下两行配置，保存后退出
+export PATH=$PATH:/usr/local/mysql/bin:/usr/local/mysql/lib
+source /etc/profile
+
+#启动服务
+service mysqld start   会启动mysqld_safe（root）和mysqld(mysql)
+
+
+
+
+
+
+
 //远程连接----------
 mysql -h 192.168.5.116 -P 3306 -u root -p123456
 //启动-------
@@ -46,3 +75,42 @@ select * from cnv_reportresult t where enable=-1 and sampleid in ("CL170407","CL
 [mysqld]
 sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
 这是就会限制你的长度
+
+### mysqld和mysqld_safe
+```
+mysqld_safe 作为mysqld 启动脚本，开启了守护mysqld进程的任务
+
+mysqld_safe相当于mysqld的守护进程，当mysqld死了，mysqld_safe会把它拉起
+
+mysqld_safe启动能够为mysqld分配系统资源
+```
+
+### 用户管理和权限设置
+```
+https://www.cnblogs.com/fslnet/p/3143344.html
+
+my.cnf中的user=mysql，表示启动用户是mysql
+
+初始化mysql，用的是root用户，他会给你一个root的初始登陆密码
+
+//修改密码，新版本（话说新版本的好繁琐）
+alter user 'root'@'localhost' identified with mysql_native_password by '123456';  
+flush privileges;  //刷新
+
+//创建账号密码
+CREATE USER `wangwei`@`127.0.0.1` IDENTIFIED BY 'passowrd';
+
+//授予权限
+GRANT ALL ON *.* TO `wangwei`@`127.0.0.1` WITH GRANT OPTION;
+
+//删除权限
+REVOKE all privileges ON databasename.tablename FROM 'username'@'host';
+
+//修改密码
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '你的密码';  </pre>
+
+//MySQL8.0中带过期时间用户的创建：
+CREATE USER `wangwei`@`127.0.0.1` IDENTIFIED BY 'wangwei' PASSWORD EXPIRE INTERVAL 90 DAY;
+GRANT ALL ON *.* TO `wangwei`@`127.0.0.1` WITH GRANT OPTION
+
+```
