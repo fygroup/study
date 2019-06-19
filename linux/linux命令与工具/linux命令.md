@@ -46,6 +46,14 @@ PASV（被动）模式
 认证方式：匿名用户认证、本地用户认证（linux的/etc/password本地用户）和虚拟用户认证（ftp自己的用户）
 https://www.jianshu.com/p/f1788f596a57
 
+
+### sh重定向
+```
+nohup sh start.sh 1>>log.txt 2>&1  &
+1>>log.txt 标准输出定向到log.txt文件
+2>&1       错误输出定向到标准输出
+```
+
 ### mount
 ```
 mount -t type -o options device dir
@@ -375,3 +383,15 @@ pmao $$
 ```
 进程树
 ```
+
+### getcap setcap
+```
+capget() 用来获得进程的权能；capset() 用来设置进程权能。
+```
+
+### findmnt
+```
+findmnt -l
+查看已经挂载的文件系统
+```
+

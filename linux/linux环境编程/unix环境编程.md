@@ -699,3 +699,81 @@ setlocale(LC_ALL, "utf8");
 //注意：utf8编码的字符串含中文和英文时，注意长度！！！
 
 ```
+
+### capability
+```
+//从2.1版开始,Linux内核有了能力(capability)的概念,即它打破了UNIX/LINUX操作系统中超级用户/普通用户的概念,由普通用户也可以做只有超级用户可以完成的工作
+
+//capability可以作用在进程上(受限),也可以作用在程序文件上,它与sudo不同,sudo只针对用户/程序/文件的概述,即sudo可以配置某个用户可以执行某个命令,可以更改某个文件,而capability是让某个程序拥有某种能力
+
+//每个进程有三个和能力有关的位图:inheritable(I),permitted(P)和effective(E), 在/proc/PID/status中
+cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'
+    CapInh: 0000000000000000
+    CapPrm: 0000000000000000
+    CapEff: 0000000000000000
+
+//cap_effective:当一个进程要进行某个特权操作时,操作系统会检查cap_effective的对应位是否有效,而不再是检查进程的有效UID是否为0. 例如,如果一个进程要设置系统的时钟,Linux的内核就会检查cap_effective的CAP_SYS_TIME位(第25位)是否有效.
+//cap_permitted:表示进程能够使用的能力,在cap_permitted中可以包含cap_effective中没有的能力，这些能力是被进程自己临时放弃的,也可以说cap_effective是cap_permitted的一个子集.
+//cap_inheritable:表示能够被当前进程执行的程序继承的能力.
+//总结：permitted表示可以使用的能力（有可能没有激活），effective表示激活的能力（可以使用的，前提是permitted要有这种能力），inheritable表示可以继承的能力
+
+CAP_CHOWN:修改文件属主的权限
+CAP_DAC_OVERRIDE:忽略文件的DAC访问限制
+CAP_DAC_READ_SEARCH:忽略文件读及目录搜索的DAC访问限制
+CAP_FOWNER：忽略文件属主ID必须和进程用户ID相匹配的限制
+CAP_FSETID:允许设置文件的setuid位
+CAP_KILL:允许对不属于自己的进程发送信号
+CAP_SETGID:允许改变进程的组ID
+CAP_SETUID:允许改变进程的用户ID
+CAP_SETPCAP:允许向其他进程转移能力以及删除其他进程的能力
+CAP_LINUX_IMMUTABLE:允许修改文件的IMMUTABLE和APPEND属性标志
+CAP_NET_BIND_SERVICE:允许绑定到小于1024的端口
+CAP_NET_BROADCAST:允许网络广播和多播访问
+CAP_NET_ADMIN:允许执行网络管理任务
+CAP_NET_RAW:允许使用原始套接字
+CAP_IPC_LOCK:允许锁定共享内存片段
+CAP_IPC_OWNER:忽略IPC所有权检查
+CAP_SYS_MODULE:允许插入和删除内核模块
+CAP_SYS_RAWIO:允许直接访问/devport,/dev/mem,/dev/kmem及原始块设备
+CAP_SYS_CHROOT:允许使用chroot()系统调用
+CAP_SYS_PTRACE:允许跟踪任何进程
+CAP_SYS_PACCT:允许执行进程的BSD式审计
+CAP_SYS_ADMIN:允许执行系统管理任务，如加载或卸载文件系统、设置磁盘配额等
+CAP_SYS_BOOT:允许重新启动系统
+CAP_SYS_NICE:允许提升优先级及设置其他进程的优先级
+CAP_SYS_RESOURCE:忽略资源限制
+CAP_SYS_TIME:允许改变系统时钟
+CAP_SYS_TTY_CONFIG:允许配置TTY设备
+CAP_MKNOD:允许使用mknod()系统调用
+CAP_LEASE:允许修改文件锁的FL_LEASE标志
+
+```
+
+### /proc文件夹
+```
+/proc 文件系统是一种内核和内核模块用来向进程(process) 发送信息的机制, /proc 存在于内存之中而不是硬盘上。proc文件系统以文件的形式向用户空间提供了访问接口，这些接口可以用于在运行时获取相关部件的信息或者修改部件的行为，因而它是非常方便的一个接口。
+
+(1) 内容介绍
+    /proc/cpuinfo - CPU 的信息(型号, 家族, 缓存大小等)
+    /proc/meminfo - 物理内存、交换空间等的信息
+    /proc/mounts - 已加载的文件系统的列表
+    /proc/devices - 可用设备的列表
+    /proc/filesystems - 被支持的文件系统
+    /proc/modules - 已加载的模块
+    /proc/version - 内核版本
+    /proc/cmdline - 系统启动时输入的内核命令行参数
+
+    /proc/pid/*     pid进程的相关信息
+
+    /proc/sys/kernel    与内核相关
+```
+
+### /var/run
+```
+/var/run 目录中存放的是自系统启动以来描述系统信息的文件。比较常见的用途是daemon进程将自己的pid保存到这个目录。标准要求这个文件夹中的文件必须是在系统启动的时候清空，以便建立新的文件。
+
+(1) /var/run/*.pid
+在工作中遇到了很多在程序启动时检查是否已经重复启动的代码段，其核心就是调用fcntl设置pid文件的锁定F_SETLK状态，其中锁定的标志为F_WRLACK。如果成功锁定，则写入进程当前PID，进程继续往下执行。如果锁定不成功，说明已经有同样的进程在运行了，当前进程结束退出
+
+(2) 
+```

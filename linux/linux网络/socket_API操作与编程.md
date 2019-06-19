@@ -45,6 +45,7 @@ struct sockaddr_in {
     sa_family_t    sin_family;    //地址族
     in_port_t      sin_port;      //16位端口号
     struct in_addr sin_addr;      //32位IP地址
+    unsigned  char  sin_zero[8];         /* Same size as struct sockaddr */
 }
 struct in_addr {
     in_addr_t      s_addr         //32位IPv4地址
@@ -52,15 +53,37 @@ struct in_addr {
 
 //IPv6
 ...
+
+//unix域套接字地址
+#include <sys/un.h>
+struct sockaddr_un {
+    sa_family    sun_family;    /* AF_UNIX */
+    char         sun_path[108];    /* pathname */
+};
+
+
 ```
 3、addr转换
 ```
+//tcp套接字转换
 struct sockaddr_in my_addr;
 my_addr.sin_family      = AF_INET;
 my_addr.sin_port        = htons(80);                 //uint16转换成网络字节序
 my_addr.sin_addr.s_addr = inet_addr("192.168.2.201") //inet_addr将字符串转换为网络addr字节， inet_ntoa相反
 bzero(&(my_addr.sin_zero), 8);                       //sin_zero置0
 struct sockaddr* myaddr = (struct sockaddr*)&my_addr //转换成sockaddr
+
+//unix域套接字转换
+struct sockaddr_un un;
+memset(&un, 0, sizeof(un));
+un.sun_family = AF_UNIX;
+strcpy(un.sun_path, "foo.socket");
+if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+        err_sys("socket failed");
+if(bind(fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
+        ERR_EXIT("bind");
+
+
 ```
 4、hostent
 ```

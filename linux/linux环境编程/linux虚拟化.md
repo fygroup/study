@@ -494,15 +494,51 @@ net:[4026532448]
 ```
 权限涉及的范围非常广，所以导致user namespace比其他的namespace要复杂； 同时权限也是容器安全的基础，所以user namespace非常重要。
 
-用于隔离安全相关的资源，包括 user IDs and group IDs，keys, 和 capabilities。同样一个用户的 user ID 和 group ID 在不同的 user namespace 中可以不一样(与 PID nanespace 类似)。换句话说，一个用户可以在一个 user namespace 中是普通用户，但在另一个 user namespace 中是超级用户。
+用于隔离安全相关的资源，包括 user IDs and group IDs，keys, 和 capabilities。同样一个用户的 user ID 和 group ID 在不同的 user namespace 中可以不一样(与 PID namespace 类似)。换句话说，一个用户可以在一个 user namespace 中是普通用户，但在另一个 user namespace 中是超级用户。
 
 非 root 进程也可以创建User Namespace ， 并且此用户在Namespace 里面可以被映射成root ， 且在Namespace 内有root 权限。
 
 //例如：子user namespace虽然是root权限，但是不能操作父user namespace的内容
 unshare --user -r /bin/bash
-hostname newname       //premisee deny, 因为此时的user namespace是不能操作父namespace的hostname
+hostname newname       //premiss deny, 因为此时的user namespace是不能操作父namespace的hostname
 
-//创建user namespace，并映射uid和gid
+//创建新的user namespace需要映射父user namespace的user id和group id到子user namespace中来
+dev@ubuntu: unshare --user -r /bin/bash
+nobody@ubuntu: readlink /proc/$$/ns/user
+  user:[4026532464]           //新的user namespace
+id                            //没有映射父的user namespace
+  uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)
+
+//映射user id和group id
+//映射ID的方法是添加配置到/proc/PID/uid_map和/proc/PID/gid_map（这里的PID是新user namespace中的进程ID，刚开始时这两个文件都是空的）
+nobody@ubuntu:~$ echo $$
+  24126
+dev@ubuntu：echo '0 1000 100' > /proc/24126/uid_map
+  write error: Operation not permitted         
+dev@ubuntu：echo '0 1000 100' > /proc/24126/gid_map
+  write error: Operation not permitted         
+dev@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)' //当前bash没有CAP_SETUID和CAP_SETGID的权限
+  CapInh: 0000000000000000
+  CapPrm: 0000000000000000
+  CapEff: 0000000000000000
+root@ubuntu: setcap cap_setgid,cap_setuid+ep /bin/bash      /赋予bash权限
+dev@ubuntu: exec bash                                      //重启bash   
+dev@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'
+  CapInh: 0000000000000000
+  CapPrm: 00000000000000c0
+  CapEff: 00000000000000c0
+dev@ubuntu: echo '0 1000 100' > /proc/24126/uid_map
+dev@ubuntu: echo '0 1000 100' > /proc/24126/gid_map
+root@ubuntu:~$ sudo setcap cap_setgid,cap_setuid-ep /bin/bash  //取消bash的权限
+nobody@ubuntu: id                                                 //映射成功
+  uid=0(root) gid=0(root) groups=0(root),65534(nogroup)
+nobody@ubuntu: exec bash                                          //重启bash
+root@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'       //表示当前运行的bash拥有所有的capability
+  CapInh: 0000000000000000
+  CapPrm: 0000003fffffffff
+  CapEff: 0000003fffffffff
+
+//一步到位创建user namespace，并映射uid和gid
 unshare --user -r /bin/bash
 ```
 
@@ -738,5 +774,89 @@ cgroup相关的所有操作都是基于内核中的cgroup virtual filesystem，�
           5456 dev       20   0   22640   5472   3524 R  20.3  1.1   0:04.62 bash
 ```
 
+### AUFS
+```
+//主要功能是把多个文件夹的内容合并到一起，提供一个统一的视图
+
+//查看/proc/filesystems中是否支持aufs文件系统
+
+(1) 挂载aufs
+mount -t aufs -o br=./Branch-0:./Branch-1:./Branch-2 none ./MountPoint
+-t aufs： 指定挂载类型为aufs
+-o br=./Branch-0:./Branch-1:./Branch-2： 表示将当前目录下的Branch-0，Branch-1，Branch-2三个文件夹联合到一起
+none：aufs不需要设备，只依赖于-o br指定的文件夹，所以这里填none即可
+./MountPoint：表示将最后联合的结果挂载到当前的MountPoint目录下，然后我们就可以往这个目录里面读写文件了
+
+//挂在后的目录显示
+              /*001.txt(b0)表示Branch-0的001.txt文件，其它的以此类推*/
+           +-------------+-------------+-------------+-------------+
+MountPoint | 001.txt(b0) | 002.txt(b2) | 003.txt(b0) | 004.txt(b1) |    
+           +-------------+-------------+-------------+-------------+
+                  ↑             ↑             ↑             ↑
+                  |             |             |             |
+           +-------------+-------------+-------------+-------------+
+Branch-0   |   001.txt   |             |   003.txt   |             |
+           +-------------+-------------+-------------+-------------+
+Branch-1   |   001.txt   |             |   003.txt   |   004.txt   |
+           +-------------+-------------+-------------+-------------+
+Branch-2   |             |   002.txt   |   003.txt   |             |
+           +-------------+-------------+-------------+-------------+
+
+(2) 只读挂载
+//挂载时，可以指定每个branch的读写权限，如果不指定的话，第一个目录将会是可写的，其它的目录是只读的，在实际使用时，最好是显示的指定每个branch的读写属性，这样大家都一眼就能看懂。
+tree
+  .
+  ├── dir0
+  │   ├── 001.txt
+  │   └── 002.txt
+  ├── dir1
+  │   ├── 002.txt
+  │   └── 003.txt
+  └── root
+sudo mount -t aufs -o br=./dir0=ro:./dir1=ro none ./root
+ls root/
+  001.txt  002.txt  003.txt
+  dir0     dir0     dir1
+
+(3) 读写挂载
+//如果联合的文件夹有写的权限，那么所有的修改都会写入可写的那个文件夹
+sudo mount -t aufs -o br=./dir0=rw:./dir1=ro none ./root
+echo "root->write" >> ./root/001.txt
+echo "root->write" >> ./root/002.txt
+echo "root->write" >> ./root/003.txt
+echo "root->write" >> ./root/005.txt
+ls ./root/
+  001.txt  002.txt  003.txt  005.txt
+ls ./dir0/                              //dir0改变
+  001.txt  002.txt  003.txt  005.txt
+ls ./dir1/                              //dir1不变
+  002.txt  003.txt 
+cat ./dir0/001.txt
+  dir0
+  root->write
+cat ./dir0/002.txt
+  dir0
+  root->write
+cat ./dir0/003.txt                      //写时复制dir1的003.txt文件
+  dir1
+  root->write
+cat ./dir0/005.txt
+  root->write
+
+
+(4) 删除文件
+//删除文件时，如果该文件只在rw目录下有，那就直接删除rw目录下的该文件，如果该文件在ro目录下有，那么aufs将会在rw目录里面创建一个.wh开头的文件，标识该文件已被删除
+rm ./root/001.txt ./root/002.txt ./root/003.txt ./root/005.txt
+tree
+  .
+  ├── dir0                  //dir0的文件全部删除
+  ├── dir1
+  │   ├── 002.txt
+  │   └── 003.txt
+  └── root                  //root为空
+//可以看到aufs为002.txt和003.txt新建了两个特殊的以.wh开头的文件，用来表示这两个文件已经被删掉了。这里其他.wh开头的文件都是aufs用到的一些属性文件
+ls ./dir0/ -a
+  .  ..  .wh.002.txt  .wh.003.txt  .wh..wh.aufs  .wh..wh.orph  .wh..wh.plnk
+```
 
 ### docker
