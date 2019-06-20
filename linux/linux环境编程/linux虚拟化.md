@@ -859,4 +859,269 @@ ls ./dir0/ -a
   .  ..  .wh.002.txt  .wh.003.txt  .wh..wh.aufs  .wh..wh.orph  .wh..wh.plnk
 ```
 
-### docker
+### image layer
+```
+镜像层都是只读的，不能往里面写数据。
+
+想写数据就需要在其上启动一层container layer，就是相当于把镜像启动成一个容器。在容器层，我们是可写的。
+
+子镜像与父镜像：
+上层的image依赖于下层的image，因此想要从一个image启动container，docker会先加载这个image和依赖的父image以及base image。
+```
+![](../../picture/14.png)
+
+
+### docker守护进程
+```
+https://www.jianshu.com/p/0dbf38703586
+
+当docker安装完毕后，默认启动docker守护进程，监听/var/docker/docker.sock这个unix套接字
+
+// 配置docker守护进程
+  sudo docker -d -H tcp://0.0.0.0:2371
+  sudo docker -d -H tcp://0.0.0.0:2371 unix://home/docker/docker.sock
+  // debug输出
+  DEBUG=1 sudo docker -d -H .....
+
+// 连接docker服务
+  docker -H :2371
+  //或者
+  export DOCKER_HOST="tcp://0.0.0.0:2371"
+  docker
+
+sudo docker -d 
+```
+
+### docker容器的启动
+```
+(1) 架构
+                              +------------+
+                              |            |
+                              | Docker Hub |
+                              |            |
+                              +------------+
+                                    ↑
+                                    |
+                                  2 | REST
+                                    |
+                                    ↓
+                               +---------+
++--------+       REST          |         |    grpc      +-------------------+
+| docker |<------------------->| dockerd |<------------>| docker-containerd |
++--------+         1           |         |      3       +-------------------+
+                               +---------+                       ↑
+                                                                 |
+                                                                 | 4
+                                                                 ↓
+                                                      +------------------------+  5   +-------------+
+                                                      | docker-containerd-shim |<---->| docker-runc |
+                                                      +------------------------+      +-------------+
+                                                                                             ↑
+                                                                                             | 6
+                                                                                             ↓
+                                                                                         +-------+
+                                                                                         | hello |
+                                                                                         +-------+
+// docker <--> dockerd
+  docker是客户端（常用的命令，感觉docker就是个发送http rest请求的软件）
+  dockerd是服务端守护进程。DOCKER的核心，参与image、container的管理、创建等
+
+// dockerd <--> "docker hub"
+ 当dockerd收到客户端的运行容器请求后，发现本地没有相应的镜像（image），就会从docker hub取相应image。
+ 为了确定image的异同，image提供manifests文件，它包含两部分内容，一是image的配置文件的digest(sha256)（理解为md5值），另一个是image包含的所有filesystem layer的digest(sha256)（镜像分层技术）
+
+// dockerd <--> docker-containerd
+  docker-containerd是和dockerd一起启动的后台进程，管理所有本机正在运行的容器。dockerd通过grpc的方式通知docker-containerd进程启动指定的容器
+
+// docker-containerd <--> docker-containerd-shim
+  docker-containerd-shim只负责管理一个运行的容器，相当于是对runc的一个包装，充当containerd和runc之间的桥梁
+  当docker-containerd收到dockerd的启动容器请求之后，会做一些初始化工作，然后启动docker-containerd-shim进程，并将相关配置所在的目录作为参数传给它
+
+// docker-containerd-shim <--> docker-runc
+  docker-containerd-shim进程启动后，就会按照runtime的标准准备好相关运行时环境，然后启动docker-runc进程  
+
+// docker-runc <--> hello
+  runc进程打开容器的配置文件，找到rootfs的位置，并启动配置文件中指定的相应进程，在hello-world的这个例子中，runc会启动容器中的hello程序。
+
+(2) 进程间的关系
+  等runc将容器启动起来后，runc进程就退出了，于是容器里面的第一个进程（hello）的父进程就变成了docker-containerd-shim
+  进程树的关系大概如下：
+  systemd───dockerd───docker-containerd───docker-containerd-shim───hello
+  docker-containerd-shim进程就是这个容器内所有进程的父进程
+```
+
+1、创建容器的详细步骤（利用curl模拟docker）
+```
+
+// 启动本机的dockerd服务
+
+// 请求dockerd创建hello-world容器
+curl 127.0.0.1:2375/v1.27/containers/create  -X POST -H "Content-Type: application/json" -d '{"Image": "hello-world"}'
+  {"message":"No such image: hello-world:latest"}
+
+// dockerd在本地找不到hello-world容器，于是去registery服务器拿image
+curl '127.0.0.1:2375/v1.27/images/create?fromImage=hello-world&tag=latest' -X POST
+  XXXXXXXXXX
+
+// 再次创建hello-world容器，可以得到容器ID
+curl 127.0.0.1:2375/v1.27/containers/create  -X POST -H "Content-Type: application/json" -d '{"Image": "hello-world"}'
+  {"Id":"2a4717ffb830bf4cff12ef6e6f1e93129970df273387797fd023e10292e3e928","Warnings":null}
+
+// attach到容器的标准输出，curl程序会暂停在这里，等待容器的输出
+curl '127.0.0.1:2375/v1.27/containers/2a4717ffb830bf4cff12ef6e6f1e93129970df273387797fd023e10292e3e928/attach?stderr=1&stdout=1&stream=1' -d '{"Connection": "Upgrade", "Upgrade":"tcp"}'
+
+// 启动容器
+curl 127.0.0.1:2375/v1.27/containers/2a4717ffb830bf4cff12ef6e6f1e93129970df273387797fd023e10292e3e928/start -X POST 
+
+```
+
+### image
+```
+                    +-----------------------+
+                    | Image Index(optional) |
+                    +-----------------------+
+                               |
+                               | 1..*
+                               ↓
+                    +----------------------+
+                    |    Image Manifest    |
+                    +----------------------+
+                               |
+                     1..1      |     1..*
+               +---------------+--------------+
+               |                              |
+               ↓                              ↓
+       +--------------+             +-------------------+
+       | Image Config |             | Filesystem Layers |
+       +--------------+             +-------------------+
+```
+
+1、Filesystem Layers
+```
+包含了文件系统的信息，即该image包含了哪些文件/目录，以及它们的属性和数据。
+```
+
+2、Image Config
+```
+{
+    "created": "2015-10-31T22:22:56.015925234Z",
+    "author": "Alyssa P. Hacker <alyspdev@example.com>",
+    "architecture": "amd64",
+    "os": "linux",
+    "config": {                                        //运行container时的默认参数
+        "User": "alice",
+        "ExposedPorts": {
+            "8080/tcp": {}
+        },
+        "Env": [
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "FOO=oci_is_a",
+            "BAR=well_written_spec"
+        ],
+        "Entrypoint": [
+            "/bin/my-app-binary"
+        ],
+        "Cmd": [
+            "--foreground",
+            "--config",
+            "/etc/my-app.d/default.cfg"
+        ],
+        "Volumes": {
+            "/var/job-result-data": {},
+            "/var/log/my-app-logs": {}
+        },
+        "WorkingDir": "/home/alice",
+        "Labels": {
+            "com.example.project.git.url": "https://example.com/project.git",
+            "com.example.project.git.commit": "45a939b2999782a3f005621a8d0f29aa387e1d6b"
+        }
+    },
+    "rootfs": {                                     //image所包含的filesystem layers
+      "diff_ids": [
+        "sha256:c6f988f4874bb0add23a778f753c65efe992244e148a1d2ec2a8b664fb66bbd1",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+      ],
+      "type": "layers"
+    },
+    "history": [
+      {
+        "created": "2015-10-31T22:22:54.690851953Z",
+        "created_by": "/bin/sh -c #(nop) ADD file:a3bc1e842b69636f9df5256c49c5374fb4eef1e281fe3f282c65fb853ee171c5 in /"
+      },
+      {
+        "created": "2015-10-31T22:22:55.613815829Z",
+        "created_by": "/bin/sh -c #(nop) CMD [\"sh\"]",
+        "empty_layer": true
+      }
+    ]
+}
+```
+
+3、manifest
+```
+manifest也是一个json文件，media type为application/vnd.oci.image.manifest.v1+json，这个文件包含了对前面filesystem layers和image config的描述，
+
+{
+  "schemaVersion": 2,
+  "config": {           //对image config文件的描述，有media type，文件大小，以及sha256码
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "size": 7023,
+    "digest": "sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7"
+  },
+  "layers": [      //对每一个layer的描述，和对config文件的描述一样
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "size": 32654,
+      "digest": "sha256:e692418e4cbaf90ca69d05a66403747baa33ee08806650b51fab815ad7fc331f"
+    },
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "size": 16724,
+      "digest": "sha256:3c3a4604a545cdc127456d94e421cd355bca5b528f4a9c1905b15da2eb4a4c6b"
+    },
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "size": 73109,
+      "digest": "sha256:ec4b8955958665577945c89419d1af06b5f7636b4ac3da7f12184802ad867736"
+    }
+  ],
+  "annotations": {
+    "com.example.key1": "value1",
+    "com.example.key2": "value2"
+  }
+}
+
+// 注意
+  这里layer的sha256和image config文件中的diff_ids有可能不一样，比如这里的layer文件格式是tar+gzip，那么这里的sha256就是tar+gzip包的sha256码，而diff_ids是tar+gzip解压后tar文件的sha256码
+```
+
+4、从register服务器拉image的过程
+```
+> 首先获取image的manifests
+> 根据manifests文件中config的sha256码，得到image config文件
+> 遍历manifests里面的所有layer，根据其sha256码在本地找，如果找到对应的layer，则跳过，否则从服务器取相应layer的压缩包
+> 等上面的所有步骤完成后，就会拼出完整的image
+```
+
+5、操作镜像
+```
+//列出镜像
+sudo docker images
+  REPOSITORY   TAG      IMAGE ID        CREATED      SIZE
+  debian       jessie   f50f9524513f    5 days ago   125.1 MB
+  debian       latest   f50f9524513f    5 days ago   125.1 MB
+
+//本地镜像都保存在/var/lib/docker目录下
+
+//拉取镜像ubuntu仓库中所有的内容（会得到一系列ubuntu镜像）
+sudo docker pull ubuntu
+
+//根据name[:tag|@digest]拉取镜像
+docker pull ubuntu:14.04
+docker pull ubuntu@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2
+
+//从不同的仓库拉取镜像
+//从一个镜像地址：myregistry.local:5000，拉取镜像文件：testing/test-image
+sudo docker pull myregistry.local:5000/testing/test-image
+
+```
