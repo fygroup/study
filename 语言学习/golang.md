@@ -964,3 +964,49 @@ b := []rune(a)  //转换unicode
 fmt.Println(len(b))  //5 ✔
 
 ```
+
+### net/http
+(1) 正确姿势
+```
+package main
+
+import (
+ "net/http"
+)
+
+func main() {
+
+ http.HandleFunc("/", func (w http.ResponseWriter, r *http.Request){
+
+
+   w.Header().Set("name", "my name is smallsoup")
+   w.WriteHeader(500)
+   w.Write([]byte("hello world\n"))
+
+ })
+
+ http.ListenAndServe(":8080", nil)
+}
+```
+
+### 前端显示图片
+```
+func showPic(w http.ResponseWriter, r *http.Request) {
+	f, err := os.Open("C:\\Users\\malx\\Pictures\\timg.jpg")
+	defer f.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	buf := make([]byte, 1024000)
+
+	_, err1 := f.Read(buf)
+	if err1 != nil {
+		fmt.Println(err1.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "image/jpg")
+	w.Header().Set("Content-Disposition", "inline; filename=\"picture.png\"")
+	w.Write(buf)
+}
+```
