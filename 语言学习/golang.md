@@ -3,6 +3,15 @@
 函数调用参数均为值传递，不是指针传递或引用传递。经测试引申出来，当参数变量为指针或隐式指针类型，参数传递方式也是传值（指针本身的copy）
 ```
 
+### 交叉编译
+```
+window -> linux
+SET CGO_ENABLED=0; set GOOS=linux; set GOARCH=amd64; go build main.go
+
+linux -> window
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build main.go
+```
+
 #### 数组与slice
 ```
 //数组是初始化就定长
@@ -1008,5 +1017,29 @@ func showPic(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/jpg")
 	w.Header().Set("Content-Disposition", "inline; filename=\"picture.png\"")
 	w.Write(buf)
+}
+```
+
+### 登陆
+```
+func login(client *http.Client) {
+	my := User{Userid: "malx", Password: "123456"}
+	x, _ := json.Marshal(my)
+	fmt.Println(string(x))
+	req, _ := http.NewRequest("POST", "http://10.10.100.14:8081/login", bytes.NewReader([]byte(string(x))))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "name=malx")
+	req.Header.Set("Connection", "keep-alive")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer resp.Body.Close()
+	fmt.Println(resp.Status)
+	cookie = resp.Header["Set-Cookie"][0]
+	fmt.Println(cookie)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
 }
 ```
