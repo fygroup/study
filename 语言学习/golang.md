@@ -1043,3 +1043,44 @@ func login(client *http.Client) {
 	fmt.Println(string(body))
 }
 ```
+
+### go-xorm
+```
+https://github.com/xormplus/xorm
+
+//xorm支持将一个struct映射为数据库中对应的一张表。
+
+(1) 映射
+    //struct
+    type PfSession struct {
+        SessionId  string    `xorm:"pk not null  VARCHAR(64)"`
+        ValueId    string    `xorm:"not null TEXT"`
+        Value      string    `xorm:"not null TEXT"`
+        Createtime time.Time `xorm:"default '0000-00-00 00:00:00' DATETIME"`
+        Motifytime time.Time `xorm:"default CURRENT_TIMESTAMP TIMESTAMP"`
+        Enable     string    `xorm:"not null  default 'T' VARCHAR(1)"`
+    }
+    //mysql
+    CREATE TABLE `pf_session` (
+    `session_id` varchar(64) NOT NULL,
+    `value_id` text NOT NULL,
+    `value` text NOT NULL,
+    `createtime` datetime DEFAULT '0000-00-00 00:00:00',
+    `motifytime` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `enable` varchar(1) NOT NULL DEFAULT 'T',
+    PRIMARY KEY (`session_id`)
+    ) ENGINE=MyISAM DEFAULT CHARSET=utf8
+    //三种方式
+    > engine.SetTableMapper(core.NewPrefixMapper(core.SnakeMapper{}, "pf_"))
+        type session struct
+    > engine.SetTableMapper(core.SameMapper{})
+        type session struct
+    > engine.SetTableMapper(core.SnakeMapper{})
+        type PfSession struct
+
+(2) ORM方式操作数据库
+    
+
+(3) 事务模型
+
+```

@@ -612,6 +612,8 @@ https://www.cnblogs.com/lvyahui/p/7389554.html
 ---
 ### syslog
 ```
+https://dearhwj.gitbooks.io/itbook/content/linux/linux_syslogd.html
+
 开机运行，由systemd启动的：
 systemctl enable rsyslog
 systemctl start rsyslog
@@ -639,7 +641,7 @@ https://blog.csdn.net/yuyin1018/article/details/80301274
 void openlog(const char* ident, int option, int facility);
     ident: 被加到日志中的程序名
     option: 常用值LOG_PID即包含每个消息的pid
-    facility: 记录日志的程序的类型，配置文件可根据不同的登录类型来区别处理消息，常用值                   LOG_DAEMON即其它系统守护进程，一般为自己创建的守护进程
+    facility: 记录日志的程序的类型，配置文件可根据不同的登录类型来区别处理消息，常用值,这个值决定你的日志输出到哪个log文件。 LOG_DAEMON即其它系统守护进程，一般为自己创建的守护进程
 
 void syslog(int priority, const char* format, ...);
     priority:  优先级，说明消息的重要性，可取值如下： 
@@ -647,6 +649,21 @@ void syslog(int priority, const char* format, ...);
 
 void closelog(void);
 
+//add syslog facility
+在/usr/include/sys/syslog.h中系统已经定义了不同log设备的宏，又提供了15个LOG_LOCAL可用于私人定制的log。
+/* other codes through 15 reserved for system use */
+#define LOG_LOCAL0      (16<<3) /* reserved for local use */
+#define LOG_LOCAL1      (17<<3) /* reserved for local use */
+#define LOG_LOCAL2      (18<<3) /* reserved for local use */
+#define LOG_LOCAL3      (19<<3) /* reserved for local use */
+#define LOG_LOCAL4      (20<<3) /* reserved for local use */
+#define LOG_LOCAL5      (21<<3) /* reserved for local use */
+#define LOG_LOCAL6      (22<<3) /* reserved for local use */
+#define LOG_LOCAL7      (23<<3) /* reserved for local use */
+所以如果要新建自己的syslog，那么在规则配置添加
+LOG_LOCAL0.*    /var/log/my.log
+在程序中
+openlog('my', LOG_PID, LOG_LOCAL0)
 ```
 
 ---
