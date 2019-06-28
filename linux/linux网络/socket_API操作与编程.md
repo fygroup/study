@@ -89,3 +89,39 @@ if(bind(fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
 ```
 
 ```
+
+
+
+### accept
+```
+https://www.cnblogs.com/wangcq/p/3520400.html
+
+三次握手发生在这一步
+
+TCP服务器端依次调用socket()、bind()、listen()之后，就会监听指定的socket地址了。TCP客户端依次调用socket()、connect()之后就想TCP服务器发送了一个连接请求。TCP服务器监听到这个请求之后，就会调用accept()函数取接收请求，这样连接就建立好了。之后就可以开始网络I/O操作了，即类同于普通文件的读写I/O操作。
+
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+参数1：服务器的socket描述字
+参数2：客户端的协议地址
+参数3：第三个参数为协议地址的长度
+返回值：由内核自动生成的一个全新的描述字，代表与返回客户的TCP连接。
+
+注意：内核为每个由服务器进程接受的客户连接创建了一个已连接socket描述字，当服务器完成了对某个客户的服务，相应的已连接socket描述字就被关闭。
+```
+
+### read/writed的返回
+```
+(1) 对于阻塞socket
+    能read时，读缓冲区没有数据，或者write时，写缓冲区满了。这是就发生阻塞，如果返回-1代表网络出错了
+(2) 对于非阻塞socket
+    不能read或write时，就会返回-1，同时errno设置为EAGAIN（再试一次）。
+```
+
+### tcp输出
+```
+用户空间        内核
+应用   ----->   TCP  ------------------------------>    IP  ----------->  输出
+缓冲区          套接字发送缓冲区（SO_SNDBUF）             MTU大小分组
+                MSS大小的TCP分节
+                通常MSS<=MTU-40(IPv4) 或 MTU-60(IPv6)
+```

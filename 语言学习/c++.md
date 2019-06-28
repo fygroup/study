@@ -1402,18 +1402,19 @@ WIFSIGNALED(status) //判断是否被杀死
 
 ---
 #### fd设置
-fd非阻塞
+
 ```
-int val;
-if ((val = fcntl(fd[0], F_GETFL, 0)) < 0){
-	cout << "[error]: fcntl" << endl;
-	exit(-1);
-}
-val |= O_NONBLOCK;                          //先取出val,再设置
-if (fcntl(fd[0], F_SETFL, val) < 0){
-	cout << "[error]: fcntl" << endl;
-	exit(-1);
-}
+(1) 设置fd非阻塞
+    int val;
+    if ((val = fcntl(fd, F_GETFL, 0)) < 0){
+        cout << "[error]: fcntl" << endl;
+        exit(-1);
+    }
+    val |= O_NONBLOCK;                          //先取出val,再设置
+    if (fcntl(fd, F_SETFL, val) < 0){
+        cout << "[error]: fcntl" << endl;
+        exit(-1);
+    }
 ```
 
 ---

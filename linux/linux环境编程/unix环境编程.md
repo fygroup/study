@@ -794,3 +794,13 @@ CAP_LEASE:允许修改文件锁的FL_LEASE标志
 
 (2) 
 ```
+
+### perror
+```
+#include <perror.h>
+
+当linux的系统C api函数发生异常时,一般会将errno变量赋一个整数值,不同的值表示不同的含义
+
+void perror(const char *s)
+用来将上一个函数发生错误的原因输出到标准错误(stderr)
+```
