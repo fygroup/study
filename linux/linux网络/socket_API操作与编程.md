@@ -109,7 +109,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 注意：内核为每个由服务器进程接受的客户连接创建了一个已连接socket描述字，当服务器完成了对某个客户的服务，相应的已连接socket描述字就被关闭。
 ```
 
-### read/writed的返回
+### read/write的返回
 ```
 (1) 对于阻塞socket
     能read时，读缓冲区没有数据，或者write时，写缓冲区满了。这是就发生阻塞，如果返回-1代表网络出错了
