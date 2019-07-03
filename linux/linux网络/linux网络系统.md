@@ -1,4 +1,20 @@
-### 虚拟网络系统
+### 内核分层模型
+```
+                应用程序
+                C标准库
+用户空间         
+-------------------------------------                
+内核空间
+   应用层       struct socket, struct sock
+   传输层       struct proto(TCP, UDP)
+   网络层       struct packet_type(IP)         
+   主机到网络层  dev.c
+                struct net_device
+                driver.c
+                硬件
+```
+
+### Linux从硬件到内部传输
 ```
 https://www.jianshu.com/p/9770fe312453
 
@@ -155,8 +171,8 @@ https://www.jianshu.com/p/9770fe312453
 
 //驱动处理内存数据
 7： 内核中的ksoftirqd进程专门负责软中断的处理，当它收到软中断后，就会调用相应软中断所对应的处理函数，对于上面第6步中是网卡驱动模块抛出的软中断，ksoftirqd会调用网络模块的net_rx_action函数
-8： net_rx_action调用网卡驱动里的poll函数来一个一个的处理数据包
-9： 在pool函数中，驱动会一个接一个的读取网卡写到内存中的数据包，内存中数据包的格式只有驱动知道
+8： net_rx_action调用网卡驱动里的poll(sys_poll, io多路复用poll、select都调用这个函数)函数来一个一个的处理数据包
+9： 在poll函数中，驱动会一个接一个的读取网卡写到内存中的数据包，内存中数据包的格式只有驱动知道
 10： 驱动程序将内存中的数据包转换成内核网络模块能识别的skb格式，然后调用napi_gro_receive函数
 11： napi_gro_receive会处理GRO相关的内容，也就是将可以合并的数据包进行合并，这样就只需要调用一次协议栈。然后判断是否开启了RPS，如果开启了，将会调用enqueue_to_backlog
 12： 在enqueue_to_backlog函数中，会将数据包放入CPU的softnet_data结构体的input_pkt_queue中，然后返回，如果input_pkt_queue满了的话，该数据包将会被丢弃，queue的大小可以通过net.core.netdev_max_backlog来配置
@@ -242,3 +258,4 @@ socket B将数据包丢给协议栈
 
 eth0通过物理网络将数据包发送出去
 ```
+
