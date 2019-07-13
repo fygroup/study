@@ -155,3 +155,22 @@ new Vue.extend({
 ```
 
 ```
+
+---
+### 小心store-getter
+```
+store的getter，不能进行watch！！！
+必须将其赋值，然后对赋值进行监听
+```
+
+---
+### v-if
+```
+不存在:v-if的用法
+```
+
+---
+### props watch mounted
+```
+监听props要谨慎，如果监听的参数需要驱动一些东西的话，最好放在mounted中。因为组件的v-if创建，并不会刷新props，不会被watch监听，除非此组建已存在
+```

@@ -1,6 +1,146 @@
 C++笔记
 |编译器为我们做了大量的优化工作，不要以为什么都理所应当
 
+### 参考
+```
+https://zh.cppreference.com/w/%E9%A6%96%E9%A1%B5
+
+
+//注意区分c/c++语言库与linux系统库
+
+(1) 概念库
+    <concepts> (C++20 起)	基础库概念
+
+(2) 协程库
+    <coroutine> (C++20 起)	协程支持库
+
+(3) 工具库
+    <cstdlib>	通用工具：程序控制、动态内存分配、随机数、排序与搜索
+    <csignal>	信号管理的函数与宏常量
+    <csetjmp>	保存执行语境的宏，及跳转到某个执行语境的函数
+    <cstdarg>	变长实参列表的处理
+    <typeinfo>	运行时类型信息工具
+    <typeindex> (C++11 起)	std::type_index
+    <type_traits> (C++11 起)	编译时类型信息
+    <bitset>	std::bitset 类模板
+    <functional>	函数对象、函数调用、绑定操作、引用包装
+    <utility>	多种工具组件
+    <ctime>	C 风格的时间/日期工具
+    <chrono> (C++11 起)	C++ 时间工具
+    <cstddef>	标准宏和 typedef
+    <initializer_list> (C++11 起)	std::initializer_list 类模板
+    <tuple> (C++11 起)	std::tuple 类模板
+    <any> (C++17 起)	std::any 类
+    <optional> (C++17 起)	std::optional 类模板
+    <variant> (C++17 起)	std::variant 类模板
+    <compare> (C++20 起)	三路比较运算符支持
+    <version> (C++20 起)	提供依赖于实现的库信息
+
+(4) 动态内存管理
+    <new>	低层内存管理工具
+    <memory>	高层内存管理工具
+    <scoped_allocator> (C++11 起)	嵌套分配器类
+    <memory_resource> (C++17 起)	多态分配器及内存资源
+
+(5) 数值界限
+    <climits>	整型类型的界限
+    <cfloat>	浮点类型的界限
+    <cstdint> (C++11 起)	定长整数及其他类型的界限
+    <cinttypes> (C++11 起)	格式化宏、 intmax_t 及 uintmax_t，数学工具及转换
+    <limits>	查询算术类型属性的标准化方式
+
+(6) 错误处理
+    <exception>	异常处理工具
+    <stdexcept>	标准异常对象
+    <cassert>	将其实参与零比较的条件性编译宏
+    <system_error> (C++11 起)	定义 std::error_code，依赖于平台的错误码
+    <cerrno>	含有最近一次错误号的宏
+    <contract> (C++20 起)	契约违规信息
+
+(7) 字符串库
+    <cctype>	确定字符数据中所含类型的函数
+    <cwctype>	确定宽字符数据中所含类型的函数
+    <cstring>	多种窄字符串处理函数
+    <cwchar>	多种宽及多字节字符串处理函数
+    <cuchar> (C++11 起)	C 风格 Unicode 字符转换函数
+    <string>	std::basic_string 类模板
+    <string_view> (C++17 起)	std::basic_string_view 类模板
+    <charconv> (C++17 起)	std::to_chars 与 std::from_chars
+
+(8) 容器库
+    <array> (C++11 起)	std::array 容器
+    <vector>	std::vector 容器
+    <deque>	std::deque 容器
+    <list>	std::list 容器
+    <forward_list> (C++11 起)	std::forward_list 容器
+    <set>	std::set 及 std::multiset 关联容器
+    <map>	std::map 及 std::multimap 关联容器
+    <unordered_set> (C++11 起)	std::unordered_set 及 std::unordered_multiset 无序关联容器
+    <unordered_map> (C++11 起)	std::unordered_map 及 std::unordered_multimap 无序关联容器
+    <stack>	std::stack 容器适配器
+    <queue>	std::queue 及 std::priority_queue 容器适配器
+    <span> (C++20 起)	std::span 视图
+
+(9) 迭代器库
+    <iterator>	范围迭代器
+
+(10) 范围库
+    <ranges> (C++20 起)	范围访问、原语、要求、工具及适配器
+
+(11) 算法库
+    <algorithm>	对范围操作的算法
+    <execution> (C++17 起)	针对算法的并行版本的预定义执行策略
+
+(12) 数值库
+    <cmath>	常用数学函数
+    <complex>	复数类型
+    <valarray>	表示和操作值的数组的类
+    <random> (C++11 起)	随机数生成器及分布
+    <numeric>	容器中值的数值运算
+    <ratio> (C++11 起)	编译时有理数算术
+    <cfenv> (C++11 起)	浮点环境访问函数
+    <bit> (C++20 起)	位操纵函数
+
+(13) 输入/输出库
+    <iosfwd>	所有输入/输出库中的类的前置声明
+    <ios>	std::ios_base 类、std::basic_ios 类模板及数个 typedef
+    <istream>	std::basic_istream 类模板及数个 typedef
+    <ostream>	std::basic_ostream、std::basic_iostream 类模板及数个 typedef
+    <iostream>	数个标准流对象
+    <fstream>	std::basic_fstream、std::basic_ifstream、std::basic_ofstream 类模板及数个typedef
+    <sstream>	std::basic_stringstream、std::basic_istringstream、std::basic_ostringstream 类模板及数个 typedef
+    <syncstream> (C++20 起)	std::basic_osyncstream、std::basic_syncbuf 及 typedef
+    <strstream> (C++98 中弃用)	std::strstream、std::istrstream、std::ostrstream
+    <iomanip>	控制输入输出格式的辅助函数
+    <streambuf>	std::basic_streambuf 类模板
+    <cstdio>	C 风格输入输出函数
+
+(14) 本地化库
+    <locale>	本地化工具
+    <clocale>	C 本地化工具
+    <codecvt> (C++11 起)(C++17 中弃用)	Unicode 转换设施
+
+(15) 正则表达式库
+    <regex> (C++11 起)	支持正则表达式处理的类、算法及迭代器
+
+(16) 原子操作库
+    <atomic> (C++11 起)	原子操作库
+
+(17) 线程支持库
+    <thread> (C++11 起)	std::thread 类及支持函数
+    <mutex> (C++11 起)	互斥原语
+    <shared_mutex> (C++14 起)	共享的互斥原语
+    <future> (C++11 起)	异步计算的原语
+    <condition_variable> (C++11 起)	线程等待条件
+
+(18) 文件系统库
+    <filesystem> (C++17 起)	std::path 类及 支持函数
+
+
+
+
+```
+
 ```
 #include <iostream>
 #include <string>
@@ -864,8 +1004,8 @@ public:
 };
 int main(){
 	A x;
-	x = A(5);      //此时新建A(5)，然后在销毁，a已经不存在了！
-	x.a[0] = 'a';
+	x = A(5);      //此时新建A(5)属于左值，马上就会销毁，A(5)中的a已经不存在了！
+	x.a[0] = 'a';  //error
 }	
 //---char to int----------------------------------------------------------------
 如果c默认初始化值（依赖编译平台）大于128那么X为负值，如果没有初始化，按以下处理也不会为负值
@@ -1005,7 +1145,7 @@ list<my::MY*> my::a;
 #### operator重载template
 ```
 template<typename T>
-class {
+class my {
     template<typename T1>
     friend my<T1> & operator *(my<T1> & my1, my<T1> & my2){  //friend 
 	    my1.i *= my2.i;
@@ -1096,6 +1236,7 @@ class a<int>{};
 ---
 #### 宏
 ```
+__COUNTER__: 递增数。但是这个宏不能重新置0
 __LINE__：在源代码中插入当前源代码行号；
 __FILE__：在源文件中插入当前源文件名；
 __DATE__：在源文件中插入当前的编译日期
@@ -1110,7 +1251,7 @@ __cplusplus：当编写C++程序时该标识符被定义。
 //在类中用未定义的T,必须以下这么用！！！
 typename base<T>::Nest temp;
 typedef typename iterator_traits<T>::value_type value_type;
-valuetype tmp(xxx)
+value_type tmp(xxx)
 ```
 
 ---
@@ -1594,6 +1735,12 @@ for_each(b.begin(),b.end(),[](int& x){cout << x << endl;});
 ---
 #### RTTI
 ```
+RTTI(Run Time Type Identification)即通过运行时类型识别，程序能够使用基类的指针或引用来检查着这些指针或引用所指的对象的实际派生类型。
+
+RTTI提供了两个非常有用的操作符：typeid和dynamic_cast。
+typeid操作符，返回指针和引用所指的实际类型；
+dynamic_cast操作符，将基类类型的指针或引用安全地转换为其派生类类型的指针或引用。
+
 //type_info类
 //typeid操作符
 //type_index类
@@ -1606,6 +1753,7 @@ std::cout << "tiInt.name = " << tiInt.name() << std::endl;
 class A{};
 std::unordered_map<std::type_index, std::string> type_names;
 type_names[std::type_index(typeid(A))] = "A";
+
 ```
 
 ---
@@ -1749,4 +1897,107 @@ int main(){
 由于C++对象的生命周期需要程序员自己管理，因此析构可能出现竞态尤其是在多线程下，一个对象可以被多个线程访问时，下列情形：
 1、即将析构一个对象时从何得知其它线程是否在操作该对象
 2、若某个线程正欲操作对象时，如何得知其它线程是否在析构该对象，且正析构一半....
+```
+
+### 实例化与具体化
+```
+(1) 显示实例化：  
+    template  void  Swap<int> (int ,int);
+    显示实例化可以直接命令编译器创建特定的实例
+    存在以下模板函数
+    template <typename T>
+    void Swap(T &a, T &b)
+    > 第一种方式是声明所需的种类，用<>符号来指示类型，并在声明前加上关键词template，如下：
+        template void Swap<int>(int &, int &);
+    > 第二种方式是直接在程序中使用函数创建，如下：
+        Swap<int>(a,b);
+    显式实例化直接使用了具体的函数定义，而不是让程序去自动判断。
+
+(2) 隐式实例化
+    就是最正常的调用，Swap(a,b)
+
+(3) 显示具体化：  
+    template <> void Swap<int> (int,int);
+    显式具体化在声明后，必须要有具体的实现，这是与显示实例化不同的地方。
+
+```
+
+### c++11 mutex lock
+```
+#include <mutex>
+
+```
+
+### class -> static function-> static variable
+```
+class中的static函数中放置此函数自己使用的变量
+//例如
+class A
+{
+public:
+    static StaticFunc (){
+        static std::mutex mutex;    //此变量StaticFun独有，没必要写到外面
+        static size_t count = 0;
+        std::unique_lock<std::mutex> lock(mutex);//加锁，析构时释放该锁
+        count++;
+    }
+};
+
+```
+
+### 遍历对象
+```
+
+```
+
+### 工厂模式
+```
+工厂   --->  产品
+抽象工厂     抽象产品
+具体工厂     具体产品
+```
+
+### 序列化
+```
+```
+
+### 反射
+```
+
+
+// 反射是程序获取自身信息的能力
+
+// 作用
+    可以用于动态创建类型，跨语言跨平台数据交互，持久化，序列化等等。
+    包含以下功能：
+        枚举所有member
+        获取member的name和type
+        能够get/set　member
+
+// c++实现方法
+    运行期支持
+    宏
+
+
+    
+
+
+
+```
+
+### 容器怎么存放不同类型的值
+```
+https://www.zhihu.com/question/33594512?sort=created
+
+(1) 相关库 std::any std::variant
+
+(2) 原理
+    底层是union和void*实现，union存储基础类型，里面的void*存储自定义类型，再加一个type字段存储类型编号即可
+    type ---> typeid ---> copyConstruct[typeid] ---> new type()
+
+    > 注册类型 copyConstruct[typeid] = TypeCopyConstruct
+    > 赋值 ptr = new copyConstruct[typeid](value)
+    > 取值switch typeid type return value
+
+
 ```
