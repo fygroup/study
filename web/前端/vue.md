@@ -174,3 +174,49 @@ store的getter，不能进行watch！！！
 ```
 监听props要谨慎，如果监听的参数需要驱动一些东西的话，最好放在mounted中。因为组件的v-if创建，并不会刷新props，不会被watch监听，除非此组建已存在
 ```
+
+---
+### input 修改值
+```
+<Input v-model="value" @on-change="change"/>
+
+data(){
+  return {
+    value: ''
+  }
+},
+methods:{
+  change(x){
+    this.$nextTick(()=>{
+      this.value = 'xxxxx'
+    })
+  }
+}
+
+
+
+```
+
+### icon原始点击
+```
+<Icon @click.native="collapsedSider" .../>
+```
+
+### drawer在容器中展示
+```
+注意：
+position:relative 表示在当前的div里面
+如果不加就会在上一级的容器里面
+
+
+<div style="position:relative;width: 800px;height: 600px;border: 1px solid pink;">
+<div style="position:relative;width: 500px;height: 400px;border: 1px solid pink;">
+    <Button @click="value1 = true" type="primary">Open</Button>
+    <Drawer title="Basic Drawer" :closable="false" v-model="value1" inner :transfer="false">
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+    </Drawer>
+</div>  
+</div>  
+```

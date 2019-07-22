@@ -391,7 +391,7 @@ TiXmlElement* first_child = root->FirstChildElement("task"); // 第一个task子
 TiXmlNode* first_child = root->FirstChild("task");	//第一个task子节点
 
 TiXmlNode* Node = Node->NextSibling() //下一个兄弟节点
-TiXmlNode* element = Node->NextSiblingElement() //下一个兄弟节点
+TiXmlNode* element = Node->NextSiblingElement() //下一个兄弟元素
 TiXmlElement* element = root->NextSiblingElement("task"); //下一个"task"兄弟元素
 
 task->value();//元素的名字
@@ -1184,8 +1184,36 @@ str << "abc" << 2 << "dda";
 ```
 
 ---
-#### 构造函数私有化
+#### 构造函数private
+```
 对于class本身，可以利用它的static公有成员，因为它们独立于class对象之外，不必产生对象也可以使用它们
+
+如果在外部使用private构造函数：
+(1) 添加friend
+    class Obj{
+    public:
+        friend class Obj1;    
+    private:
+        Obj(){};
+    };
+
+    class Obj1{
+        Obj CreateObj(){
+            return Obj();  //可以使用Obj里的private
+        }
+    }
+
+(2) static调用
+    class Obj{
+    public:
+        static Obj CreateObj(){
+            return Obj()
+        }
+    private:
+        Obj(){}    
+    };
+    Obj a = Obj::CreateObj();
+```
 
 ---
 #### 获取文件绝对路径
@@ -1246,17 +1274,17 @@ __cplusplus：当编写C++程序时该标识符被定义。
 ```
 
 ---
-#### typename
-```
-//在类中用未定义的T,必须以下这么用！！！
-typename base<T>::Nest temp;
-typedef typename iterator_traits<T>::value_type value_type;
-value_type tmp(xxx)
-```
-
----
 #### 虚函数
-继承必须是指针或引用才能动态编译。
+```
+//要实现C++的多态性必须要用到虚函数，并且还要使用引用或者指针
+
+//需要注意：
+    只有类的成员函数才能声明为虚函数，虚函数仅适用于有继承关系的类对象。普通函数不能声明为虚函数。
+    静态成员函数不能是虚函数，因为静态成员函数不受限于某个对象。
+    内联函数（inline）不能是虚函数，因为内联函数不能在运行中动态确定位置。
+    构造函数不能是虚函数。
+    析构函数可以是虚函数，而且建议声明为虚函数。
+```
 
 ---
 #### 模板类初始化(构造函数里)
@@ -1578,7 +1606,7 @@ A b=a;  //拷贝构造创建对象b
 ```
 
 ---
-#### 右值引用的深思
+#### 右值引用
 编译选项-fno-elide-constructors用来关闭返回值优化效果
 
 1、值优化的重要性
@@ -1860,6 +1888,13 @@ enum class Color {red,yellow,blue};
 Color myColor = Color::red; 
 ```
 
+### enum c++98
+```
+enum My{a=1,b,c};
+
+My a = a;
+```
+
 #### 智能指针不能当右值
 ```
 void* a = NULL;
@@ -1973,8 +2008,6 @@ public:
 
 ### 反射
 ```
-
-
 // 反射是程序获取自身信息的能力
 
 // 作用
@@ -1988,10 +2021,7 @@ public:
     运行期支持
     宏
 
-
-    
-
-
+//了解yuanzhibi的实现方式 https://github.com/yuanzhubi/reflect_struct/blob/master/test.cpp
 
 ```
 
@@ -2010,4 +2040,261 @@ https://www.zhihu.com/question/33594512?sort=created
     > 取值switch typeid type return value
 
 
+```
+
+### 指针operator
+```
+this->operator[](3)
+```
+
+### enum和union
+```
+class ValueObj {
+public:
+
+}
+```
+
+### union也可以这么用
+```
+//可以在union里面定义类型，也可以定义构造函数
+
+//注意：union cannot define non-POD as member data, 对于这种情况直接用指针得了
+
+union PopupInfo
+{
+	struct _s1 { NativePoint location; INativeScreen* screen; };
+	struct _s2 { GuiControl* control; INativeWindow* controlWindow; Rect bounds; bool preferredTopBottomSide; };
+	struct _s3 { GuiControl* control; INativeWindow* controlWindow; Point location; };
+	struct _s4 { GuiControl* control; INativeWindow* controlWindow; bool preferredTopBottomSide; };
+
+	_s1 _1;
+	_s2 _2;
+	_s3 _3;
+	_s4 _4;
+
+	PopupInfo() {}
+};
+
+union My {
+    vector<int>* a;
+    map<int,int>* b;
+    vector<int> c;  //错误
+}
+```
+
+### struct :
+```
+C语言又提供了一种数据结构，称为“位域”或“位段”。所谓“位域”是把一个字节中的二进位划分为几个不同的区域，并说明每个区域的位数
+
+struct bs { 
+    int a:8; 
+    int b:2; 
+    int c:6; 
+} data;
+ 
+data为struct bs的变量，其中位域a占8位，位域b占2位，位域c占6位
+```
+
+### POD类型(旧数据类型)
+```
+
+```
+
+### 明确构造、析构、copy构造、拷贝
+```
+template<typename T>
+class Object {
+public:
+    Object();                                       //默认构造
+    virtual ~Object(){}                             //析构
+    Object(const Object &);                         //拷贝构造
+    template<typename T1>
+    Object(const Object<T1> &);                     //泛化的拷贝构造   
+    Object<T> & operator=(const Object<T> & ob)     //拷贝
+    template<typename T1>
+    Object<T> & operator=(const Object<T1> & ob)    //泛化拷贝
+public:
+    Object create(){}                               //新建    
+    void clean(){}                                  //清除
+    void swap(Object & ob){}                        //交换
+}；
+```
+
+### friend调用
+```
+
+class Point
+{
+public:
+      Point(double xx,double yy)
+      {
+          x=xx;
+          y=yy;
+      }
+      void GetXY();
+      friend double Distance(Point &a,Point &b);
+protected:
+private:
+      double x,y;
+};
+
+Point p1(3.0,4.0),p2(6.0,8.0);
+double d = Distance(p1,p2);     //友元函数的调用方法，同普通函数的调用一样，不要像成员函数那样调用
+```
+
+### new
+```
+//可以这样调用
+    ::operator new()
+    ::operatot delete()
+
+// C++ 两个实现
+1. 分配空间： 调用函数 operator new 来实现。 new T [3]; new T()
+2. 调用构造函数： 调用 placement new 来实现。(在一个 已经分配好的空间上，调用构造函数，创建一个类)
+    new(void*) T [3]; new(void*) T()
+```
+
+### allocator
+```
+https://zhuanlan.zhihu.com/p/34725232
+//allocator是STL的重要组成,allocator除了负责内存的分配和释放，还负责对象的构造和析构
+//例如大部分STL都会有以下用法
+    std::vector<int> v;
+    等价于
+    std::vector<int, allocator<int>> v;
+
+(1) 重要用法
+    // 以下几种自定义类型是一种type_traits技巧
+        allocator::value_type
+        allocator::pointer
+        allocator::const_pointer
+        allocator::reference
+        allocator::const_reference
+        allocator::size_type
+        allocator::difference
+    // 配置空间，足以存储n个T对象。第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
+        pointer allocator::allocate(size_type n, const void* = 0)
+    // 释放先前配置的空间
+        void allocator::deallocate(pointer p, size_type n)
+    // 调用对象的构造函数，等同于 new((void*)p) value_type(x)
+        void allocator::construct(pointer p, const T& x)
+    // 调用对象的析构函数，等同于 p->~T()
+        void allocator::destroy(pointer p)
+```
+
+### 可变参数实例
+```
+class DetailAnno {
+public:
+    static vector<string> spl;
+    template<typename T, typename... Argv>
+    static void Init(const T str_, Argv... argvs);
+    static void Init(){}
+
+public:
+    DetailAnno(){}
+    virtual ~DetailAnno(){}
+    DetailAnno(const DetailAnno & d) = default;
+    DetailAnno & operator=(const DetailAnno & d) = default;
+};
+
+vector<string> DetailAnno::spl;
+
+template<typename... Argv>
+void DetailAnno::Init<string, Argv...>(const string str_, Argv... argvs){
+    DetailAnno::spl.push_back(str_);
+    DetailAnno::Init(argvs...);
+}
+```
+
+### 模板类偏特化(指针)
+```
+template<typename T>
+struct My{
+    T a;
+};
+
+template<typename T>
+struct My<T*> {
+    T* a;
+};
+```
+
+### 类模板中的模板函数
+```
+template<typename T>
+class My{
+public:
+    typedef T type_name;    
+private:
+    T t;   
+    My(){} 
+public:
+    My(T t_):t(t_){}
+    virtual ~My(){}
+    My(const My<T> & m) = default;
+    template<typename T1>
+    My(const My<T1> & m);
+    T & operator=(const My<T> m) = default;
+};
+
+template<typename T>
+template<typename T1>
+My<T>::My(const My<T1> & m){
+    t = static_cast<T>(m.t);
+}
+
+```
+
+### Traits Classes 
+```
+// 在 C++ 中，traits 习惯上总是被实现为 struct ，但它们往往被称为 traits classes。Traits classes 的作用主要是用来为使用者提供类型信息。
+
+//  STL 中，容器与算法是分开的，容器与算法之间通过迭代器联系在一起
+
+https://www.cnblogs.com/mangoyuan/p/6446046.html
+https://cloud.tencent.com/info/a180e28f80b999eb22700e2407fc0957.html
+https://blog.csdn.net/lihao21/article/details/55043881
+
+//函数的“template参数推导机制”推导的只是参数，无法推导函数的返回值类型
+
+template <class I>
+struct iterator_traits {
+    typedef typename I::value_type value_type;
+};
+
+template <class I>
+struct iterator_traits<T*> {
+    typedef T value_type;
+};
+
+template <class I> typename iterator_traits<I>::value_type
+func(I ite) {
+    return *ite;
+}
+
+// 我们就可以知道模板类和指针的类型信息
+```
+
+### value_type
+```
+//对于大部分STL都适用
+
+vector<int>::iterator::value_type a = 1;
+等价于
+int a = 1;
+template <class T, ...>
+
+//这种技术也叫萃取
+
+class vector {
+public:
+    class iterator {
+    public:
+        typedef T value_type;
+        ...
+    };
+...
+};
 ```
