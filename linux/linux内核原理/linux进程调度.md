@@ -69,6 +69,16 @@ clone(CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND, 0);
 //CLONE_FILES 父子进程共享打开的文件
 //CLONE_FS共享文件系统信息
 //CLONE_VM共享地址空间
+
+其他的
+CLONE_PARENT	创建的子进程的父进程是调用者的父进程，新进程与创建它的进程成了“兄弟”而不是“父子”
+CLONE_NEWNS	在新的namespace启动子进程，namespace描述了进程的文件hierarchy
+CLONE_SIGHAND	子进程与父进程共享相同的信号处理（signal handler）表
+CLONE_PTRACE	若父进程被trace，子进程也被trace
+CLONE_VFORK	父进程被挂起，直至子进程释放虚拟内存资源
+CLONE_PID	子进程在创建时PID与父进程一致
+CLONE_THREAD	Linux 2.4中增加以支持POSIX线程标准，子进程与父进程共享相同的线程群
+
 ```
 
 (2)内核线程

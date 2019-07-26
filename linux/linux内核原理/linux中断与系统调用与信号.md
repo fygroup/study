@@ -48,6 +48,8 @@ static irqreturn_t handler(int irq, void* dev) //返回值其实是一个int
 
 #### 中断机制
 ```
+https://www.cnblogs.com/wlei/articles/2490011.html
+
 设备产生中断，并通过中断线将中断信号送往中断控制器，如果中断没有被屏蔽则会到达CPU的INTR引脚，CPU立即停止当前工作，根据获得中断向量号从IDT中找出门描述符，并执行相关中断程序。
 
 //注册IQR
@@ -82,20 +84,22 @@ struct softirq_action{
 static struct softirq_action softirq_vec[32];
 
 2、核心代码
-do_softirq()
-u32 pending;
-pending = local_softirq_pending(); //待处理软中断的32位位图，如果第n位设置为1，那么第n位对应的软中断等待处理
-if (pending){
-    struct softirq_action *h;
-    set_softirq_pending(0);     //重置位图
-    h = softirq_vec;
-    do{                         //循环32位
-        if (h & 1)
-            h->action(h);
-        h++;
-        pending >>= 1;
-    }while(pending);
+do_softirq() {
+    u32 pending;
+    pending = local_softirq_pending(); //待处理软中断的32位位图，如果第n位设置为1，那么第n位对应的软中断等待处理
+    if (pending){
+        struct softirq_action *h;
+        set_softirq_pending(0);     //重置位图
+        h = softirq_vec;
+        do{                         //循环32位
+            if (h & 1)
+                h->action(h);
+            h++;
+            pending >>= 1;
+        }while(pending);
+    }
 }
+
 
 3、解释
 软中断处理程序执行的时候，允许响应中断，但它自己不休眠，而且当前处理器的软中断被禁止。实际上，如果同一个软中断在被执行时再次触发了，其他处理器仍可执行其软中断。所以，不安全。。。
@@ -143,7 +147,7 @@ tasklet是通过软中断实现的，所以本身也是软中断。
 for(;;){
     if (!softirq_pending(cpu)) //当没有软中断处理时，就调度正常队列
         schedule();
-    set_current_state(TASK_RUNNING);
+    set_current_state(TASK_RUNNING); //将当前进程设置为执行进程
     while (softirq_pending(cpu)){
         do_softirq();         处理软中断
         if (need_resched())
