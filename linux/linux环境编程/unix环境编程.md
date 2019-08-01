@@ -1103,10 +1103,17 @@ https://cloud.tencent.com/developer/article/1007500
 
     SIGCHLD
         一个进程终止或停止时，此信号发送给父进程，默认是忽略此信号
+        产生条件：
+            子进程终止
+            子进程接收到SIGSTOP信号停止时
+            子进程处于停止状态，接收到SIGCONT后唤醒
 
     SIGTERM
         SIGTERM是杀或的killall命令发送到进程默认的信号。它会导致一过程的终止，但是SIGKILL信号不同，它可以被捕获和解释（或忽略）的过程。因此，SIGTERM类似于问一个进程终止可好，让清理文件和关闭
 
+    实例：（SIGCHLD的应用）
+        https://blog.csdn.net/isunbin/article/details/84032708
+        https://blog.csdn.net/oguro/article/details/53857376
 ```
 
 ### fork vs vfork
@@ -1121,6 +1128,7 @@ https://cloud.tencent.com/developer/article/1007500
 
 (3) 为什么vfork
     起初只有fork，但是很多程序在fork一个子进程后就exec一个外部程序，于是fork需要copy父进程的数据这个动作就变得毫无意了，而且这样干还很重（注：后来，fork做了优化，详见本文后面），所以，BSD搞出了个父子进程共享的 vfork，这样成本比较低。因此，vfork本就是为了exec而生。
+
 ```
 
 ### 进程控制相关概念

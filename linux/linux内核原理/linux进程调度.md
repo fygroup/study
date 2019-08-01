@@ -65,6 +65,7 @@ list_for_each(list, &current->children){
 (1)创建
 调用clone的时候需要传递参数，指明需要共享的资源
 ```
+#include <sched.h>
 clone(CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND, 0);
 //CLONE_FILES 父子进程共享打开的文件
 //CLONE_FS共享文件系统信息
