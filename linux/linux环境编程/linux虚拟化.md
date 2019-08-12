@@ -189,7 +189,7 @@ Mount namespace用来隔离文件系统的挂载点, 使得不同的mount namesp
 
 函数clone()的flag是CLONE_NEWNS
 
-clone或者unshare函数创建新的mount namespace时,新的拷贝老的，从这之后，他们就没有关系了，通过mount和umount增加和删除各自namespace里面的挂载点都不会相互影响。
+clone或者unshare函数创建新的mount namespace时,新的拷贝老的，从这之后，他们就没有关系了，通过mount和umount增加和删除各自namespace里面的挂载点都不会相互影响。（只是设备不会相互影响，里面的文件是共享的）
 ```
 
 示例
@@ -511,32 +511,41 @@ id                            //没有映射父的user namespace
 
 //映射user id和group id
 //映射ID的方法是添加配置到/proc/PID/uid_map和/proc/PID/gid_map（这里的PID是新user namespace中的进程ID，刚开始时这两个文件都是空的）
-nobody@ubuntu:~$ echo $$
-  24126
-dev@ubuntu：echo '0 1000 100' > /proc/24126/uid_map
-  write error: Operation not permitted         
-dev@ubuntu：echo '0 1000 100' > /proc/24126/gid_map
-  write error: Operation not permitted         
-dev@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)' //当前bash没有CAP_SETUID和CAP_SETGID的权限
-  CapInh: 0000000000000000
-  CapPrm: 0000000000000000
-  CapEff: 0000000000000000
-root@ubuntu: setcap cap_setgid,cap_setuid+ep /bin/bash      /赋予bash权限
-dev@ubuntu: exec bash                                      //重启bash   
-dev@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'
-  CapInh: 0000000000000000
-  CapPrm: 00000000000000c0
-  CapEff: 00000000000000c0
-dev@ubuntu: echo '0 1000 100' > /proc/24126/uid_map
-dev@ubuntu: echo '0 1000 100' > /proc/24126/gid_map
-root@ubuntu:~$ sudo setcap cap_setgid,cap_setuid-ep /bin/bash  //取消bash的权限
-nobody@ubuntu: id                                                 //映射成功
-  uid=0(root) gid=0(root) groups=0(root),65534(nogroup)
-nobody@ubuntu: exec bash                                          //重启bash
-root@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'       //表示当前运行的bash拥有所有的capability
-  CapInh: 0000000000000000
-  CapPrm: 0000003fffffffff
-  CapEff: 0000003fffffffff
+
+//uid_map和gid_map
+  (1) 格式
+    两个文件里面的配置格式如下（可以有多条）: ID-inside-ns ID-outside-ns length
+    例如：
+      0 1000 256这条配置就表示父user namespace中的1000~1256映射到新user namespace中的0~256
+  (2) 写入权限
+    只有root才有写入权限，user自己没有写入权限。只能root赋予该权限
+    nobody@ubuntu:~$ echo $$
+      24126
+    dev@ubuntu：echo '0 1000 100' > /proc/24126/uid_map
+      write error: Operation not permitted         
+    dev@ubuntu：echo '0 1000 100' > /proc/24126/gid_map
+      write error: Operation not permitted         
+    dev@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)' //当前bash没有CAP_SETUID和CAP_SETGID的权限
+      CapInh: 0000000000000000
+      CapPrm: 0000000000000000
+      CapEff: 0000000000000000
+  (3) 权限赋予
+    root@ubuntu: setcap cap_setgid,cap_setuid+ep /bin/bash      /赋予bash权限
+    dev@ubuntu: exec bash                                      //重启bash   
+    dev@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'
+      CapInh: 0000000000000000
+      CapPrm: 00000000000000c0
+      CapEff: 00000000000000c0
+    dev@ubuntu: echo '0 1000 100' > /proc/24126/uid_map
+    dev@ubuntu: echo '0 1000 100' > /proc/24126/gid_map
+    root@ubuntu:~$ sudo setcap cap_setgid,cap_setuid-ep /bin/bash  //取消bash的权限
+    nobody@ubuntu: id                                                 //映射成功
+      uid=0(root) gid=0(root) groups=0(root),65534(nogroup)
+    nobody@ubuntu: exec bash                                          //重启bash
+    root@ubuntu: cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'       //表示当前运行的bash拥有所有的capability
+      CapInh: 0000000000000000
+      CapPrm: 0000003fffffffff
+      CapEff: 0000003fffffffff
 
 //一步到位创建user namespace，并映射uid和gid
 unshare --user -r /bin/bash
@@ -549,6 +558,7 @@ unshare(CLONE_NEWUSER | CLONE_NEW*);
 内核会保证CLONE_NEWUSER先被执行，然后执行剩下的其他CLONE_NEW*，这样就使得不用root账号而创建新的容器成为可能，这条规则对于clone函数也同样适用
 
 //和其他类型namespace的关系
+除了user namespace外，创建其它类型的namespace都需要CAP_SYS_ADMIN的capability。当新的user namespace创建并映射好uid、gid了之后， 这个user namespace的第一个进程将拥有完整的所有capabilities，意味着它就可以创建新的其它类型namespace
 每个namespace都有一个owner（user namespace），这样保证对任何namespace的操作都受到user namespace权限的控制。
 //例如uts namespace的结构体
 struct uts_namespace {
@@ -561,6 +571,8 @@ struct uts_namespace {
 
 2、不和任何user namespace关联的资源
 ```
+//需要特权操作的资源没有跟任何user namespace关联，比如修改系统时间（需要CAP_SYS_MODULE）、创建设备（需要CAP_MKNOD），这些操作只能由initial user namespace里有相应权限的进程来操作（这里initial user namespace就是系统启动后的默认user namespace
+
 //当和mount namespace一起用时（注意是一起用！！！），不能挂载基于块设备的文件系统，但是可以挂载下面这些文件系统
 
 //但是可以挂载一些特殊的文件系统
@@ -667,7 +679,7 @@ Cgroups用来提供对一组进程以及将来子进程的资源限制
   /proc/cgroups
   #subsys_name    hierarchy       num_cgroups     enabled
   cpuset          11              1               1
-  cpu             3               64              1
+  cpu             3(第三位)        64              1
   cpuacct         3               64              1
   blkio           8               64              1
   memory          9               104             1

@@ -125,6 +125,9 @@ async function insertData(person){
 ---
 ### 协程的原理
 ```
+https://www.zhihu.com/question/65647171/answer/233495694
+https://zhuanlan.zhihu.com/p/25964339
+
 //对称与非对称
 对称类似于生产者、消费者之间协程的切换，并不涉及栈空间的销毁
 非对称类似于函数的调用
@@ -138,6 +141,34 @@ async function insertData(person){
 协程的意义就是阻塞异步，所以一些io函数必须设计为，非阻塞异步
 
 //switch语法糖的实现协程
+    注意：此种实现不能用于try catch、递归循环
+
+    #define BEGIN_CORO void operator()() { switch(next_line) { case 0:
+    #define YIELD next_line=__LINE__; break; case __LINE__:
+    #define END_CORO }} int next_line=0
+
+    struct coroutine{
+        int n_;
+        coroutine(int n__):n_(n__){}
+        void operator()(){
+            case 0:
+                cout << n_++ << end;
+                next_line = __LINE__ + 2;
+                break;
+            case __LINE__:
+                cout << n_++ << end;
+                next_line = __LINE__ + 2;
+                break;
+            case __LINE__:
+                cout << n_++ << end;
+                next_line = __LINE__ + 2;
+                break;
+            case         
+                next_line = 0;
+        }
+        int next_line;
+    }
+    
 
 async/await的出现，实现了基于stackless coroutine的完整coroutine。在特性上已经非常接近stackful coroutine了，不但可以嵌套使用也可以支持try catch。所以是不是可以认为async/await是一个更好的方案？
 
@@ -913,7 +944,7 @@ setlocale(LC_ALL, "utf8");
 
 //每个进程有三个和能力有关的位图:inheritable(I),permitted(P)和effective(E), 在/proc/PID/status中
 cat /proc/$$/status | egrep 'Cap(Inh|Prm|Eff)'
-    CapInh: 0000000000000000
+    CapInh: 0000000000000000    //16位
     CapPrm: 0000000000000000
     CapEff: 0000000000000000
 

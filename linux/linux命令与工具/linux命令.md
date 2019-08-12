@@ -148,6 +148,8 @@ mount -t proc none /mnt
 斜杠后面的数字就表示子网掩码，数字具体代表32位子网掩码（二进制形式）中前面的“1”的个数
 
 //地址管理
+0、显示所有设备
+    ip addr show 
 1、显示设备的ip地址
     ip addr show dev eth1
 2、增加删除设备的地址
