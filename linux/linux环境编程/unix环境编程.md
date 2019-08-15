@@ -1024,6 +1024,22 @@ void perror(const char *s)
 用来将上一个函数发生错误的原因输出到标准错误(stderr)
 ```
 
+### 可重入与不可重入函数
+```
+https://www.jianshu.com/p/2c8de98bf0db
+
+(1) 可重入的概念
+    若一个程序或子程序可以“在任意时刻被中断，然后操作系统调度执行另外一段代码，这段代码又调用了该子程序不会出错”，则称其为可重入（reentrant或re-entrant）的。
+
+    简单来说就是可以被中断的函数，也就是说，可以在这个函数执行的任何时刻中断它，转入OS调度下去执行另外一段代码，而返回控制时不会出现什么错误
+    
+    也就是说，当该子程序正在运行时，执行线程可以再次进入并执行它，仍然获得符合设计时预期的结果。与多线程并发执行的线程安全不同，可重入强调对单个线程执行时，重新进入同一个子程序，仍然是安全的。
+    
+    可重入的函数,并且不能在原子上下文中运行
+
+
+```
+
 ### linux信号
 ```
 https://zhuanlan.zhihu.com/p/66051508
@@ -1096,7 +1112,7 @@ https://cloud.tencent.com/developer/article/1007500
         且调用schedule()使系统调度其他程序运行，
         在死循环中调用比完全的死循环的好处是让出cpu
 
-(5) 阻塞和未决
+(4) 阻塞和未决
     https://cloud.tencent.com/developer/article/1008811
     > 实际执行信号的处理动作称为信号递达（Delivery）
       信号从产生到递达之间的状态，称为信号未决（Pending）
@@ -1113,7 +1129,7 @@ https://cloud.tencent.com/developer/article/1007500
           1       1       void sighandler(int signo)      阻塞、信号产生处于未决状态（解除阻塞才会处理）
           1       0       void sighandler(int signo)      阻塞、信号没产生
 
-(6) 信号集
+(5) 信号集
     表示多个信号的数据类型
     #include <signal.h>
     int sigemptyset(sigset_t *set);
@@ -1127,7 +1143,7 @@ https://cloud.tencent.com/developer/article/1007500
     int sigpending(sigset_t *set);
     读取当前进程的未决信号集
 
-(8) 信号
+(7) 信号
     SIGHUP
         终端关闭时，该信号发送到session首进程和后台进程（&提交的）
         session首进程退出时，该信号被发送到该session中的前台进程组中的每一个进程

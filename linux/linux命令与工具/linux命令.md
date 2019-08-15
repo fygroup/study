@@ -409,3 +409,38 @@ findmnt -l
 
 fg 12314
 ```
+
+### Core Dump
+```
+当程序运行的过程中异常终止或崩溃，操作系统会将程序当时的内存状态记录下来，保存在一个文件中，这种行为就叫做Core Dump
+
+我们可以认为Core Dump是“内存快照”，但实际上，除了内存信息之外，还有些关键的程序运行状态也会同时dump下来，例如寄存器信息（包括程序指针、栈指针等）、内存管理信息、其他处理器和操作系统状态和信息。
+
+(1) 打开系统core dump
+    1) 查系统是否开启core dump
+    ulimit -c    //0未开启
+
+    2) 开启系统core dump
+    ulimit -c unlimited            //unlimited:表示生成的core文件大小不受限制
+    ulimit -c 10240                //超过10240，就不生成了
+    注意：开启的core dump只对当前窗口有效
+
+    3) 在~/.bashrc中添加
+    ulimit -c unlimited
+
+(2) core路径设置
+    1) 默认生成的 core 文件保存在可执行文件所在的目录下，文件名就为 core。
+
+    2) 通过修改 /proc/sys/kernel/core_uses_pid 文件可以让生成 core 文件名是否自动加上 pid 号。
+        echo 1 > /proc/sys/kernel/core_uses_pid ，生成的 core 文件名将会变成 core.pid，其中 pid 表示该进程的 PID。
+
+    3) 通过修改 /proc/sys/kernel/core_pattern 来控制生成 core 文件保存的位置以及文件名格式。
+        echo "/tmp/corefile-%e-%p-%t" > /proc/sys/kernel/core_pattern 设置生成的 core 文件保存在 “/tmp/corefile” 目录下，文件名格式为 “core-命令名-pid-时间戳”。
+
+(3) gdb调试core文件
+    gcc test.c -g
+    ./test                   //如果程序出现Segmentation fault (core dumped)，会在当前目录下生成test.core.24158文件
+    gdb ./test test.core    //调试
+
+
+```
