@@ -439,7 +439,7 @@ fg 12314
 
 (3) gdb调试core文件
     gcc test.c -g
-    ./test                   //如果程序出现Segmentation fault (core dumped)，会在当前目录下生成test.core.24158文件
+    ./test                  //如果程序出现Segmentation fault (core dumped)，会在当前目录下生成test.core.24158文件
     gdb ./test test.core    //调试
 
 
