@@ -7,55 +7,61 @@
 ```
 
 ### 链表
+1、内核API
 ```
-(1) 内核API
-    #include <include/linux/list.h>
-    1) 结构体
-        struct MY{
-            .....
-            struct list_head list;
-        };
-        struct MY* mys;
-        mys = kmalloc(sizeof(struct MY), GFP_KERNEL);
-        //注意：
-            > 在内核空间中，没有进程堆的概念，用kmalloc()分配内存，实际上是Linux内核统一管理的，一般用slab分配器，也就是一个内存缓存池，管理所有可以kmalloc()分配的内存。在Linux内核态，kmalloc分配的所有的内存，都是可以被所有运行在Linux内核态的task访问到的。
-            > 内核态的栈在task_struct->stack里面描述，其底部是thread_info对象，thread_info可以用来快速获取task_struct对象。整个stack区域一般只有一个内存页(可配置)
-            > kmalloc的flag
-                GFP_KERNEL
-                当所请求分配的内存不够一页的时候,GFP_KERNEL让当前进程睡眠,来等待够一页内存大小的时候,才能获得正确分配到的内存
-                GFP_ATOMIC
-                用来从中断处理和进程上下文之外的其他代码中分配内存,从不睡眠.
-                GFP_USER
-                为用户空间页来分配内存,可能睡眠.
-    2) 新建链表head
-        LIST_HEAD(stu_head);
-    3) 初始化每个结构体中的list
-        INIT_LIST_HEAD(&mys->list);
-    4) 将节点加入链表head
-        list_add(&mys->list, &stu_head);
-    5) 正向遍历
-        struct MY* my_tmp;
-        list_for_each_entry(my_tmp, &stu_head, list)       //这是个宏！！！
-        {
-            printk (KERN_ALERT "id  =%d\n", my_tmp->id);
-        }
-        //注意：这一步通过链表节点获得用户数据，用到的宏如下
-        #define list_entry(ptr, type, member) container_of(ptr, type, member)
-        #define container_of(ptr, type, member) ({               \
-            const typeof(((type *)0)->member)*__mptr = (ptr);    \
-            (type *)((char *)__mptr - offsetof(type, member)); })
-    6) 反向遍历
-        list_for_each_entry_reverse(my_tmp, &stu_head, list)
-        {
-        }
-    7) 替换
-        struct MY* my1 = kmalloc(sizeof(struct MY), );
-        struct MY* my2;
+#include <include/linux/list.h>
+(1) 结构体
+    struct MY{
+        .....
+        struct list_head list;
+    };
+    struct MY* mys;
+    mys = kmalloc(sizeof(struct MY), GFP_KERNEL);
+    //注意：
+        > 在内核空间中，没有进程堆的概念，用kmalloc()分配内存，实际上是Linux内核统一管理的，一般用slab分配器，也就是一个内存缓存池，管理所有可以kmalloc()分配的内存。在Linux内核态，kmalloc分配的所有的内存，都是可以被所有运行在Linux内核态的task访问到的。
+        > 内核态的栈在task_struct->stack里面描述，其底部是thread_info对象，thread_info可以用来快速获取task_struct对象。整个stack区域一般只有一个内存页(可配置)
+        > kmalloc的flag
+            GFP_KERNEL: 当所请求分配的内存不够一页的时候,GFP_KERNEL让当前进程睡眠,来等待够一页内存大小的时候,才能获得正确分配到的内存
+            GFP_ATOMIC: 用来从中断处理和进程上下文之外的其他代码中分配内存,从不睡眠.
+            GFP_USER: 为用户空间页来分配内存,可能睡眠.
 
-        list_replace(&stu3->list, &stu2->list);
-    8) 删除
+(2) 新建链表head
+    LIST_HEAD(stu_head);
 
-(2) 实例代码
+(3) 初始化每个结构体中的list
+    INIT_LIST_HEAD(&mys->list);
+
+(4) 将节点加入链表head
+    list_add(&mys->list, &stu_head);
+
+(5) 正向遍历
+    struct MY* my_tmp;
+    list_for_each_entry(my_tmp, &stu_head, list)       //这是个宏！！！
+    {
+        printk (KERN_ALERT "id  =%d\n", my_tmp->id);
+    }
+    //注意：这一步通过链表节点获得用户数据，用到的宏如下
+    #define list_entry(ptr, type, member) container_of(ptr, type, member)
+    #define container_of(ptr, type, member) ({               \
+        const typeof(((type *)0)->member)*__mptr = (ptr);    \
+        (type *)((char *)__mptr - offsetof(type, member)); })
+(6) 反向遍历
+    list_for_each_entry_reverse(my_tmp, &stu_head, list)
+    {
+    }
+
+(7) 替换
+    struct MY* my1 = kmalloc(sizeof(struct MY), GFP_KERNEL);
+    struct MY* my2;
+    list_replace(&stu3->list, &stu2->list);
+
+(8) 删除
+    list_del(&stu2->list);
+```
+
+2、实例
+```
+(1) 代码
     #include<linux/init.h>
     #include<linux/slab.h>
     #include<linux/module.h>
@@ -76,7 +82,7 @@
     {
         struct student *stu1, *stu2, *stu3, *stu4;
         struct student *stu;
-        
+            
         // init a list head
         LIST_HEAD(stu_head);
 
@@ -178,9 +184,90 @@
 ```
 
 ### 队列
+1、内核API
 ```
-// 注意
-    队列的size在初始化时，始终设定为2的n次方
-    使用队列之前将队列结构体中的锁(spinlock)释放
+> 队列的size在初始化时，始终设定为2的n次方
+> 使用队列之前将队列结构体中的锁(spinlock)释放
+> 内核中的队列是以字节形式保存数据的，所以获取数据的时候，需要知道数据的大小
 
+#include<linux/init.h>
+#include<linux/slab.h>
+#include<linux/module.h>
+#include<linux/kernel.h>
+#include<linux/kfifo.h>
+#include<linux/time.h>
+
+(1) 结构体
+    struct kfifo *fifo;
+    struct student;     //例子
+
+(2) 锁
+    spinlock_t sl = SPIN_LOCK_UNLOCKED;
+
+(3) init
+    fifo = kfifo_alloc(4*sizeof(struct student), GFP_KERNEL, &sl);  //申请内存时，一定要加锁。此处申请4个结构体的队列空间
+
+(4) 队列添加元素
+    struct student* stu1 = kmalloc(sizeof(struct student), GFP_KERNEL);
+    kfifo_put(fifo, (char *)stu1, sizeof(struct student));          //字节的形式添加
+
+(5) 队列取出元素
+    char* c_tmp = kmalloc(sizeof(struct student), GFP_KERNEL);
+    kfifo_get(fifo, c_tmp, sizeof(struct student));                 //取出元素
+    print_student((struct student*)c_tmp);
+    kfifo_get(fifo, c_tmp, sizeof(struct student));                 //取出元素
+    print_student((struct student*)c_tmp);
+
+(6) 其他(这里描述内核时间API)
+    void print_student(struct student* stu) {
+        struct timeval *tv;
+        struct tm *t;
+        tv = kmalloc(sizeof(struct timeval), GFP_KERNEL);
+        t = kmalloc(sizeof(struct tm), GFP_KERNEL);
+
+        do_gettimeofday(tv);
+        time_to_tm(tv->tv_sec, 0, t);
+
+        printk(KERN_ALERT "%ld-%d-%d %d:%d:%d",
+            t->tm_year + 1900,
+            t->tm_mon + 1,
+            t->tm_mday,
+            (t->tm_hour + 8) % 24,
+            t->tm_min,
+            t->tm_sec);
+
+        if (is_new_line == 1)
+            printk(KERN_ALERT "\n");
+        
+        kfree(tv);
+        kfree(t);
+    }
+
+```
+2、实例
+```
+https://www.cnblogs.com/wang_yb/archive/2013/04/16/3023892.html
+
+kn_common.h
+kn_common.c  ---->  kn_common.0
+testkfifo.c  ---->  testkfifo.o
+
+
+Makefile:
+    obj-m += fifo.o
+    fifo-objs := testkfifo.o kn_common.o
+
+    #generate the path
+    CURRENT_PATH:=$(shell pwd)
+    #the current kernel version number
+    LINUX_KERNEL:=$(shell uname -r)
+    #the absolute path
+    LINUX_KERNEL_PATH:=/usr/src/kernels/$(LINUX_KERNEL)
+    #complie object
+    all:
+        make -C $(LINUX_KERNEL_PATH) M=$(CURRENT_PATH) modules
+        rm -rf modules.order Module.symvers .*.cmd *.o *.mod.c .tmp_versions *.unsigned
+    #clean
+    clean:
+        rm -rf modules.order Module.symvers .*.cmd *.o *.mod.c *.ko .tmp_versions *.unsigned
 ```
