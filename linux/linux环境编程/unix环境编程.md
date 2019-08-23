@@ -592,6 +592,9 @@ username:password:User ID:Group ID:comment:home directory:shell
 Linux系统中一个负责IP地址与域名快速解析的文件
 例如：
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+
+此目录包含
+host.conf    hostname     hosts        hosts.allow  hosts.deny
 ```
 5、/etc/services
 ```
@@ -1029,7 +1032,7 @@ void perror(const char *s)
 https://www.jianshu.com/p/2c8de98bf0db
 
 (1) 可重入的概念
-    若一个程序或子程序可以“在任意时刻被中断，然后操作系统调度执行另外一段代码，这段代码又调用了该子程序不会出错”，则称其为可重入（reentrant或re-entrant）的。
+    若一个程序或子程序可以在任意时刻被中断，然后操作系统调度执行另外一段代码，这段代码又调用了该子程序不会出错，则称其为可重入（reentrant或re-entrant）的。
 
     简单来说就是可以被中断的函数，也就是说，可以在这个函数执行的任何时刻中断它，转入OS调度下去执行另外一段代码，而返回控制时不会出现什么错误
     
@@ -1073,7 +1076,7 @@ https://cloud.tencent.com/developer/article/1007500
         https://cloud.tencent.com/developer/article/1008813
         > 用户程序注册了SIGQUIT信号的处理函数sighandler。
         > 当前正在执行main函数，某条指令发生中断或异常或产生信号切换到内核态。（可重入函数）
-        > 在中断处理完毕后要返回用户态的main函数之前检查到有信号SIGQUIT递达。（进程检查信号的时机）
+        > 在中断处理完毕后要返回用户态的main函数之前检查到有信号SIGQUIT递达。（进程检查信号的时机）<----此时才会开始信号处理
         > 内核决定返回用户态后不是恢复main函数的上下文继续执行，而是执行sighandler函数，sighandler和main函数使用不同的堆栈空间，它们之间不存在调用和被调用的关系，是两个独立的控制流程。
         > sighandler函数返回后自动执行特殊的系统调用sigreturn再次进入内核态。
         > 如果没有新的信号要递达，这次再返回用户态就是恢复main函数的上下文继续执行了。

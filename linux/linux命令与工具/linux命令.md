@@ -449,3 +449,70 @@ fg 12314
 ```
 who /var/log/wtmp
 ```
+
+### ssh权限
+```
+https://www.jianshu.com/p/967e3a04a6c7
+
+(1) 登陆限制
+    1) 只要用户满足以下条件之一，ssh便会拒绝登录：
+        > 用户无密码(由于默认开启了PermitEmptyPasswords no选项)
+        > 用户无合法shell(注意如果不指定shell，则默认为/bin/sh)
+        > 明确拒绝使用各种可登录的渠道(比如PasswordAuthentication no, PubkeyAuthentication no等等)
+        > /etc/nologin存在，则除root外所有用户均拒绝登录，并打印/etc/nologin文件内容作为提示信息
+
+    2) 禁止root登录
+        PermitRootLogin no
+
+    3) Match
+        条件是：User, Group, Host, Address
+        Match User limited-user
+            AllowTcpForwarding yes                  // 这个是默认配置，如果没改过的话可以不加
+            X11Forwarding no                        // 禁止x11 forwarding
+            GatewayPorts yes                        // 允许ssh -R参数bind所有ip，否则只允许bind 127.0.0.1
+            AllowAgentForwarding no
+            PasswordAuthentication no                       // 不允许密码登录
+            PermitOpen localhost:62222                      // 只允许打开localhost:62222做端口转发
+            ForceCommand echo 'This account can only be used for TCP proxy' //此处登陆会直接echo
+        > 限定ip白名单登录
+            办法很多，比如在防火墙控制，在/etc/hosts.(deny|allow)控制等，其实在/etc/sshd_config
+            Match Address 127.0.0.*
+
+(2) 代理权限限制
+    1) 禁止端口转发
+        AllowTcpForwarding no
+    2) 禁止X11转发
+        X11Forwarding no
+    3) 限制转发端口
+        PermitOpen host:port
+        PermitOpen IPv4_addr:port
+        PermitOpen [IPv6_addr]:port        
+        any(默认)表示所有端口都允许用于转发。
+
+(5) sftp限制
+    ssh传输文件的有三个命令scp,rsync,sftp。它们的机制不一样，
+    scp和rsync是通过远程非交互式执行命令实现的
+    sftp是通过openssh的sftp server实现的。
+    1) 限制scp和rsync
+        Match User xxxx
+            ForceCommand /bin/bash
+
+    2) 限制sftp
+        > 创建sftp组
+            groupadd sftp
+        > 创建一个用户sftpuser并分配到sftp组
+            useradd -g sftp -s /bin/false sftpuser
+        > 配置/etc/ssh/sshd_config
+            Subsystem sftp /usr/lib/openssh/sftp-server
+            Match Group sftp                //这行用来匹配用户组
+                ChrootDirectory /datas/www  //用chroot将用户的根目录指定到/datas/www ，这样用户就只能在/datas/www下活动
+                ForceCommand internal-sftp  //强制执行内部sftp，并忽略任何~/.ssh/rc文件中的命令
+        > 修改sftp用户组用户目录权限
+            > 设定的目录必须是root用户所有，否则就会出现问题
+                chown -R root:root /datas/www
+                chmod 755 /datas/www
+            > 建立SFTP用户登入后可写入的目录：
+                mkdir /datas/www/sftpuser
+                chown -R sftpuser:sftp /datas/www/sftpuser/
+                chmod 755 /datas/www/sftpuser/
+```

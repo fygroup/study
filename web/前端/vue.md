@@ -286,3 +286,26 @@ store是个持久化的东西，只要没刷新界面，他就会一直存在。
 如果涉及修改store.state的内容，那么在view层拷贝一份，然后再进行修改
 ```
 
+### route与持久化
+```
+<keep-alive>
+  <router-view/>
+</keep-alive>
+
+[
+  {
+    path: 'diseaseTaskList',
+    name: 'diseaseTaskList',
+    component: () => import('@/view/task/diseaseList'),
+  }
+]
+
+在@/view/task/diseaseList/index.js文件中
+  import diseaseTaskList from './diseaseTaskList.vue'
+  export default diseaseTaskList
+
+export的模块名必须与route中的path、name一样，否则不会持久化
+
+
+
+```

@@ -267,7 +267,71 @@ Makefile:
     all:
         make -C $(LINUX_KERNEL_PATH) M=$(CURRENT_PATH) modules
         rm -rf modules.order Module.symvers .*.cmd *.o *.mod.c .tmp_versions *.unsigned
-    #clean
     clean:
         rm -rf modules.order Module.symvers .*.cmd *.o *.mod.c *.ko .tmp_versions *.unsigned
+```
+
+### 映射
+1、内核API
+```
+https://www.linuxidc.com/Linux/2016-12/138233.htm
+Linux的idr机制(32叉树)
+
+// 头
+#include <linux/idr.h>
+
+// 注意
+    映射的使用需要注意的是，给自定义的数据结构申请一个id的时候，不能直接申请id，先要分配id(函数idr_pre_get)，分配成功后，在获取一个id(函数idr_get_new)。
+    
+(1) 结构
+    1) idr结构体
+        struct idr {
+            struct idr_layer __rcu *top;	//idr_layer顶层,32叉树的根
+            struct idr_layer *id_free;		//指向idr_layer的空闲链表
+            int	layers;		                //idr_layer的层数量
+            int	id_free_cnt;	            //idr_layer空闲链表中剩余的idr_layer个数
+            spinlock_t	lock;
+        };
+    
+    2) idr_layer结构体
+        struct idr_layer {
+            unsigned long	bitmap;	                    //标记位图,标记使用情况
+            struct idr_layer __rcu	*ary[1<<IDR_BITS];	//子idr_layer数组ary[32]
+            int	count;	                                //ary数组使用情况
+            int	layer;                              	//层号
+            struct rcu_head	rcu_head;
+        };
+        在32位系统中IDR_BITS的取值为5
+
+    3) IDR_BITS
+        #if BITS_PER_LONG == 32
+            # define IDR_BITS 5
+            # define IDR_FULL 0xfffffffful
+            # define TOP_LEVEL_FULL (IDR_FULL >> 30)
+        #elif BITS_PER_LONG == 64
+            # define IDR_BITS 6
+            # define IDR_FULL 0xfffffffffffffffful
+            # define TOP_LEVEL_FULL (IDR_FULL >> 62)
+        #else
+            # error "BITS_PER_LONG is not 32 or 64"
+        #endif
+
+    4) 初始化
+        #define IDR_INIT(name)		\
+        {				\
+            .top		= NULL,	\
+            .id_free		= NULL,	\
+            .layers 		= 0,	\
+            .id_free_cnt	= 0,	\
+            .lock		= __SPIN_LOCK_UNLOCKED(name.lock),	\
+        }
+        #define DEFINE_IDR(name)	struct idr name = IDR_INIT(name)
+
+    5) 
+
+
+
+```
+2、实例
+```
 ```

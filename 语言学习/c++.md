@@ -2352,3 +2352,16 @@ public:
         return 0;
     }
 ```
+
+### struct初始化
+```
+c/c++中的struct
+//无序
+struct MyS a = {
+    .a = 1,
+    .b = NULL
+};
+
+//有序
+struct MyS a = {1, NULL};
+```
