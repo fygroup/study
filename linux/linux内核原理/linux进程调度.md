@@ -4,6 +4,20 @@
 (2)虚拟处理器和虚拟内存
 ```
 
+### 内核
+```
+> 内核本身不是以进程形式存在的，既不是特殊的任务，也不是普通的进程，它就是一段代码加数据的二进制文件，驻留在内存里等着系统调用去执行它的部分代码。
+> 在初始化的过程中表现得就像一个进程，但是内核绝对没有进程的数据结构task_struct，可以严格跟进程区分开 。自从创建init 进程之后，内核就不再主动占有cpu了。
+> 只有当进程主动要求和中断到来时，内核才动一动，很快又把cpu还给合适的进程，不是想象中的，以后台服务进程的形式存在。
+> 我们又给这样的内核起了个名字，叫做宏内核，“宏”的意思是“大”，为什么大呢，因为内核把所有子系统都集成到自身里面去了。
+
+Linux上进程分3种，内核线程（或者叫核心进程）、用户进程、用户线程
+
+进程通常都会处于用户空间，当执行系统调用或触发某个异常，他就陷入内核空间。此时称内核"代表进程执行"并处于进程上下文中
+
+```
+
+
 ### 进程描述符及任务结构
 ```
 内核把进程列表放到任务队列（task_list）的双向链表中。链表每一项是task_struct,称为进程描述符的结构
@@ -64,9 +78,9 @@ list_for_each(list, &current->children){
 ```
 
 ### 线程(特殊的进程)
-(1)创建
-调用clone的时候需要传递参数，指明需要共享的资源
 ```
+(1)普通线程的创建
+调用clone的时候需要传递参数，指明需要共享的资源
 #include <sched.h>
 clone(CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND, 0);
 //CLONE_FILES 父子进程共享打开的文件
@@ -82,11 +96,10 @@ CLONE_VFORK	父进程被挂起，直至子进程释放虚拟内存资源
 CLONE_PID	子进程在创建时PID与父进程一致
 CLONE_THREAD	Linux 2.4中增加以支持POSIX线程标准，子进程与父进程共享相同的线程群
 
-```
+(2)内核线程的创建
+内核需要在后台执行一些操作，内核线程与普通用户进程的区别是没有独立的地址空间。只在内核空间运行，从来不切换到用户空间去。
+内核线程和普通线程可以被调度，可以被抢占
 
-(2)内核线程
-内核需要在后台执行一些操作，与普通用户线程的区别是没有独立的地址空间。可以被调度可以被抢占
-```
 struct task_struct* kthread_create(int (*threadfn)(void* data), void* data, const char namefmt[], ...)
 //内核通过clone来实现，新的进程将运行threadfn，参数是data，进程被命名为namefmt。他不会主动运行，需要wake_up_process来唤醒
 
@@ -104,10 +117,66 @@ struct task_struct* kthread_run(int (*threadfn)(void* data), void* data, const c
 ```
 
 ### 进程调度
-(1) 时间片
+1、概念
 ```
-每次调度时，把CPU分配给队首进程，并令其执行一个时间片。时间片的大小从几ms到几百ms。当执行的时间片用完时，由一个计时器发出时钟中断请求，调度程序便据此信号来停止该进程的执行，并将它送往就绪队列的末尾;然后，再把处理机分配给就绪队列中新的队首进程，同时也让它执行一个时间片。
+> io消耗性和cpu消耗性进程
+
+> 优先级
+    nice：      -20 到 +19，越大优先级越低
+    实时优先级： 0 到 99，越大优先级越高
+    任何实时优先级都高于普通进程，实时优先级和nice优先级处于不相交范畴
+
+> 时间片    
+    每次调度时，把CPU分配给队首进程，并令其执行一个时间片。时间片的大小从几ms到几百ms。当执行的时间片用完时，由一个计时器发出时钟中断请求，调度程序便据此信号来停止该进程的执行，并将它送往就绪队列的末尾;然后，再把处理机分配给就绪队列中新的队首进程，同时也让它执行一个时间片。
+
+> 调度器类
+    > linux调度器以模块的方式提供，允许不同进程选择针对性的调度算法
+    > 不同的调度类必须提供struct sched_class的一个实例
+        extern const struct sched_class stop_sched_class;
+        extern const struct sched_class dl_sched_class;
+        extern const struct sched_class rt_sched_class;
+        extern const struct sched_class fair_sched_class;
+        extern const struct sched_class idle_sched_class;
+    > 进程结构体中包含sched_class
+        struct task_struct{
+            ...
+            const struct sched_class *sched_class;
+            ...
+        }
+    > sched_class
+        sched_class可以理解为调度器的接口类
+        struct sched_class {
+            /*  系统中多个调度类, 按照其调度的优先级排成一个链表
+            下一优先级的调度类
+            * 调度类优先级顺序: stop_sched_class -> dl_sched_class -> rt_sched_class -> fair_sched_class -> idle_sched_class
+            */
+            const struct sched_class *next;
+
+            /*  将进程加入到运行队列中，即将调度实体（进程）放入红黑树中，并对 nr_running 变量加1   */
+            void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
+            
+            /*  从运行队列中删除进程，并对 nr_running 变量中减1  */
+            void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
+            
+            /*  放弃CPU，在 compat_yield sysctl 关闭的情况下，该函数实际上执行先出队后入队；在这种情况下，它将调度实体放在红黑树的最右端  */
+            void (*yield_task) (struct rq *rq);
+
+            /*   检查当前进程是否可被新进程抢占 */
+            void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+
+            /*  选择下一个应该要运行的进程运行  */
+            struct task_struct * (*pick_next_task) (struct rq *rq,
+                                struct task_struct *prev);
+            
+            /* 将进程放回运行队列 */
+            void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+            ....
+        };
+
+> 
+
 ```
+
 
 (2) 调度
 ```
