@@ -2365,3 +2365,15 @@ struct MyS a = {
 //有序
 struct MyS a = {1, NULL};
 ```
+
+### {}一个用法
+```
+#define var(x) (*({     \
+    //a的一些操作        \
+    &a;}))
+
+int a = 0;
+
+var(a)++;
+
+```
