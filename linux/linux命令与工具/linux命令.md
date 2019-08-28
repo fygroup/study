@@ -140,6 +140,16 @@ mount -t proc none /mnt
     mount -o bind,ro ./bind/bind1/ ./bind/bind1
 ```
 
+### 查看总线上的所有设备
+```
+//查看总线上的所有设备
+lspci
+
+//查看网络设备的详细信息
+iwconfig
+
+```
+
 ### ip
 ```
 地址、设备、路由表
@@ -516,3 +526,5 @@ https://www.jianshu.com/p/967e3a04a6c7
                 chown -R sftpuser:sftp /datas/www/sftpuser/
                 chmod 755 /datas/www/sftpuser/
 ```
+
+
