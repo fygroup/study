@@ -173,6 +173,10 @@ store的getter，不能进行watch！！！
 ### props watch mounted
 ```
 监听props要谨慎，如果监听的参数需要驱动一些东西的话，最好放在mounted中。因为组件的v-if创建，并不会刷新props，不会被watch监听，除非此组建已存在
+
+
+初始的props不会被watch监听
+
 ```
 
 ---
