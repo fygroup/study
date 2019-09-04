@@ -81,10 +81,8 @@ http://www.wowotech.net/kernel_synchronization/memory-barrier.html
 ### 内存屏障
 ```
 https://www.jianshu.com/p/64240319ed60
+http://ifeve.com/linux-memory-barriers/
 http://ifeve.com/memory-barriers-or-fences/
-
-(0) cpu缓存体系
-
 
 (1) 可见性与重排序
     1) 可见性
@@ -93,20 +91,24 @@ http://ifeve.com/memory-barriers-or-fences/
     2) 重排序
         编译器、cpu出于优化的目的，导致指令重新排序
 
+(2) 什么是内存屏障
+    一个系统中，CPU和其它硬件可以使用各种技巧来提高性能，包括内存操作的重排、延迟和合并；预取；推测执行分支以及各种类型的缓存。内存屏障是用来禁用或抑制这些技巧的，使代码稳健地控制多个CPU和(或)设备的交互
+    1) 内存屏障的种类
+        > write（或store）内存屏障
+        > 数据依赖屏障
+        > read（或load）内存屏障
+        > 通用内存屏障
 
-(2) volatile(解决编译器层面的可见性与重排序问题)
-    > 概念
-        对volatile变量的写入操作必须在对该变量的读操作之前执行
-    > 一个标准
-        volatile变量规则只是一种标准，要求编译器实现保证volatile变量的偏序语义。结合程序顺序规则、传递性，该偏序语义通常表现为两个作用：
-        > 保持可见性
-        > 禁用重排序（读操作禁止重排序之后的操作，写操作禁止重排序之前的操作）
-
-(3) 内存屏障(解决了硬件层面的可见性与重排序问题)
-    1) store和load
-        Store：将处理器缓存的数据刷新到内存中。
-        Load：将内存存储的数据拷贝到处理器的缓存中。
-    2) 分类
+(3) 显示内核屏障
+    Linux内核有多种不同的屏障，工作在不同的层上：
+    编译器屏障
+    CPU内存屏障
+    MMIO write屏障
+    1) 编译器屏障
+        Linux内核有一个显式的编译器屏障函数，用于防止编译器将内存访问从屏障的一侧移动到另一侧
+        barrier()
+        编译屏障并不直接影响CPU，CPU依然可以按照它所希望的顺序进行重排序
+    2) CPU内存屏障(解决了硬件层面的可见性与重排序问题)
         屏障类型
         > LoadLoad Barriers
             指令示例: Load1;LoadLoad;Load2	
@@ -122,21 +124,13 @@ http://ifeve.com/memory-barriers-or-fences/
             说明: 该屏障确保Store1立刻刷新数据到内存的操作先于Load2及其后所有装载装载指令的操作。它会使该屏障之前的所有内存访问指令(存储指令和访问指令)完成之后,才执行该屏障之后的内存访问指令
             注意：
                 该屏障同时具备其他三个屏障的效果，因此也称之为全能屏障（mfence），是目前大多数处理器所支持的；但是相对其他屏障，该屏障的开销相对昂贵。然而，除了mfence，不同的CPU架构对内存屏障的实现方式与实现程度非常不一样
-    3) x86内存屏障
-        x86架构并没有实现全部的内存屏障。
-        > Store Barrier(相当于StoreStore Barriers)
-            指令：sfence
-            功能：
-                强制所有在sfence指令之前的store指令，都在该sfence指令执行之前被执行，发送缓存失效信号，并把store buffer中的数据刷出到CPU的L1 Cache中；所有在sfence指令之后的store指令，都在该sfence指令执行之后被执行。即，禁止对sfence指令前后store指令的重排序跨越sfence指令，使所有Store Barrier之前发生的内存更新都是可见的。这里的"可见", 指修改值可见（内存可见性）且操作结果可见（禁用重排序）
-        > Load Barrier(相当于LoadLoad Barriers)
-            指令：lfence
-            功能：
-                强制所有在lfence指令之后的load指令，都在该lfence指令执行之后被执行，并且一直等到load buffer被该CPU读完才能执行之后的load指令（发现缓存失效后发起的刷入）。即，禁止对lfence指令前后load指令的重排序跨越lfence指令，配合Store Barrier，使所有Store Barrier之前发生的内存更新，对Load Barrier之后的load操作都是可见的。
-        > Full Barrier(相当于StoreLoad Barriers)    
-            指令：mfence
-            功能：所有Full Barrier之前发生的操作，对所有Full Barrier之后的操作都是可见的
 
-
+(4) 什么地方需要内存障碍？
+    在正常操作下，一个单线程代码片段中内存操作重排序一般不会产生问题，仍然可以正常工作，即使是在一个SMP内核系统中也是如此。但是，下面四种场景下，重新排序可能会引发问题：
+    > 多理器间的交互
+    > 原子操作
+    > 设备访问
+    > 中断
 
 
 ```
