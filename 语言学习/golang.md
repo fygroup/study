@@ -327,18 +327,18 @@ if ok{
 #### 泛型
 ```
 func main() {
-    list := make(List, 3)
+    list := make([]interface{}, 3)
     list[0] = 1 //an int
     list[1] = "Hello" //a string
     list[2] = Person{"Dennis", 70}
     for index, element := range list{
-        switch value := element.(type) {
+        switch element.(type) {
             case int:
-                fmt.Printf("list[%d] is an int and its value is %d\n", index, value)
+                fmt.Printf("list[%d] is an int and its value is %d\n", index, value.(int))
             case string:
-                fmt.Printf("list[%d] is a string and its value is %s\n", index, value)
+                fmt.Printf("list[%d] is a string and its value is %s\n", index, value.(string))
             case Person:
-                fmt.Printf("list[%d] is a Person and its value is %s\n", index, value)
+                fmt.Printf("list[%d] is a Person and its value is %s\n", index, value.(Person))
             default:
                 fmt.Println("list[%d] is of a different type", index)
         }

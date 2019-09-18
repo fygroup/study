@@ -1038,12 +1038,7 @@ strcasecmp（忽略大小写比较字符串）
 相关函数 bcmp，memcmp，strcmp，strcoll，strncmp
 
 
-__attribute__((noreturn))    表示没有返回值
-__attribute__((unused))   表示该函数或变量可能不使用，这个属性可以避免编译器产生警告信息 
-void __attribute__((noreturn)) handle_signal(int __attribute__((unused)) signal) {
-;
-  exit(0);
-}
+
 //-------------------------------------
 term.c_cc[VMIN] = (cc_t) 1;  对于read函数读取一个就会进行下一步 当设为0时，表示不等待进行
 tmp.c_cc[VERASE] = '\b'; 
@@ -1064,8 +1059,6 @@ for(i=0;i<l;i++){
 __m256 b=_mm256_load_ps(array);
 float* f=(float*)&b;
 printf("%f\n",f[3]);
-
-关键字__attribute__ 可以对变量 结构体（struct ）或共用体（union ）进行属性设置。大致有六个参数值可以被设定，即：aligned, packed, transparent_union, unused, deprecated 和 may_alias 。
 
 //------------数据对齐----------------------------------------
 变量的内存地址位于它长度的整数倍

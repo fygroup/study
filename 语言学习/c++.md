@@ -2377,3 +2377,58 @@ int a = 0;
 var(a)++;
 
 ```
+
+### __attribute__
+```
+(1) 概念
+    GNU C 的一大特色就是__attribute__ 机制。__attribute__ 可以设置函数属性（Function Attribute ）、变量属性（Variable Attribute ）和类型属性（Type Attribute ）
+    __attribute__ 书写特征是：__attribute__ 前后都有两个下划线，并切后面会紧跟一对原括弧，括弧里面是相应的__attribute__ 参数。
+    __attribute__ 语法格式为：__attribute__ ((attribute-list))
+
+
+(2) 函数属性(Function Attribute)
+    __attribute__((noreturn))    表示没有返回值
+    __attribute__((unused))   表示该函数或变量可能不使用，这个属性可以避免编译器产生警告信息 
+    void __attribute__((noreturn)) handle_signal(int __attribute__((unused)) signal) {
+        exit(0);
+    }
+
+
+(3) 类型属性(Type Attributes)
+
+
+(4) 变量属性(Variable Attribute)
+    __bitwise	__attribute__((bitwise))
+        确保变量是相同的位方式(比如 bit-endian, little-endiandeng)
+    __user	__attribute__((noderef, address_space(1)))
+        指针地址必须在用户地址空间
+    __kernel	__attribute__((noderef, address_space(0)))
+        指针地址必须在内核地址空间
+    __iomem	__attribute__((noderef, address_space(2)))
+        指针地址必须在设备地址空间
+    __safe	__attribute__((safe))
+        变量可以为空
+    __force	__attribute__((force))
+        变量可以进行强制转换
+    __nocast	__attribute__((nocast))
+        参数类型与实际参数类型必须一致
+    __acquires(x)	__attribute__((context(x, 0, 1)))	
+        参数x 在执行前引用计数必须是0,执行后,引用计数必须为1
+    __releases(x)	__attribute__((context(x, 1, 0)))	
+        与__acquires(x)相反
+    __acquire(x)	__context__(x, 1)
+        参数x的引用计数+1
+    __release(x)	__context__(x, 1)
+        与__acquire(x)相反
+    __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)	
+        参数c 不为0时,引用计数 + 1, 并返回1
+    __rcu    __attribute__((noderef, address_space(4))) 
+        即这个变量地址必须是有效的，而且变量所在的地址空间必须是 4，即 RCU 空间的。
+        使用__rcu 附上 RCU保护的数据结构，如果你没有使用rcu_dereference()类中某个函数，Sparse就会警告你这个操作。
+
+
+
+
+
+
+```
