@@ -38,7 +38,7 @@ static irqreturn_t handler(int irq, void* dev) //返回值其实是一个int
 返回IRQ_HANDLED：是注册处理函数指定的产生源
 ```
 
-#### 共享中断处理程序
+### 共享中断处理程序
 ```
 (1)flags必须是IRQF_SHARED
 (2)当收到中断信号时，会依次调用注册的函数
@@ -46,7 +46,9 @@ static irqreturn_t handler(int irq, void* dev) //返回值其实是一个int
 (4)注册条件：中断线当前未被注册或者被注册的中断都是IRQF_SHARED
 ```
 
-#### 中断机制
+
+
+### 中断机制
 ```
 https://www.cnblogs.com/wlei/articles/2490011.html
 
@@ -70,18 +72,7 @@ void disable_irq(unsigned int irq);
 
 ### 中断（软中断、tasklet、工作队列）
 ```
-#下半部机制   上下文  复杂度                          性能   顺序执行保障
-软中断       中断   高(确保软中断的执行顺序和锁机制)    好    没有
-tasklet     中断    中(提供接口使用软中断)            中    同类型不能(不会)同时执行
-工作队列     进程   低(在进程上下文运行，类似用户程序)  差    没有(和进程上下文一样被调度)
 
-软中断的分配时静态的(即在编译时定义)，而tasklet的分配和初始化能够在执行时进行。
-软中断(即便是同一种类型的软中断)能够并发地运行在多个CPU上。
-因此，软中断是可重入函数并且必须明白地使用自旋锁保护其数据结构。
-tasklet不必操心这些问题。由于内核对tasklet的运行进行了更加严格的控制。
-同样类型的tasklet总是被串行运行。
-换句话说就是：不能在两个CPU上同一时候执行同样类型的tasklet。可是，类型不同的tasklet能够在几个CPU上并发执行。
-tasklet的串行化使tasklet函数不必是可重入的
 
 ```
 #### 软中断
