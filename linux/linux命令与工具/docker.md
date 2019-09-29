@@ -1,3 +1,5 @@
+https://yeasy.gitbooks.io/docker_practice/content/
+
 ### 容器使用相关参数
 ```
 (1) 命令
@@ -40,6 +42,26 @@
         --name      容器命名
         -d          后台运行
         --restart   自动重启, always  on-failure(退出码非0时就重启)  on-failure:3(重启次数)
+        > 资源限制
+            > 内存
+                > 大小
+                    -m              内存限制
+                        -m 500M
+            > cpu        
+                > 核的控制
+                    --cpuset-cpus   设置容器可以在哪些 CPU 核上运行
+                        --cpuset-cpus="1,3"
+                        --cpuset-cpus="0-2"
+                > 份额控制
+                    –cpu-shares     指定容器所使用的CPU份额值
+                        每个docker容器的cpu份额都是1024。单独一个容器的份额是没有意义的，只有在同时运行多个容器时，容器的cpu加权的效果才能体现出来
+                > 周期控制
+                    –cpu-period是用来指定容器对CPU的使用要在多长时间内做一次重新分配
+                    -cpu-quota是用来指定在这个周期内，最多可以有多少时间用来跑这个容器。
+                    如果容器进程需要每1秒使用单个CPU的0.2秒时间，可以将cpu-period设置为1000000（即1秒），cpu-quota设置为200000（0.2秒）
+                    在多核情况下，如果允许容器进程需要完全占用两个CPU，则可以将cpu-period设置为100000（即0.1秒），cpu-quota设置为200000（0.2秒）
+
+
     2) logs 日志
         --tail      输出尾部多少行
         -f          最新日志
@@ -54,6 +76,7 @@
     9) ps 
         -a          显示所有容器
         -q          只列出容器ID, docker ps -a -q
+
 ```
 
 ### 镜像
@@ -82,6 +105,8 @@
         一个仓库，多个版本的镜像
     > docker images ubuntu
         查看ubuntu镜像内容
+    > docker inspect ubuntu
+        查看镜像详细信息
 
 (2) 拉取镜像      
     docker pull ubuntu  
@@ -104,6 +129,13 @@
         docker commit -m="aaada" --author="malx" 4aa3adv5asx malx/ubuntu:lastest
 
     2) Dockerfile（如下）
+
+(8) 镜像的导出与导入
+    1) 导出
+        docker save -o 保存的文件名 镜像
+    2) 导入
+        docker load --input 文件
+
 ```
 3、Dockerfile
 ```
@@ -149,9 +181,17 @@
             EXPOSE 2020
             //但是他并不会主动向外开放，需要运行时手动指定（-P）
             docker run -d -P --name mydocker malx/ubuntu nginx -g 'daemon off;'
-(3) 其他指令
+(3) dockerfile的指令
+    https://zhuanlan.zhihu.com/p/57335983
     https://www.jianshu.com/p/5f4b1ade9dfc
-    1) CMD
+
+    1) FROM
+        基础镜像
+        FROM ubuntu:tag
+    2) MAINTAINER
+        指定维护者的信息，并应该放在FROM的后面
+        MAINTAINER authors_name 
+    3) CMD和ENTRYPOINT
         //用于指定一个容器启动时要运行的命令。注意区分RUN(RUN是镜像构建时运行的命令)
         docker run -i -t malx/ubuntu /bin/bash -l
         //可以用CMD的方式
@@ -159,12 +199,17 @@
         //注意：
         每个Dockerfile只能有一条CMD命令。如果指定了多条命令，只有最后一条会被执行。
         如果用户启动容器时候指定了运行的命令，则会覆盖掉 CMD 指定的命令。
-    2) ENTRYPOINT
-        与CMD类似
-        //注意
-        配置容器启动后执行的命令，并且不可被 docker run 提供的参数覆盖。
-        每个 Dockerfile 中只能有一个 ENTRYPOINT，当指定多个时，只有最后一个起效。
-    3) WORKDIR
+        ENTRYPOINT提供命令不会被启动容器覆盖
+    
+    4) RUN
+        RUN命令是Dockerfile执行命令的核心部分
+        每条run指令在当前基础镜像执行，并且提交新镜像。当命令比较长时，可以使用“/”换行
+        RUN apt-get update ;\
+            apt-get install xxx
+        RUN xxxx;\
+            xxxxx   
+
+    5) WORKDIR
         //创建一个新容器时设置工作目录，ENTRYPOINT和CMD的指令都在该目录下运行
         WORKDIR /opt/webapp/db
         RUN bundle install
@@ -173,15 +218,85 @@
         //在外部指定-w
         docker run -ti -w /var/log ubuntu pwd
         # /var/log
-    4) ENV
+
+    6) ENV
         //设置环境变量
         ENV RVM_PATH /home/rvm
         ENV PATH /home/my/:$PATH
         //外部传递环境变量
         docker run -ti -e "WEB_PORT=8080" ubuntu /bin/bash
-    5) USER
+
+    7) USER
         //指定镜像会以什么样用户运行
+        //指定运行容器时的用户名或UID，后续的 RUN 也会使用指定用户。
         USER nginx    //该容器会以nginx用户的身份来运行
+    
+    8) VOLUME
+        VOLUME命令用于让你的容器访问宿主机上的目录，它绕过联合文件系统，用于共享数据和持久化
+        格式为 VOLUME ["/data", "/data1"] 
+        创建一个可以从本地主机或其他容器挂载的挂载点，一般用来存放数据库和需要保持的数据等
+        docker run --privileged --name httpd -v /sys/fs/cgroup:/sys/fs/cgroup:ro -p 80:80 -d  httpd
+
+    9) ADD
+        用来将构建环境的文件和目录拷贝到镜像中
+        ADD aaa /data/
+        ADD aa.tar.gz /data/     //会解压到/data中
+
+    10) COPY
+        类似于ADD
+        文件路径必须和dockerfile在同一个目录，不能复制以外的目录，而且不会解压
+        COPY ./aaa /data
+
+    11) ONBUILD
+        ONBUILD 指定的命令在构建镜像时并不执行，而是在它的子镜像中执行
+
+    12) EXPOSE
+        指定在docker允许时指定的端口进行转发
+        EXPOSE 6379
+        EXPOSE 6379/tcp
+        EXPOSE 6379/udp
+        在运行时使用 -p <宿主端口>:<容器端口>
+
+(4) 构建镜像
+    docker build -t webapp:latest -f ./webapp/a.Dockerfile ./webapp
+                   新镜像名称          指定dockerfile路径     dockerfile目录
+
+    注意：一个镜像不能超过127层
+```
+
+### dockerfile实例
+```
+https://github.com/CentOS/CentOS-Dockerfiles
+```
+
+### docker systemctl
+```
+创建容器：
+docker run -tdi --name my_centos --privileged centos init
+进入容器：
+docker exec -it my_centos /bin/bash
+```
+
+### docker root
+```
+docker守护程序绑定到Unix套接字而不是TCP端口。 默认情况下，Unix套接字是由root用户拥有的，其他用户可以使用sudo访问它。 因此，docker守护程序始终以root用户身份运行。
+为了避免在使用docker命令时必须使用sudo，请创建一个名为docker的Unix组并将用户添加到其中。 docker守护程序启动时，它将使docker组可以读取/写入Unix套接字的所有权。
+```
+
+### Docker使用非root用户
+```
+sudo groupadd docker
+sudo gpasswd -a ${USER} docker
+sudo systemctl restart docker
+```
 
 
+### volumns管理
+```
+
+
+```
+
+### 资源管理
+```
 ```

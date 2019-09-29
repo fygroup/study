@@ -1137,3 +1137,54 @@ docker pull ubuntu@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f878
 sudo docker pull myregistry.local:5000/testing/test-image
 
 ```
+
+### docker网络模式
+```
+https://www.cnblogs.com/gispathfinder/p/5871043.html
+
+(1) host模式
+    --net=host  
+    和宿主机共用一个Network Namespace，不用任何NAT转换
+
+(2) container模式
+    --net=container:NAME_or_ID
+    新创建的容器不会创建自己的网卡，配置自己的IP，而是和一个指定的容器共享IP、端口范围等
+
+(3) none模式
+    --net=none
+    Docker容器拥有自己的Network Namespace，但是，并不为Docker容器进行任何网络配置。也就是说，这个Docker容器没有网卡、IP、路由等信息。需要我们自己为Docker容器添加网卡、配置IP
+
+(4) bridge模式(默认)
+    --net=bridge
+    分配Network Namespace、设置IP等，并将一个主机上的Docker容器连接到一个虚拟网桥上
+
+    +----------------------------------------------+
+    |   host                                       |
+    |                                              |
+    | +----------------+      +-----------------+  |
+    | | docker1        |      |  docker2        |  |
+    | |                |      |                 |  |
+    | | 172.17.0.1/16  |      |  172.17.0.2/16  |  |
+    | |                |      |                 |  |
+    | |     eth0       |      |      eth0       |  |
+    | +-------+--------+      +--------+--------+  |
+    |         |                        |           |
+    | +-------+------------------------+--------+  |
+    | |     veth                     veth       |  |
+    | |                 docker0                 |  |
+    | |             172.17.42.1/16              |  |
+    | |                                         |  |
+    | +-----------------------------------------+  |
+    |                   eth0                       |
+    +----------------------------------------------+
+```
+
+### docker高级网络配置
+```
+(1) 容器访问外部网络
+    容器要想访问外部网络，需要本地系统的转发支持。在Linux 系统中，检查转发是否打开。
+    sysctl net.ipv4.ip_forward
+    net.ipv4.ip_forward = 1
+    //如果为 0，说明没有开启转发，则需要手动打开。
+    sysctl -w net.ipv4.ip_forward=1
+```

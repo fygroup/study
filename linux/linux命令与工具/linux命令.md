@@ -527,4 +527,83 @@ https://www.jianshu.com/p/967e3a04a6c7
                 chmod 755 /datas/www/sftpuser/
 ```
 
+### systemctl
+```
+http://www.ruanyifeng.com/blog/2016/03/systemd-tutorial-commands.html
 
+(1) Unit
+    Systemd 可以管理所有系统资源。不同的资源统称为 Unit（单位）
+    1) 类型
+        Service unit：系统服务
+        Target unit：多个 Unit 构成的一个组
+        Device Unit：硬件设备
+        Mount Unit：文件系统的挂载点
+        Automount Unit：自动挂载点
+        Path Unit：文件或路径
+        Scope Unit：不是由 Systemd 启动的外部进程
+        Slice Unit：进程组
+        Snapshot Unit：Systemd 快照，可以切回某个快照
+        Socket Unit：进程间通信的 socket
+        Swap Unit：swap 文件
+        Timer Unit：定时器
+    2) Unit状态
+        //列出正在运行的 Unit
+        systemctl list-units
+        //显示系统状态
+        systemctl status
+        //显示单个 Unit 的状态
+        sysystemctl status bluetooth.service
+
+    3) Unit管理
+        //立即启动一个服务
+        sudo systemctl start apache.service
+        //立即停止一个服务
+        sudo systemctl stop apache.service
+        //重启一个服务
+        sudo systemctl restart apache.service
+        //杀死一个服务的所有子进程
+        sudo systemctl kill apache.service
+        //重新加载一个服务的配置文件
+        sudo systemctl reload apache.service
+        //重载所有修改过的配置文件
+        sudo systemctl daemon-reload
+
+(2) Unit的配置文件
+    Systemd 默认从目录/etc/systemd/system/读取配置文件。但是，里面存放的大部分文件都是符号链接，指向目录/usr/lib/systemd/system/，真正的配置文件存放在那个目录
+    1) 配置文件格式
+        [Unit]
+        Description=test
+
+        [Service]
+        Type=simple
+        ExecStart=/usr/bin/test
+        Restart=always
+        RestartSec=10
+        StartLimitInterval=0
+        //RestartPreventExitStatus=SIGKILL
+
+        [Install]
+        WantedBy=multi-user.target
+
+//重新加载一个服务的配置文件
+systemctl reload apache.service
+
+//重新加载所有配置文件
+systemctl daemon-reload
+
+//启动
+systemctl start test
+
+//查看test单元的日志
+journalctl -u test
+
+//显示日志占据的硬盘空间
+journalctl --disk-usage
+
+//指定日志文件占据的最大空间
+journalctl --vacuum-size=1G
+
+//指定日志文件保存多久
+journalctl --vacuum-time=1years
+
+```
