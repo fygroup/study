@@ -48,7 +48,7 @@ field没有索引，tag有索引
 
 无法对tag value进行数学运算
 
-但是tag越多，series也就越多。但是不要有太多的series
+但是tag越多，series也就越多，内存占用就越大。不要有太多的series
 
 
 ```

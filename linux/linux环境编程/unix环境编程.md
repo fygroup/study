@@ -475,6 +475,8 @@ void create_daemon() {
     if (pid == -1){
         syslog();
         exit(-1);
+    }else if (pid > 0){
+        exit(0);
     }
     if (chdir("/") < 0){                //工作路径改为根目录
         syslog();
