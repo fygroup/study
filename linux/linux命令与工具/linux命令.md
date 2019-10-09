@@ -607,3 +607,13 @@ journalctl --vacuum-size=1G
 journalctl --vacuum-time=1years
 
 ```
+
+### hwclock
+```
+https://yq.aliyun.com/articles/653670
+
+hwclock是一种访问硬件时钟的工具，可以显示当前时间，将硬件时钟设置为指定的时间，将硬件时钟设置为系统时间，以及从硬件时钟设置系统时间
+
+//读取硬件时钟并在标准输出上打印时间
+hwclock -r
+```

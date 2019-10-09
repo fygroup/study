@@ -76,6 +76,8 @@ https://yeasy.gitbooks.io/docker_practice/content/
     9) ps 
         -a          显示所有容器
         -q          只列出容器ID, docker ps -a -q
+    10) cp
+        docker cp aaa:/aaa/aa /home/malx
 
 ```
 
