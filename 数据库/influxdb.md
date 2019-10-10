@@ -3,7 +3,7 @@
 https://jasper-zhang1.gitbooks.io/influxdb/content/Guide/querying_data.html
 ```
 
-### 配置
+### influxdb关键概念
 ```
 // 不同的工具
     influxd          influxdb服务器
@@ -61,44 +61,40 @@ bind-address = ":8088"  # 备份恢复时使用，默认值为8088
 [http]
     enabled = true  # 是否启用该模块，默认值 ：true
     bind-address = ":8086"  # 绑定地址，默认值：":8086"
-
-
+    auth-enabled = false  # 是否开启认证，默认值：false
+    注意：如果打开了身份验证功能，而且没有用户，InfluxDB会强制创建admin用户，并且只接受创建admin用户的query
 ```
 
 ### 结构
 ```
-database                        库
-measurement                     表，influx的表很轻，可以建立上百万个
-tag(索引), field, timestamp     列
-retention policy                数据保留策略(如30天)
-series                          集合
-                                retention policy，measurement以及tag set
-point                           行，一行数据
+(1) 数据结构
+    > database                        库
+    > measurement                     表，influx的表很轻，可以建立上百万个
+    > tag(索引), field, timestamp     列
+    > retention policy                数据保留策略(如30天)
+    > series                          集合(retention policy，measurement以及tag set)
+    > point                           行，一行数据
+                                
+(2) series示例
+    任意series编号	retention policy    measurement	    tag set
+    series 1	    autogen	            census	        location = 1,scientist = langstroth
+    series 2	    autogen	            census	        location = 2,scientist = langstroth
+    series 3	    autogen	            census	        location = 1,scientist = perpetua
+    series 4	    autogen	            census	        location = 2,scientist = perpetua
 
-
-任意series编号	retention policy    measurement	    tag set
-series 1	    autogen	            census	        location = 1,scientist = langstroth
-series 2	    autogen	            census	        location = 2,scientist = langstroth
-series 3	    autogen	            census	        location = 1,scientist = perpetua
-series 4	    autogen	            census	        location = 2,scientist = perpetua
-```
-
-### tag & field 
-```
-field value就是数据，它们可以是字符串、浮点数、整数、布尔值
-tag value只能是字符串
-
-field没有索引，tag有索引
-
-无法对tag value进行数学运算
-
-但是tag越多，series也就越多，内存占用就越大。不要有太多的series
-
-
+(3) tag和field
+    field value就是数据，它们可以是字符串、浮点数、整数、布尔值
+    tag value只能是字符串
+    field没有索引，tag有索引
+    无法对tag value进行数学运算
+    但是tag越多，series也就越多，内存占用就越大。不要有太多的series
 ```
 
 ### 操作
 ```
+(0) 数据库的创建和删除
+    CREATE DATABASE xxx
+    DROP DATABASE xxx
 (1) 插入
     1) 语法
         [command] <measurement>[,<tag>=<value>...] <field>=<value>[,<field>=<value>...] [unix-nano-timestamp]
@@ -142,6 +138,36 @@ field没有索引，tag有索引
     select * from <rp_name>.<different_measurement>
     //删除Continuous Queries
     DROP CONTINUOUS QUERY <cq_name> ON <database_name>
+
+(6) 用户权限
+    配置auth-enabled = true（默认admin admin）
+    1) 管理员用户管理
+        //创建一个新的管理员用户
+        CREATE USER <username> WITH PASSWORD '<password>' WITH ALL PRIVILEGES
+        //为一个已有用户授权管理员权限
+        GRANT ALL PRIVILEGES TO <username>
+        //取消用户权限
+        REVOKE ALL PRIVILEGES FROM <username>
+        //展示用户及其权限
+        SHOW USERS
+    2) 非管理员用户管理
+        //创建一个新的普通用户
+        CREATE USER <username> WITH PASSWORD '<password>'
+        //为一个已有用户授权
+        GRANT [READ,WRITE,ALL] ON <database_name> TO <username>
+        //取消权限
+        REVOKE [READ,WRITE,ALL] ON <database_name> FROM <username>
+        //展示用户在不同数据库上的权限
+        SHOW GRANTS FOR <user_name>
+    3) 普通用户账号功能管理
+        //重设密码
+        SET PASSWORD FOR <username> = '<password>'
+        //删除用户
+        DROP USER <username>
+    4) query和write必须带上用户名和密码
+    curl -v -G "http://login1.org:8086/query?db=test&u=admin&p=admin" --data-urlencode "q=select * from table"
+    curl -v -XPOST "http://login1.org:8086/write?db=test&u=admin&p=admin" --data-binary "table dd=44"
+
 
 ```
 

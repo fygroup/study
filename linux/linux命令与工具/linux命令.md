@@ -617,3 +617,21 @@ hwclock是一种访问硬件时钟的工具，可以显示当前时间，将硬�
 //读取硬件时钟并在标准输出上打印时间
 hwclock -r
 ```
+
+### 资源管理
+```
+(1) 查看消耗CPU资源最多的前10个进程
+    ps auxw | head -1;ps auxw |sort -rn -k3 |head -11
+
+(2) 查看消耗内存资源最多的前10个进程
+    ps auxw | head -1;ps auxw |sort -rn -k4 |head -11
+
+(3) 如下指令也是同样效果(按照cpu,内存等)
+    ps auxw --sort=rss
+    ps auxw --sort=%cpu
+    ps auxw --sort=%mem
+    > %MEM 进程的内存占用率
+    > VSZ 进程所使用的虚存的大小
+    > RSS 进程使用的驻留集大小或者是实际内存的大小
+    > TTY 与进程关联的终端（tty）
+```
