@@ -1,6 +1,6 @@
 //---查看硬盘容量-------------------------------
  df -h
-//------硬盘挂载----------------------------------
+//------硬盘挂载情况----------------------------------
 fdisk -l
 mount -t ntfs-3g /dev/sdc1 /mnt/
 //------更改yum 镜像-----------------------
@@ -138,6 +138,11 @@ mount -t proc none /mnt
 
     //想让当前目录readonly，那么可以bind自己，并且指定readonly参数：
     mount -o bind,ro ./bind/bind1/ ./bind/bind1
+
+(6) 挂载nfs
+    mount -t nfs hostname:/directory /mount/point
+    //注意：nfs只是个服务，不是个设备
+    
 ```
 
 ### 查看总线上的所有设备
