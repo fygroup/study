@@ -495,3 +495,20 @@ chrome 会对 log 的对象求一次值，打印出来是 Object ，可以继续
 如果把 console.log(a) 改为 console.log(JSON.stringify(a))， 这时就会输出
 {"b":{"c":1}}
 ```
+
+### promise 钩子
+```
+var a
+new Promise((res,rej)=>{
+    a=res
+}).then(res=>{
+    console.log(res)
+})
+a("hello")
+//输出hello
+
+```
+
+
+
+
