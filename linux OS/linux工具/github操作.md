@@ -78,3 +78,6 @@ ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到
 
 
 
+
+
+
