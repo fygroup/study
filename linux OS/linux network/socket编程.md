@@ -85,7 +85,7 @@ if(bind(fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
 
 
 ```
-4、hostent
+4、hostent地址查询
 ```
 
 ```
