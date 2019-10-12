@@ -37,6 +37,7 @@ git reset --hard origin/master
 //---权限控制--------------------------------
 你只有git pull的权利，并没有git push的权利
 url = https://github.com/BingGostar/c_project.git   //会提示你用账号密码登陆
+
 url = git@github.com:BingGostar/c_project.git       //会用密钥登陆
 ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
 
