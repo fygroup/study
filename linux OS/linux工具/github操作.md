@@ -40,5 +40,36 @@ url = https://github.com/BingGostar/c_project.git   //会提示你用账号密�
 url = git@github.com:BingGostar/c_project.git       //会用密钥登陆
 ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
 
+//示例
+账号
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[remote "origin"]
+	url = https://github.com/BingGostar/study
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
 
-
+密钥
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[remote "origin"]
+	url = git@github.com:BingGostar/program_study.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+[user]
+	name = malx
+	email = guduqiubai.mlx@163.com 
