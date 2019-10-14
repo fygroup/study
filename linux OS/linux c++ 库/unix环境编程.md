@@ -81,7 +81,6 @@ POSIX定义的可选头文件
    同步，异步：访问数据的方式，同步需要主动读写数据，在读写数据的过程中还是会阻塞；异步只需要I/O操作完成的通知，并不主动读写数据，由操作系统内核完成数据的读写。
 7、《UNIX网络编程：卷一》对unix的io讲得明明白白。
 8、 说白了，同步需要从内核空间拷贝到用户空间，异步是内核帮你把数据拷贝到用户空间，所以异步需要底层api的支持。而阻塞和非阻塞是指进程访问的数据是否准备就绪，没有就绪则等待！！！
-
 9、异步有异步io和异步操作，异步io如第八步所说的，而异步操作就多了，多线程、协程。。。，所以要根据软件的涉及。
 
 ```
@@ -257,38 +256,6 @@ LD_PRELOAD=./libmyhook.so ./main
 由于编译器存在内联优化，不会调用库中的目标函数，所以必须关闭目标函数优化
 -fno-builtin-strcmp，关闭 strcmp 函数的优化 
 gcc -o main main.c -fno-builtin-strcmp
-
-```
-
-### 多路复用与异步IO
-1、多路复用(同步非阻塞IO)
-select #(select实例)[https://blog.csdn.net/u010155023/article/details/53507788]
-epoll #(epoll实例)[https://blog.csdn.net/davidsguo008/article/details/73556811]
-```
-当某一进程调用epoll_create方法时，Linux内核会创建一个eventpoll结构体，这个结构体中有两个成员与epoll的使用方式密切相关。eventpoll结构体如下所示：
-struct eventpoll{
-    ....
-    /*红黑树的根节点，这颗树中存储着所有添加到epoll中的需要监控的事件*/
-    struct rb_root  rbr;
-    /*双链表中则存放着将要通过epoll_wait返回给用户的满足条件的事件*/
-    struct list_head rdlist;
-    ....
-};
-
-每一个epoll对象都有一个独立的eventpoll结构体，用于存放通过epoll_ctl方法向epoll对象中添加进来的事件。这些事件都会挂载在红黑树中,如此，重复添加的事件就可以通过红黑树而高效的识别出来(红黑树的插入时间效率是lgn，其中n为树的高度)。
-
-而所有添加到epoll中的事件都会与设备(网卡)驱动程序建立回调关系，也就是说，当相应的事件发生时会调用这个回调方法。这个回调方法在内核中叫ep_poll_callback,它会将发生的事件添加到rdlist双链表中。
-在epoll中，对于每一个事件，都会建立一个epitem结构体，如下所示：
-struct epitem{
-    struct rb_node  rbn;//红黑树节点
-    struct list_head    rdllink;//双向链表节点
-    struct epoll_filefd  ffd;  //事件句柄信息
-    struct eventpoll *ep;    //指向其所属的eventpoll对象
-    struct epoll_event event; //期待发生的事件类型
-}
-
-当调用epoll_wait检查是否有事件发生时，只需要检查eventpoll对象中的rdlist双链表中是否有epitem元素即可。如果rdlist不为空，则把发生的事件复制到用户态（所以epoll不是异步），同时将事件数量返回给用户。
-
 
 ```
 

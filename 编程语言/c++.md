@@ -1605,173 +1605,148 @@ A b=a;  //拷贝构造创建对象b
 //强调：这里b对象是不存在的，是用a 对象来构造和初始化b的！！
 ```
 
----
-#### 右值引用
+### 右值引用
+```
 编译选项-fno-elide-constructors用来关闭返回值优化效果
+(1) 值优化的重要性
+    //值传递实例（关闭值优化）
+    class A
+    {
+        A(){
+            cout << "construct" << endl;
+        }
 
-1、值优化的重要性
-```
-//值传递实例（关闭值优化）
-class A
-{
-    A(){
-        cout << "construct" << endl;
+        A(const A& a){
+            cout << "copy" << endl;
+        }
+        ~A(){
+            cout << "deconstruct" << endl;
+        }
+    };
+
+    A GetA(){
+        return A();
     }
 
-    A(const A& a){
-        cout << "copy" << endl;
+    int main(){
+        A a = GetA();
     }
-    ~A(){
-        cout << "deconstruct" << endl;
+
+    //结果
+    construct
+    copy construct
+    deconstruct
+    copy construct
+    deconstruct
+    deconstruct
+
+    //当开启值优化时
+    construct
+    deconstruct
+
+    //由此可见值优化非常重要！！！
+
+(2) 指针悬挂与深拷贝
+
+(3) 左值引用与常量左值引用
+    //左值引用
+    int a;
+    int& b = a; //正确
+    int& b = 1; //错误 
+    //注意：所有的引用都是左值引用，即右边必须是左值！！！
+
+    //常量左值引用
+    const int& a = 1; //正确
+    int& b = a;       //错误 a还是右值,所以b不能引用右值
+
+    string func(){
+        return("dddada");
     }
-};
+    string& a = func(); //错误 func返回的值已被销毁 引用的必须是左值
+    const string& a = func(); //正确 常量左值引用是一个“万能”的引用类型，可以接受左值、右值、常量左值和常量右值
 
-A GetA(){
-    return A();
-}
+(4) 右值引用与类型推导判断
+    //右值引用
+    int a;
+    int&& b = 1; 
+    int&& b = a; //错误 a是左值，必须引用右值
+    //自动判断（T&& t在发生自动类型推断的时候，它是未定的引用类型）
+    template<typename T>
+    void func(T&& t){}
 
-int main(){
+    func(10);  //t变成右值引用
+    int x = 10;
+    func(x);   //t变成左值引用
+
+    template<typename T>
+    class Test {
+        Test(Test&& rhs); //注意 构造函数 没有发生类型推导 rhs肯定是右值引用
+    };
+
+(5) 续命与减少拷贝
+    int func(){
+        return 1;
+    }
+
+    int x = func();    //需要拷贝
+    int&& x = func();   //不需要拷贝 仅仅是move
+
+(6) 移动语义（移动构造函数）
+    class A
+    {
+        int* i_ptr;
+        A():i_ptr(new int(0)){
+            cout << "construct" << endl;
+        }
+        ~A(){delete i_ptr;}
+        A(const A& a):i_ptr(new int(*a.i_ptr)){ //注意 a是左值引用
+            cout << "copy" << endl;
+        }
+        A(A&& a):i_ptr(a.i_ptr){   //移动构造函数 a是右值引用 没有做深拷贝，仅仅是将指针的所有者转移到了另外一个对象
+            a.i_ptr = nullptr;      //非常重要，因为a被析构，所以要让他的内存指向一个空！！！
+            cout << "move" << endl;
+        }
+    };
+    //对于上面的右值引用（A(A&& a)），a是一个右值，那么里面的内容也是右值，所以i_ptr = a.i_ptr合法。
+
+    A GetA(){
+        return A();
+    }
+
     A a = GetA();
-}
+    //输出
+    construct
+    move
+    move
 
-//结果
-construct
-copy construct
-deconstruct
-copy construct
-deconstruct
-deconstruct
-
-//当开启值优化时
-construct
-deconstruct
-
-//由此可见值优化非常重要！！！
-```
-
-2、指针悬挂与深拷贝
-```
-
-```
-
-3、左值引用与常量左值引用
-
-```
-//左值引用
-int a;
-int& b = a; //正确
-int& b = 1; //错误 
-//注意：所有的引用都是左值引用，即右边必须是左值！！！
-
-//常量左值引用
-const int& a = 1; //正确
-int& b = a;       //错误 a还是右值,所以b不能引用右值
-
-string func(){
-    return("dddada");
-}
-string& a = func(); //错误 func返回的值已被销毁 引用的必须是左值
-const string& a = func(); //正确 常量左值引用是一个“万能”的引用类型，可以接受左值、右值、常量左值和常量右值
-```
-
-4、右值引用与类型推导判断
-
-```
-//右值引用
-int a;
-int&& b = 1; 
-int&& b = a; //错误 a是左值，必须引用右值
-//自动判断（T&& t在发生自动类型推断的时候，它是未定的引用类型）
-template<typename T>
-void func(T&& t){}
-
-func(10);  //t变成右值引用
-int x = 10;
-func(x);   //t变成左值引用
-
-template<typename T>
-class Test {
-    Test(Test&& rhs); //注意 构造函数 没有发生类型推导 rhs肯定是右值引用
-};
-
-
-```
-
-5、续命与减少拷贝
-
-```
-int func(){
-    return 1;
-}
-
-int x = func();    //需要拷贝
-int&& x = func();   //不需要拷贝 仅仅是move
-```
-
-6、移动语义（移动构造函数）
-
-```
-class A
-{
-    int* i_ptr;
-    A():i_ptr(new int(0)){
-        cout << "construct" << endl;
+(7) 完美转发
+    #include <utility>
+    void func(string& str){}
+    void func(string&& str){}
+    template<typename T>
+    void pfunc(T&& str){
+        func(forward<T>(str)); //自动判断str是左值还是右值
     }
-    ~A(){delete i_ptr;}
-    A(const A& a):i_ptr(new int(*a.i_ptr)){ //注意 a是左值引用
-        cout << "copy" << endl;
-    }
-    A(A&& a):i_ptr(a.i_ptr){   //移动构造函数 a是右值引用 没有做深拷贝，仅仅是将指针的所有者转移到了另外一个对象
-        a.i_ptr = nullptr;      //非常重要，因为a被析构，所以要让他的内存指向一个空！！！
-        cout << "move" << endl;
-    }
-};
-//对于上面的右值引用（A(A&& a)），a是一个右值，那么里面的内容也是右值，所以i_ptr = a.i_ptr合法。
 
-A GetA(){
-    return A();
-}
-
-A a = GetA();
-//输出
-construct
-move
-move
+(8) std::move(移动转移所有权)
+    #include<utility>
+    vector<int>	a = {1,2,3,4,5};
+    vector<int> b = move(a);
+    cout << "===" << endl;
+    for_each(a.begin(),a.end(),[](int& x){cout << x << endl;});
+    cout << "===" << endl;
+    for_each(b.begin(),b.end(),[](int& x){cout << x << endl;});
+    //输出
+    ===
+    ===
+    1
+    2
+    3
+    4
+    5
 ```
 
-7、完美转发
-
-```
-#include <utility>
-void func(string& str){}
-void func(string&& str){}
-template<typename T>
-void pfunc(T&& str){
-    func(forward<T>(str)); //自动判断str是左值还是右值
-}
-```
-
-8、std::move(移动转移所有权)
-```
-#include<utility>
-vector<int>	a = {1,2,3,4,5};
-vector<int> b = move(a);
-cout << "===" << endl;
-for_each(a.begin(),a.end(),[](int& x){cout << x << endl;});
-cout << "===" << endl;
-for_each(b.begin(),b.end(),[](int& x){cout << x << endl;});
-//输出
-===
-===
-1
-2
-3
-4
-5
-```
-
----
-#### RTTI
+### RTTI
 ```
 RTTI(Run Time Type Identification)即通过运行时类型识别，程序能够使用基类的指针或引用来检查着这些指针或引用所指的对象的实际派生类型。
 
@@ -1914,13 +1889,13 @@ auto_ptr<string> b;
 b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
 ```
 
-#### 智能指针不要与容器混合使用
+#### 智能指针auto_ptr不要与容器混合使用
 ```
 STL有一条规定：
 std::auto_ptr 不能和容器混合使用。
 原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
 
-所以！！！auto_ptr几乎没鸡巴卵用！！！
+所以！！！auto_ptr几乎没用！！！
 ```
 
 #### goto
@@ -2143,23 +2118,81 @@ Point p1(3.0,4.0),p2(6.0,8.0);
 double d = Distance(p1,p2);     //友元函数的调用方法，同普通函数的调用一样，不要像成员函数那样调用
 ```
 
-### new
+### operator new
 ```
-//可以这样调用
-    ::operator new()
-    ::operatot delete()
+//三种形式
+(1) void* operator new(size_t) throw(std::bad_alloc);
+    > 用法
+        A *a = new A;
+    > 做了三件事
+        调用operator new (sizeof(A))
+        调用A:A()
+        返回指针
+    > 失败时抛出bad_alloc
 
-// C++ 两个实现
-1. 分配空间： 调用函数 operator new 来实现。 new T [3]; new T()
-2. 调用构造函数： 调用 placement new 来实现。(在一个 已经分配好的空间上，调用构造函数，创建一个类)
-    new(void*) T [3]; new(void*) T()
+(2) void* operator new(size_t, nothrow_value) throw();
+    > 用法
+        A* a = new(std::nothrow) A;
+    > 同上，但是失败时返回null
+        调用operator new (sizeof(A), nothrow_value)
+        调用A:A()
+        返回指针
+(3) void* operator new(size_t, void* ptr) throw();
+    > 用法
+        //在ptr所指地址上构建一个对象(通过调用其构造函数)
+        char ptr[1024];
+        A* a = new(ptr) A();
+    > 本身返回ptr
+    > 可以被重载
+    
+(4) 示例
+    class a{
+    public:
+        T n;
+        a(T _n):n(_n){
+            cout << "T" << endl;
+        }
+        virtual ~a(){}
+        void* operator new(size_t n){
+            cout << "void* operator new(size_t n)" << endl;
+            cout << n << endl;
+            return malloc(n);
+        }
+
+        void* operator new(size_t n, void* p){
+            cout << "void* operator new(size_t n, void* p)" << endl;
+            cout << n << endl;
+            return p;
+        }
+    };
+
+    int main() {
+        char buf[1024];
+        a<int> * x = new a<int>(3);
+        cout << x->n << endl;
+        a<int> * y = new(buf) a<int>(4);
+        cout << x->n << endl;
+        return 0;
+    }
 ```
 
 ### allocator
 ```
 https://zhuanlan.zhihu.com/p/34725232
 //allocator是STL的重要组成,allocator除了负责内存的分配和释放，还负责对象的构造和析构
-//例如大部分STL都会有以下用法
+//例如vector的class如下：
+    template<typename T, typename Alloc = allocator<T>>
+    class vector{
+        //每个vector内部实例一个allocator
+        Alloc data_allocator;
+    };
+
+    //负责内存的分配和释放，还负责对象的构造和析构
+    template<typename T>
+    class allocator{ 
+
+    };
+
     std::vector<int> v;
     等价于
     std::vector<int, allocator<int>> v;
@@ -2211,14 +2244,29 @@ void DetailAnno::Init<string, Argv...>(const string str_, Argv... argvs){
 ### 模板类偏特化(指针)
 ```
 template<typename T>
-struct My{
-    T a;
+class a{
+public:
+    a(){
+        cout << "T" << endl;
+    }
+    virtual ~a(){}
 };
 
 template<typename T>
-struct My<T*> {
-    T* a;
+class a<T*>{
+public:
+    a(){
+        cout << "T*" << endl;
+    }
+    virtual ~a(){}
 };
+
+int main() {
+    a<char> x;
+    a<char*> x1;
+
+    return 0;
+}
 ```
 
 ### 类模板中的模板函数
@@ -2234,7 +2282,7 @@ public:
     My(T t_):t(t_){}
     virtual ~My(){}
     My(const My<T> & m) = default;
-    template<typename T1>
+    template<typename T1>               //注意
     My(const My<T1> & m);
     T & operator=(const My<T> m) = default;
 };
@@ -2284,10 +2332,8 @@ func(I ite) {
 vector<int>::iterator::value_type a = 1;
 等价于
 int a = 1;
-template <class T, ...>
 
-//这种技术也叫萃取
-
+//萃取
 class vector {
 public:
     class iterator {
@@ -2307,7 +2353,7 @@ public:
     int a(2);
     double b(2.22);
     int *a(new int [2]);   //a是2个int的指针
-    int (*a())[3];         //不占内存，仅仅是声明了一个函数（创建3个int指针的函数）,但是注意，此函数在编译器已经被解开，所以a()并不是个函数
+    int (*a())[3];         //这是个声明，所以不占内存，声明了一个包含3个int的函数指针
     sizeof(*a());          //输出12
 
 (2) 编译期计数
@@ -2351,6 +2397,20 @@ public:
         printf("%u%u%u%u\n%u%u%u\n", i1, i2, i3, i4 ,j1, j2, j3 );
         return 0;
     }
+
+(3) 自己的理解
+    template<int N>
+    struct counter:counter<N-1>{};
+    template<>
+    struct counter<0>{};
+
+    char (*f(...))[1];
+    cout << sizeof(*f((void*)0)) << endl;
+    char (*f(counter<2>*))[2];
+    cout << sizeof(*f((counter<MAX>*)0)) << endl;
+    char (*f(counter<3>*))[3];
+    cout << sizeof(*f((counter<MAX>*)0)) << endl;
+
 ```
 
 ### struct初始化
