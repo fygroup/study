@@ -25,9 +25,6 @@ boost::system::error_code ec;
 sync_func( arg1 arg2, ..., argN, ec); // 返回错误码
 
 
-
-
-
 ```
 
 ### ip
@@ -208,6 +205,9 @@ ip::icmp::socket, ip::icmp::endpoint, ip::icmp::resolver
 
 ### 套接字控制
 ```
+// 注意
+    在下述特性工作之前，套接字要被打开。否则，会抛出异常
+
 // get_io_service()
     这个函数返回构造函数中传入的io_service实例
 
@@ -234,6 +234,19 @@ ip::icmp::socket, ip::icmp::endpoint, ip::icmp::resolver
 // io_control(cmd)
     这个函数在套接字上执行一个I/O指令
 
-
+// 示例
+    ip::tcp::endpoint ep( ip::address::from_string("127.0.0.1"), 80);
+    ip::tcp::socket sock(service);
+    sock.connect(ep);
+    // TCP套接字可以重用地址
+    ip::tcp::socket::reuse_address ra(true);
+    sock.set_option(ra);
+    // 获取套接字读取的数据
+    ip::tcp::socket::receive_buffer_size rbs;
+    sock.get_option(rbs);
+    std::cout << rbs.value() << std::endl;
+    // 把套接字的缓冲区大小设置为8192
+    ip::tcp::socket::send_buffer_size sbs(8192);
+    sock.set_option(sbs);
 
 ```
