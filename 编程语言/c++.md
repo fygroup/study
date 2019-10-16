@@ -1,6 +1,11 @@
 C++笔记
 |编译器为我们做了大量的优化工作，不要以为什么都理所应当
 
+### 书籍
+```
+https://github.com/chuenlungwang/cppprimer-note
+```
+
 ### 参考
 ```
 https://zh.cppreference.com/w/%E9%A6%96%E9%A1%B5
@@ -280,19 +285,7 @@ my::a
 #include <ctime> <time.h>
 #include <cctype> <ctype.h>
 #include <iostream>
-#include <memory> 智能指针 auto_ptr<int> a(new int [10]) unique_ptr shared_ptr
-//---智能指针---------------------
-auto_ptr具有所有权，即一个地址只有一个智能指针
-int* p_reg = new int [1024];
-cout<<(void*)p_reg<<endl;
-auto_ptr<int> pshare(p_reg);
-cout<<&pshare<<endl;
-cout<<pshare.get()<<endl;
-auto_ptr<int> pshare1=pshare;
-cout<<&pshare<<endl;
-cout<<pshare.get()<<endl;
-cout<<&pshare1<<endl;
-cout<<pshare1.get()<<endl;
+
 //---using------------------------
 template <typename T>
 using ArenaDeque = std::deque<T, ArenaAllocatorAdapter<T>>;
@@ -1392,35 +1385,6 @@ template<typename T, typename... Args> //T 返回 argvs参数
 static void forkRun(function<T(Args...)> func, Args... args);
 ```
 
----
-#### 智能指针转换
-```
-//初始化
-shared_ptr<int> sptr1( new int );
-// 使用make_shared 来加速创建过程
-// shared_ptr 自动分配内存，并且保证引用计数
-// 而make_shared则是按照这种方法来初始化
-shared_ptr<int> sptr2 = make_shared<int>( 100 );
-
-//普通指针到智能指针的转换
-int* iPtr = new int(42);
-shared_ptr<int> p(iPtr);
-//智能指针到普通指针的转换
-int* pI = p.get();
-
-//shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存。每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁。
-//例如：
-void func(shared_ptr<int> & a){       //引用 不会改变计数
-	cout << a.use_count() << endl;
-}
-void func(shared_ptr<int> a){		//复制 会改变计数
-	cout << a.use_count() << endl;
-}
-shared_ptr<int> a = make_shared<int>(10);
-cout << a.use_count() << endl;	
-func(a);
-cout << a.use_count() << endl;
-```
 
 ---
 #### lambda
@@ -1868,34 +1832,6 @@ Color myColor = Color::red;
 enum My{a=1,b,c};
 
 My a = a;
-```
-
-#### 智能指针不能当右值
-```
-void* a = NULL;
-//右值Segmentation fault (core dumped)
-a =  static_cast<void*>(auto_ptr<string>(new string("sadadada")).get()); //此时智能指针是右值
-cout << *static_cast<string*>(a) << endl; //出错！ 实际上智能指针早已析构了
-//必须先存成左值
-auto_ptr<string> x = auto_ptr<string>(new string("sadadada")); //必须现存成左值
-a =  static_cast<void*>(x.get());
-cout << *static_cast<string*>(a) << endl;
-```
-
-#### 智能指针所有权（auto_ptr）
-```
-auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
-auto_ptr<string> b;
-b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
-```
-
-#### 智能指针auto_ptr不要与容器混合使用
-```
-STL有一条规定：
-std::auto_ptr 不能和容器混合使用。
-原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
-
-所以！！！auto_ptr几乎没用！！！
 ```
 
 #### goto
@@ -2485,10 +2421,96 @@ var(a)++;
     __rcu    __attribute__((noderef, address_space(4))) 
         即这个变量地址必须是有效的，而且变量所在的地址空间必须是 4，即 RCU 空间的。
         使用__rcu 附上 RCU保护的数据结构，如果你没有使用rcu_dereference()类中某个函数，Sparse就会警告你这个操作。
+```
 
+#### shared_ptr
+```
+#include <memory>
 
+shared_ptr<int> a(new string("dasdas"));
+shared_ptr<int> a = make_shared<int>("dasdas")
+shared_ptr<vector<int>> a(new vector<int>(10));
+cout << a << endl;  //0x5633802bfe70
 
+shared_ptr<int> a(new int [10] {1,2,3,4,5});
+cout << *a << endl;  //1
+cout << a[0] << endl;  //错误
+shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
+cout << *a << endl;  //错误
+cout << a[0] << endl;  //1
 
+shared_ptr<vector<int>> vc = make_shared<vector<int>>(10,3);
+cout << vc->operator[](1) << endl;
+cout << vc->size() << endl;
+
+int* pI = p.get();
+
+//shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存。每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁。
+//例如：
+void func(shared_ptr<int> & a){       //引用 不会改变计数
+	cout << a.use_count() << endl;
+}
+void func(shared_ptr<int> a){		//复制 会改变计数
+	cout << a.use_count() << endl;
+}
+shared_ptr<int> a = make_shared<int>(10);
+cout << a.use_count() << endl;	
+func(a);
+cout << a.use_count() << endl;
+
+shared_ptr<int[]> a(new int[1], [](int* a){cout << "delete" << endl;delete a;});
+```
+
+#### 智能指针不能当右值
+```
+void* a = NULL;
+//右值Segmentation fault (core dumped)
+a =  static_cast<void*>(auto_ptr<string>(new string("sadadada")).get()); //此时智能指针是右值
+cout << *static_cast<string*>(a) << endl; //出错！ 实际上智能指针早已析构了
+//必须先存成左值
+auto_ptr<string> x = auto_ptr<string>(new string("sadadada")); //必须现存成左值
+a =  static_cast<void*>(x.get());
+cout << *static_cast<string*>(a) << endl;
+```
+
+#### 智能指针所有权（auto_ptr）
+```
+auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
+auto_ptr<string> b;
+b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
+```
+
+#### 智能指针auto_ptr不要与容器混合使用
+```
+STL有一条规定：
+std::auto_ptr 不能和容器混合使用。
+原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
+
+所以！！！auto_ptr几乎没用！！！
+```
+
+### shared_ptr 和 unique_ptr
+```
+```
+
+### allocator
+```
+allocator<string> alloc;
+string *s = alloc.allocate(10);
+string *s1 = s;
+alloc.construct(s1++);
+alloc.construct(s1++, "dasd");
+alloc.construct(s1++, "dasddasdas");
+cout << s[0] << endl;
+
+alloc.destory(s1);       //析构s1处的内存
+alloc.deallocate(s, 10); //析构整个内存
+
+//复制和填充未初始化的内存
+allocator 类定义了两个可以构建对象的算法，以下这些函数将在目的地构建元素，而不是给它们赋值
+vector<string> list(10, "aaaa");
+uninitialized_copy_n(list.begin(), 5, s);  //构建填充
+uninitialized_fill_n(list.begin(), 5, s);  //拷贝填充
 
 
 ```
