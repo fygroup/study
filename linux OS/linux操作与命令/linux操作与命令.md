@@ -389,6 +389,9 @@ umask 022 -----w--w-: (-rw-rw-rw-) - (-----w--w-) = (-rw-r--r--)
 ```
 ps -aux | grep xxxx
 netstat –apn
+                    本地                        远端
+tcp        0      0 127.0.0.1:8112              0.0.0.0:*                   LISTEN      10552/ssh           
+tcp        0      0 20.23.11.12:54923           10.10.53.54:22              ESTABLISHED 10552/ssh    
 ```
 
 ### pmap
@@ -645,4 +648,9 @@ hwclock -r
     > VSZ 进程所使用的虚存的大小
     > RSS 进程使用的驻留集大小或者是实际内存的大小
     > TTY 与进程关联的终端（tty）
+```
+
+### 域名解析
+```
+nslookup https://music.163.com/
 ```
