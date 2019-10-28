@@ -654,3 +654,11 @@ hwclock -r
 ```
 nslookup https://music.163.com/
 ```
+
+### make
+```
+(1) make指定目录
+    1> ./configure --prefix=* && make
+    2> ./configure && make install DESTDIR=*
+
+```
