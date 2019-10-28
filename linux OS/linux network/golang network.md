@@ -26,6 +26,18 @@ func CreateToken() string{
 }
 
 func CheckToken(tokenString string, secret string) bool{
-    
+    token, err := jwt.Parse(tokenString, func (token *jwt.Token) (interface{}, error){
+        return []byte(secret),nil
+    }) 
+
+    if err != nil || !token.Valid {
+        return false
+    }
+
+    claims, err := token.Claims.(jwt.MapClaims)
+    //claims['id'].(int)
+    //cliams['name'].(string)
+    return true
+
 }
 ```
