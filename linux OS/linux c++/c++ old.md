@@ -1,10 +1,7 @@
 C++笔记
 |编译器为我们做了大量的优化工作，不要以为什么都理所应当
 
-### 书籍
-```
-https://github.com/chuenlungwang/cppprimer-note
-```
+
 
 ### 参考
 ```
@@ -2513,4 +2510,28 @@ uninitialized_copy_n(list.begin(), 5, s);  //构建填充
 uninitialized_fill_n(list.begin(), 5, s);  //拷贝填充
 
 
+```
+
+### basic_string
+```
+https://www.byvoid.com/zhs/blog/cpp-string
+
+string并不是一个单独的容器，只是basic_string 模板类的一个typedef 而已
+
+extern "C++" {
+typedef basic_string <char> string;
+typedef basic_string <wchar_t> wstring;
+}
+
+// 类basic_string
+template <class charT, class traits = char_traits<charT>,
+class Allocator = allocator<charT> >
+class basic_string
+{
+//...
+}
+```
+
+### stream
+```
 ```

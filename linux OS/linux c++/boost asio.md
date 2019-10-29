@@ -3,6 +3,11 @@
 https://mmoaay.gitbooks.io/boost-asio-cpp-network-programming-chinese
 ```
 
+### 编译
+```
+flag = -lboost_thread -lboost_system
+```
+
 ### error
 
 ```
@@ -181,16 +186,20 @@ ip::icmp::socket, ip::icmp::endpoint, ip::icmp::resolver
     这个函数返回有多少字节的数据可以无阻塞地进行同步读取。
 
 // 示例
-    // 在一个tcp套接字上进行同步读写
+    // 在一个tcp套接字上进行同步读写(模拟http)
     io_service service;
-    ip::tcp::endpoint ep(ip::address::from_string("192.1.1.1"), 80);
+    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8000);
     ip::tcp::socket sock(service);
     sock.open(ip::tcp::v4());
     sock.connect(ep);
-    sock.write_some(buffer("GET /index.html\r\n"));
+    sock.write_some(buffer("GET / HTTP/1.1\r\nHost:{}\r\nAccept-Language: zh-CN,zh;q=0.9,und;q=0.8\r\n\r\n"));
+    sleep(2)
+    char buff[10240];
     cout << sock.available() << endl;
-    char buf[512];
-    size_t read = sock.read_some(buffer(buf));
+    sock.read_some(buffer(buff, 10240));
+    cout << buff << endl;
+    //sock.shutdown(ip::tcp::socket::shutdown_receive);
+    sock.close();
 
     // 在一个UDP套接字上进行同步读写
     ip::udp::endpoint ep(ip::address::from_string("192.1.1.1"), 80);
@@ -249,4 +258,68 @@ ip::icmp::socket, ip::icmp::endpoint, ip::icmp::resolver
     ip::tcp::socket::send_buffer_size sbs(8192);
     sock.set_option(sbs);
 
+```
+
+### 不同套接字的I/O函数不同
+```
+名字	            TCP	UDP	ICMP
+async_read_some	    是	-	-
+async_receive_from	-	是	是
+async_write_some	是	-	-
+async_send_to	    -	是	是
+read_some	        是	-	-
+receive_from	    -	是	是
+write_some	        是	-	-
+send_to	            -	是	是
+```
+
+### 套接字的其他方法
+```
+// local_endpoint
+    这个方法返回套接字本地连接的地址
+
+// remote_endpoint
+    这个方法返回套接字连接到的远程地址。
+
+// native_handle()
+    这个方法返回原始套接字的处理程序。你只有在调用一个Boost.Asio不支持的原始方法时才需要用到它。
+
+// non_blocking()
+    如果套接字是非阻塞的，这个方法返回true，否则false。
+
+// native_non_blocking()
+    如果套接字是非阻塞的，这个方法返回true，否则返回false。但是，它是基于原生的套接字来调用本地的api。所以通常来说，你不需要调用这个方法（non_blocking()已经缓存了这个结果）；你只有在直接调用native_handle()这个方法的时候才需要用到这个方法。
+
+// at_mark()
+    如果套接字要读的是一段OOB数据，这个方法返回true。这个方法你很少会用到。
+```
+
+### 套接字buffer
+```
+mutable_buffers_1 buffer(xxx);
+
+// 以下可以包装到buffer中
+    char[] const buf
+    int[] const buf
+    void *buf
+    std::string
+    std::vector
+    boost::vector
+    std::array
+```
+
+### read/write/connect单独函数
+```
+(1) connect
+    1) connect(socket, begin [, end] [, condition])
+        begin迭代器是调用socket_type::resolver::query的返回结果
+        tcp::resolver resolver(service);
+        tcp::resolver::iterator iter = resolver.resolve(tcp::resolver::query("www.baidu.com", "80"));
+        ip::tcp::endpoint ep = *iter++;
+        tcp::socket sock(service);
+        connect(sock, iter);
+    2) async_connect(socket, begin [, end] [, condition], handler)
+        void handler(constboost::system::error_code & err, Iterator iterator)
+
+(2) 
 ```
