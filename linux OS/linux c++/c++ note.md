@@ -284,8 +284,5 @@ https://cloud.tencent.com/developer/article/1008625
             cnt++;
         }
         std::cout << cnt << '\n';
-
-
     2) 自定义缓冲区
-
 ```

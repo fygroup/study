@@ -139,6 +139,14 @@ mount -t proc none /mnt
     //想让当前目录readonly，那么可以bind自己，并且指定readonly参数：
     mount -o bind,ro ./bind/bind1/ ./bind/bind1
 
+    //隐藏进程
+    mkdir /tmp/none
+    mount --bind /tmp/none /proc/pid
+    //查看隐藏进程
+    cat /proc/mounts
+    或
+    cat /proc/$$/mountinfo
+
 (6) 挂载nfs
     mount -t nfs hostname:/directory /mount/point
     //注意：nfs只是个服务，不是个设备
