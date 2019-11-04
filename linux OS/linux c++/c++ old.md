@@ -1,10 +1,7 @@
 C++笔记
 |编译器为我们做了大量的优化工作，不要以为什么都理所应当
 
-### 书籍
-```
-https://github.com/chuenlungwang/cppprimer-note
-```
+
 
 ### 参考
 ```
@@ -1655,6 +1652,14 @@ A b=a;  //拷贝构造创建对象b
     int x = func();    //需要拷贝
     int&& x = func();   //不需要拷贝 仅仅是move
 
+    stringstream ss("dadada");
+    string && ss1 = ss.str(); //str()返回的是拷贝，所以我们用右值避免拷贝
+    cout << ss1 << endl;
+    const char * ss2 = ss1.c_str();
+    char *ss3 = const_cast<char*>(ss2);
+    *ss3 = 'W';
+    cout << ss1 << endl;
+
 (6) 移动语义（移动构造函数）
     class A
     {
@@ -2054,103 +2059,6 @@ Point p1(3.0,4.0),p2(6.0,8.0);
 double d = Distance(p1,p2);     //友元函数的调用方法，同普通函数的调用一样，不要像成员函数那样调用
 ```
 
-### operator new
-```
-//三种形式
-(1) void* operator new(size_t) throw(std::bad_alloc);
-    > 用法
-        A *a = new A;
-    > 做了三件事
-        调用operator new (sizeof(A))
-        调用A:A()
-        返回指针
-    > 失败时抛出bad_alloc
-
-(2) void* operator new(size_t, nothrow_value) throw();
-    > 用法
-        A* a = new(std::nothrow) A;
-    > 同上，但是失败时返回null
-        调用operator new (sizeof(A), nothrow_value)
-        调用A:A()
-        返回指针
-(3) void* operator new(size_t, void* ptr) throw();
-    > 用法
-        //在ptr所指地址上构建一个对象(通过调用其构造函数)
-        char ptr[1024];
-        A* a = new(ptr) A();
-    > 本身返回ptr
-    > 可以被重载
-    
-(4) 示例
-    class a{
-    public:
-        T n;
-        a(T _n):n(_n){
-            cout << "T" << endl;
-        }
-        virtual ~a(){}
-        void* operator new(size_t n){
-            cout << "void* operator new(size_t n)" << endl;
-            cout << n << endl;
-            return malloc(n);
-        }
-
-        void* operator new(size_t n, void* p){
-            cout << "void* operator new(size_t n, void* p)" << endl;
-            cout << n << endl;
-            return p;
-        }
-    };
-
-    int main() {
-        char buf[1024];
-        a<int> * x = new a<int>(3);
-        cout << x->n << endl;
-        a<int> * y = new(buf) a<int>(4);
-        cout << x->n << endl;
-        return 0;
-    }
-```
-
-### allocator
-```
-https://zhuanlan.zhihu.com/p/34725232
-//allocator是STL的重要组成,allocator除了负责内存的分配和释放，还负责对象的构造和析构
-//例如vector的class如下：
-    template<typename T, typename Alloc = allocator<T>>
-    class vector{
-        //每个vector内部实例一个allocator
-        Alloc data_allocator;
-    };
-
-    //负责内存的分配和释放，还负责对象的构造和析构
-    template<typename T>
-    class allocator{ 
-
-    };
-
-    std::vector<int> v;
-    等价于
-    std::vector<int, allocator<int>> v;
-
-(1) 重要用法
-    // 以下几种自定义类型是一种type_traits技巧
-        allocator::value_type
-        allocator::pointer
-        allocator::const_pointer
-        allocator::reference
-        allocator::const_reference
-        allocator::size_type
-        allocator::difference
-    // 配置空间，足以存储n个T对象。第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
-        pointer allocator::allocate(size_type n, const void* = 0)
-    // 释放先前配置的空间
-        void allocator::deallocate(pointer p, size_type n)
-    // 调用对象的构造函数，等同于 new((void*)p) value_type(x)
-        void allocator::construct(pointer p, const T& x)
-    // 调用对象的析构函数，等同于 p->~T()
-        void allocator::destroy(pointer p)
-```
 
 ### 可变参数实例
 ```
@@ -2423,114 +2331,22 @@ var(a)++;
         使用__rcu 附上 RCU保护的数据结构，如果你没有使用rcu_dereference()类中某个函数，Sparse就会警告你这个操作。
 ```
 
-#### shared_ptr
+### basic_string
 ```
-#include <memory>
+https://www.byvoid.com/zhs/blog/cpp-string
 
-shared_ptr<int> a(new string("dasdas"));
-shared_ptr<int> a = make_shared<int>("dasdas")
-shared_ptr<vector<int>> a(new vector<int>(10));
-cout << a << endl;  //0x5633802bfe70
+string并不是一个单独的容器，只是basic_string 模板类的一个typedef 而已
 
-shared_ptr<int> a(new int [10] {1,2,3,4,5});
-cout << *a << endl;  //1
-cout << a[0] << endl;  //错误
-shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
-cout << *a << endl;  //错误
-cout << a[0] << endl;  //1
-
-shared_ptr<vector<int>> vc = make_shared<vector<int>>(10,3);
-cout << vc->operator[](1) << endl;
-cout << vc->size() << endl;
-
-int* pI = p.get();
-
-//shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存。每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁。
-//例如：
-void func(shared_ptr<int> & a){       //引用 不会改变计数
-	cout << a.use_count() << endl;
+extern "C++" {
+typedef basic_string <char> string;
+typedef basic_string <wchar_t> wstring;
 }
-void func(shared_ptr<int> a){		//复制 会改变计数
-	cout << a.use_count() << endl;
+
+// 类basic_string
+template <class charT, class traits = char_traits<charT>,
+class Allocator = allocator<charT> >
+class basic_string
+{
+//...
 }
-shared_ptr<int> a = make_shared<int>(10);
-cout << a.use_count() << endl;	
-func(a);
-cout << a.use_count() << endl;
-
-shared_ptr<int[]> a(new int[1], [](int* a){cout << "delete" << endl;delete a;});
-```
-
-#### 智能指针不能当右值
-```
-void* a = NULL;
-//右值Segmentation fault (core dumped)
-a =  static_cast<void*>(auto_ptr<string>(new string("sadadada")).get()); //此时智能指针是右值
-cout << *static_cast<string*>(a) << endl; //出错！ 实际上智能指针早已析构了
-//必须先存成左值
-auto_ptr<string> x = auto_ptr<string>(new string("sadadada")); //必须现存成左值
-a =  static_cast<void*>(x.get());
-cout << *static_cast<string*>(a) << endl;
-```
-
-#### 智能指针所有权（auto_ptr）
-```
-auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
-auto_ptr<string> b;
-b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
-```
-
-#### 智能指针auto_ptr不要与容器混合使用
-```
-STL有一条规定：
-std::auto_ptr 不能和容器混合使用。
-原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
-
-所以！！！auto_ptr几乎没用！！！
-```
-
-### shared_ptr 和 unique_ptr
-```
-```
-
-### allocator
-```
-allocator<string> alloc;
-string *s = alloc.allocate(10);
-string *s1 = s;
-alloc.construct(s1++);
-alloc.construct(s1++, "dasd");
-alloc.construct(s1++, "dasddasdas");
-cout << s[0] << endl;
-
-alloc.destory(s1);       //析构s1处的内存
-alloc.deallocate(s, 10); //析构整个内存
-
-//复制和填充未初始化的内存
-allocator 类定义了两个可以构建对象的算法，以下这些函数将在目的地构建元素，而不是给它们赋值
-vector<string> list(10, "aaaa");
-uninitialized_copy_n(list.begin(), 5, s);  //构建填充
-uninitialized_fill_n(list.begin(), 5, s);  //拷贝填充
-```
-
-### std:placeholders
-```
-c++11 占位符
-
-std::placeholders::_1
-std::placeholders::_2
-...
-```
-
-### std::bind
-```
-struct Foo {
-    void func(int a) {
-        cout << a << endl;
-    }
-};
-
-Foo foo;
-function<void(int)> a = bind(&Foo::func, &foo, _1);
-a(12);
 ```

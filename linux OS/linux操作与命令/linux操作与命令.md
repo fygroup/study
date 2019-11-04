@@ -139,6 +139,14 @@ mount -t proc none /mnt
     //想让当前目录readonly，那么可以bind自己，并且指定readonly参数：
     mount -o bind,ro ./bind/bind1/ ./bind/bind1
 
+    //隐藏进程
+    mkdir /tmp/none
+    mount --bind /tmp/none /proc/pid
+    //查看隐藏进程
+    cat /proc/mounts
+    或
+    cat /proc/$$/mountinfo
+
 (6) 挂载nfs
     mount -t nfs hostname:/directory /mount/point
     //注意：nfs只是个服务，不是个设备
@@ -653,4 +661,23 @@ hwclock -r
 ### 域名解析
 ```
 nslookup https://music.163.com/
+```
+
+### make
+```
+(1) make指定目录
+    1> ./configure --prefix=* && make
+    2> ./configure && make install DESTDIR=*
+
+```
+
+### file
+```
+file xxx
+查看文件类型
+
+//例如
+file a.out
+a.out: ELF 64-bit LSB shared object, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/l, for GNU/Linux 3.2.0, BuildID[sha1]=1f968f44e3ed35b7725aff487cc1e9eb1ebf9a5a, not stripped
+
 ```

@@ -6,12 +6,15 @@ linux kernel内核知识笔记
     《深入linux内核架构》
     https://github.com/gatieme/LDD-LinuxDeviceDrivers/tree/master/study/kernel【Linux内核与设备驱动程序学习笔记】
     https://www.cnblogs.com/wang_yb/p/3514730.html 【《Linux内核设计与实现》读书笔记】
+    https://xinqiu.gitbooks.io/linux-insides-cn/
+    https://draveness.me/
+    https://zhuanlan.zhihu.com/p/72818398
+    《嵌入式Linux应用开发完全手册》
+    《Linux 内核完全剖析 0.12》
 
 （2）目标与重点
         文件系统
         网络
-
-
 ```
 
 ### 知识架构
