@@ -670,3 +670,14 @@ nslookup https://music.163.com/
     2> ./configure && make install DESTDIR=*
 
 ```
+
+### file
+```
+file xxx
+查看文件类型
+
+//例如
+file a.out
+a.out: ELF 64-bit LSB shared object, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/l, for GNU/Linux 3.2.0, BuildID[sha1]=1f968f44e3ed35b7725aff487cc1e9eb1ebf9a5a, not stripped
+
+```
