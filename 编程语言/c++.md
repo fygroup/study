@@ -2511,6 +2511,26 @@ allocator 类定义了两个可以构建对象的算法，以下这些函数将�
 vector<string> list(10, "aaaa");
 uninitialized_copy_n(list.begin(), 5, s);  //构建填充
 uninitialized_fill_n(list.begin(), 5, s);  //拷贝填充
+```
 
+### std:placeholders
+```
+c++11 占位符
 
+std::placeholders::_1
+std::placeholders::_2
+...
+```
+
+### std::bind
+```
+struct Foo {
+    void func(int a) {
+        cout << a << endl;
+    }
+};
+
+Foo foo;
+function<void(int)> a = bind(&Foo::func, &foo, _1);
+a(12);
 ```
