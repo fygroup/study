@@ -18,7 +18,7 @@ javascript是基于phototype的，不是基于类的。
 prototype可以理解为函数的一个属性，即Object.prototype,他也是实例化的东西
 prototype属性中含有两个属性constructor和__proto__
 任何对象都有一个__proto__属性 
-任何方法都有一个prototype属性，prototype也是一个对象 ，所以其中也有一个___proto__
+任何方法都有一个prototype属性，prototype也是一个对象 ，所以其中也有一个__proto__
 使用Object.getPrototypeOf()代替__proto__
 原型链可以理解为：Object.prototype.__proto__.prototype.__proto__.....
 继承是通过原型链一层一层的向上延续（找属性）
