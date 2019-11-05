@@ -313,3 +313,9 @@ export的模块名必须与route中的path、name一样，否则不会持久化
 
 
 ```
+
+### $listeners
+```
+//获得当前组件绑定的事件
+this.$listeners
+```
