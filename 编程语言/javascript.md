@@ -127,13 +127,13 @@ ctx.strokeText("H",coorX[0],coorY[0]);
 
 #### 静态变量与实例变量
 ```
-function obj(){
-    obj.a=0; //类变量
-    this.b=1;//实例变量
+var obj = function(){
 }
-console.log(obj.a);
-var my = new obj();
-console.log(my.b);
+//添加静态变量
+obj.prototype.a = 1
+
+var my = new obj()
+my.a   //1 
 ```
 
 #### prototype与__proto__
@@ -509,6 +509,20 @@ a("hello")
 
 ```
 
+### like __main__
+```
+// node
+var fnName = function() {
+    // main code
+}
+if (require.main === module) {
+    fnName();
+}
 
+//brower
+if (typeof require !== 'undefined' && require.main === module) {
+    fnName();
+}
+```
 
 
