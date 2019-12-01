@@ -49,7 +49,7 @@ var b [] int = a[:]
 #### map
 ```
 //声明
-var my map[string] int;
+var my map[string] int;       //此处只是声明，没有分配内存
 my := make(map[string] int)
 //赋值
 my['dada'] = 1
@@ -169,6 +169,7 @@ type Student struct {
 
 p:=Student{Human{"malx",25},"dada"}
 p:=Student{Human:Human{"malx",25},speciality:"dada"}
+
 
 ```
 
@@ -354,7 +355,7 @@ type Handler interface{
 
 type HandlerFunc func(res, *req)
 
-func (h HandlerFun  c) ServeHTTP(res, *req){
+func (h HandlerFunc) ServeHTTP(res, *req){
     h(res, *req)
 }
 
@@ -688,70 +689,6 @@ func main() {
 }
 ```
 
-
-#### net/http
-(1)基础结构
-```
-//handler重中之重的基础
-type Handler interface {
-    ServeHTTP(ResponseWriter, *Request)
-}
-
-//重要的serveMux路由结构
-type ServeMux struct {
-    mu    sync.RWMutex
-    m     map[string]muxEntry
-    hosts bool 
-}
-
-type muxEntry struct {
-    explicit bool
-    h        Handler
-    pattern  string
-}
-
-//服务器
-func ListenAndServe(addr string, handler Handler) error {
-    server := &Server{Addr: addr, Handler: handler}
-    return server.ListenAndServe()
-}
-
-type Server struct {
-    Addr         string        
-    Handler      Handler       
-    ReadTimeout  time.Duration 
-    WriteTimeout time.Duration 
-    TLSConfig    *tls.Config   
-
-    MaxHeaderBytes int
-
-    TLSNextProto map[string]func(*Server, *tls.Conn, Handler)
-
-    ConnState func(net.Conn, ConnState)
-    ErrorLog *log.Logger
-    disableKeepAlives int32     nextProtoOnce     sync.Once 
-    nextProtoErr      error     
-}
-
-
-```
-
-
-(1)函数作为处理器
-```
-func helloHandler(w http.ResponseWriter, req *http.Request) {
-    io.WriteString(w, "hello, world!\n")
-}
-
-http.HandlerFunc()
-
-```
-(2)自定义处理器
-
-
-
-
-
 #### defer panic recover
 ```
 //Defer function按照后进先出的规则执行。例如下面的代码打印“3210”。
@@ -769,54 +706,6 @@ func c() (i int) {
 
 ```
 
-### serveFile
-```
-type Dir string
-func (d Dir) Open(name string) (File, error) {
-  // ...
-}
-type FileSystem interface {
-  Open(name string) (File, error)
-}
-http.FileServer()
-http.FileServer() 方法返回的是 fileHandler 实例，而 fileHandler 结构体实现了 Handler 接口的方法 ServeHTTP()。ServeHTTP 方法内的核心是 serveFile() 方法。
-// 所属文件: src/net/http/fs.go, 690-716行
-type fileHandler struct {
-  root FileSystem
-}
-func FileServer(root FileSystem) Handler {
-  return &fileHandler{root}
-}
-func (f *fileHandler) ServeHTTP(w ResponseWriter, r *Request) {
-  upath := r.URL.Path
-  if !strings.HasPrefix(upath, "/") {
-    upath = "/" + upath
-    r.URL.Path = upath
-  }
-  serveFile(w, r, f.root, path.Clean(upath), true)
-}
-// 所属文件: src/net/http/server.go, 82行
-type Handler interface {
-  ServeHTTP(ResponseWriter, *Request)
-}
-
-//实例
-var rootPath = "/data_dir/malx/test/"
-
-func down(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(">>>")
-	mpath := path.Join(rootPath,r.URL.Path)
-	fmt.Println(mpath)
-	http.ServeFile(w, r, mpath)
-}
-
-http.HandleFunc("/",down)
-```
-
-### url
-```
-r.URL *url.URL
-```
 
 ### 查看GC
 ```
@@ -974,76 +863,6 @@ fmt.Println(len(b))  //5 ✔
 
 ```
 
-### net/http
-(1) 正确姿势
-```
-package main
-
-import (
- "net/http"
-)
-
-func main() {
-
- http.HandleFunc("/", func (w http.ResponseWriter, r *http.Request){
-
-
-   w.Header().Set("name", "my name is smallsoup")
-   w.WriteHeader(500)
-   w.Write([]byte("hello world\n"))
-
- })
-
- http.ListenAndServe(":8080", nil)
-}
-```
-
-### 前端显示图片
-```
-func showPic(w http.ResponseWriter, r *http.Request) {
-	f, err := os.Open("C:\\Users\\malx\\Pictures\\timg.jpg")
-	defer f.Close()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	buf := make([]byte, 1024000)
-
-	_, err1 := f.Read(buf)
-	if err1 != nil {
-		fmt.Println(err1.Error())
-		return
-	}
-	w.Header().Set("Content-Type", "image/jpg")
-	w.Header().Set("Content-Disposition", "inline; filename=\"picture.png\"")
-	w.Write(buf)
-}
-```
-
-### 登陆
-```
-func login(client *http.Client) {
-	my := User{Userid: "malx", Password: "123456"}
-	x, _ := json.Marshal(my)
-	fmt.Println(string(x))
-	req, _ := http.NewRequest("POST", "http://10.10.100.14:8081/login", bytes.NewReader([]byte(string(x))))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", "name=malx")
-	req.Header.Set("Connection", "keep-alive")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer resp.Body.Close()
-	fmt.Println(resp.Status)
-	cookie = resp.Header["Set-Cookie"][0]
-	fmt.Println(cookie)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
-}
-```
-
 ### go-xorm
 ```
 https://github.com/xormplus/xorm
@@ -1082,5 +901,22 @@ https://github.com/xormplus/xorm
     
 
 (3) 事务模型
+
+```
+
+### sizeof
+```
+//切片的大小
+arr := [...]int{1,2,3,4,5}
+fmt.Println(unsafe.Sizeof(arr)) //40
+
+//string 大小
+typedef struct{
+    char* buffer;
+    size_tlen;
+} string;
+unsafe.Sizeof("dasdas")  //16
+
+//
 
 ```

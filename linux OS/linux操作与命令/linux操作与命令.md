@@ -681,3 +681,61 @@ file a.out
 a.out: ELF 64-bit LSB shared object, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/l, for GNU/Linux 3.2.0, BuildID[sha1]=1f968f44e3ed35b7725aff487cc1e9eb1ebf9a5a, not stripped
 
 ```
+
+### curl
+```
+(1) 模拟Http Get/Post请求
+    // get
+    curl http://127.0.0.1:8080/check_your_status?user=Summer&passwd=12345678
+    // post
+    curl -d "user=Summer&passwd=12345678" "http://127.0.0.1:8080/check_your_status"
+    // 带header
+    curl -H "Content-Type:application/json" -H "Accept: application/json" -X POST --data '{"message": "sunshine"}' http://localhost:8000/
+
+
+```
+
+### date
+```
+//unix时间戳
+date +%s
+
+//将固定时间转换为unix时间戳
+date -d '2013-2-22 22:14:23.460630412"' +%s
+
+//时间戳转换时间
+date -d @1361542596
+
+//时间戳转换时间 指定格式
+date -d @1361542596 +"%Y-%m-%d %H:%M:%S"
+
+//UTC 标准时间的日期
+date +"%Y-%m-%d"
+```
+
+### apt
+```
+apt提供了大多数与apt-get及apt-cache有的功能，但更方便使用
+
+//根据名称列出软件包
+dpkg list
+//搜索软件包描述
+apt-cache search [软件]
+//显示软件包细节 
+apt-cache show [软件]
+//列出软件包含了哪些文件
+dpkg -L [软件] 
+//安装软件包 
+apt-get install [软件]
+//移除软件包 
+apt-get remove [软件]
+//更新可用软件包列表 
+apt-get update
+//通过 安装/升级 软件来更新系统 
+apt-get upgrade
+//通过 卸载/安装/升级 来更新系统 
+apt-get dist-upgrade
+//编辑软件源信息文件 
+vim /etc/apt/sources.list
+
+```
