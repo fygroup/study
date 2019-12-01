@@ -271,56 +271,6 @@ gcc -o main main.c -fno-builtin-strcmp
 ```
 
 ---
-### 系统数据文件
-1、/etc/password
-```
-存放着所有用户帐号的信息，包括用户名和密码，因此，它对系统来说是至关重要的
-格式如下：
-username:password:User ID:Group ID:comment:home directory:shell
-```
-2、/etc/shadow
-```
-存放系统的口令文件
-```
-3、/etc/group
-```
-用户组管理的文件,linux用户组的所有信息都存放在此文件中
-格式如下：
-组名:口令:组标识号:组内用户列表
-```
-4、/etc/hosts
-```
-Linux系统中一个负责IP地址与域名快速解析的文件
-例如：
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-
-此目录包含
-host.conf    hostname     hosts        hosts.allow  hosts.deny
-```
-5、/etc/services
-```
-Internet 守护程序（ineted）是 Linux 世界中的重要服务。它借助 /etc/services 文件来处理所有网络服务
-格式如下：
-service-name    port/protocol   [aliases..]  [#comment]
-service-name 是网络服务的名称。例如 telnet、ftp 等。
-port/protocol 是网络服务使用的端口（一个数值）和服务通信使用的协议（TCP/UDP）。
-alias 是服务的别名。
-comment 是你可以添加到服务的注释或说明。以 # 标记开头。
-```
-6、utmp和wtmp
-```
-/var/run/utmp（二进制） 命令 who
-/var/log/wtmp（二进制） 命令 w
-utmp记录当前登录到系统的用户
-wtmp跟踪各个登陆与注销事件
-```
-7、uname和hostname
-```
-命令uname显示操作系统信息
-命令hostname显示主机的域名
-```
-
----
 ### 互斥量、信号量
 ```
 虽然mutex和semaphore可以相互替代，可以把 值最大为1 的Semaphore当Mutex用，也可以用Mutex＋计数器当Semaphore。
@@ -370,7 +320,6 @@ thread_join(t3);
 
 在网络登录程序中，登录认证守护程序 fork 一个进程处理连接，并以ptys_open 函数打开一个伪终端设备（文件）获得文件句柄，并将此句柄复制到子进程中作为标准输入、标准输出、标准错误，所以位于此控制终端进程下的所有子进程将可以持有终端
 ```
-
 
 ---
 ### 守护进程 daemon
@@ -605,31 +554,7 @@ sighup（挂断）信号在控制终端或者控制进程死亡时向关联会�
 
 ```
 
-### /var 目录
-```
-系统一般运行时要改变的数据.每个系统是特定的，即不通过网络与其他计算机共享.  
-/var/lib            系统正常运行时要改变的文件.
 
-/var/local          /usr/local 中安装的程序的可变数据
-
-/var/lock           锁定文件.以支持他们正在使用某个特定的设备或文件.其他程序注意到这个锁定文件，将不试图使用这个设备或文件.  
-
-/var/log            各种程序的Log文件，
-/var/log/wtmp       永久记录每个用户登录、注销及系统的启动、停机的事件。
-/var/log/lastlog    记录最近成功登录的事件和最后一次不成功的登录事件，由login生成
-
-/var/run            保存到下次引导前有效的关于系统的信息文件
-/var/run/utmp       记录著現在登入的用戶。
-
-/var/tmp            比/tmp 允许的大或需要存在较长时间的临时文件
-```
-
-### stdout stderr
-```
-stdout是行缓冲的，他的输出会放在一个buffer里面，只有到换行的时候，才会输出到屏幕。而stderr是无缓冲的，会直接输出
-如果用转向标准输出到磁盘文件，则可看出两者区别。stdout输出到磁盘文件，stderr在屏幕。 
-
-```
 
 ### 字符编码
 ```
@@ -689,35 +614,6 @@ CAP_SYS_TTY_CONFIG:允许配置TTY设备
 CAP_MKNOD:允许使用mknod()系统调用
 CAP_LEASE:允许修改文件锁的FL_LEASE标志
 
-```
-
-### /proc文件夹
-```
-/proc 文件系统是一种内核和内核模块用来向进程(process) 发送信息的机制, /proc 存在于内存之中而不是硬盘上。proc文件系统以文件的形式向用户空间提供了访问接口，这些接口可以用于在运行时获取相关部件的信息或者修改部件的行为，因而它是非常方便的一个接口。
-
-(1) 内容介绍
-    /proc/cpuinfo - CPU 的信息(型号, 家族, 缓存大小等)
-    /proc/meminfo - 物理内存、交换空间等的信息
-    /proc/mounts - 已加载的文件系统的列表
-    /proc/devices - 可用设备的列表
-    /proc/filesystems - 被支持的文件系统
-    /proc/modules - 已加载的模块
-    /proc/version - 内核版本
-    /proc/cmdline - 系统启动时输入的内核命令行参数
-
-    /proc/pid/*     pid进程的相关信息
-
-    /proc/sys/kernel    与内核相关
-```
-
-### /var/run
-```
-/var/run 目录中存放的是自系统启动以来描述系统信息的文件。比较常见的用途是daemon进程将自己的pid保存到这个目录。标准要求这个文件夹中的文件必须是在系统启动的时候清空，以便建立新的文件。
-
-(1) /var/run/*.pid
-在工作中遇到了很多在程序启动时检查是否已经重复启动的代码段，其核心就是调用fcntl设置pid文件的锁定F_SETLK状态，其中锁定的标志为F_WRLACK。如果成功锁定，则写入进程当前PID，进程继续往下执行。如果锁定不成功，说明已经有同样的进程在运行了，当前进程结束退出
-
-(2) 
 ```
 
 ### perror
@@ -793,7 +689,46 @@ https://www.jianshu.com/p/2c8de98bf0db
         设置用户、进程、进程组的优先级
 ```
 
+### open flag mode
+```
+#include <sys/types.h>    
+#include <sys/stat.h>    
+#include <fcntl.h>
+
+int open(const char * pathname, int flags);
+int open(const char * pathname, int flags, mode_t mode);
+
+O_RDONLY 以只读方式打开文件
+O_WRONLY 以只写方式打开文件
+O_RDWR 以可读写方式打开文件. 上述三种旗标是互斥的, 也就是不可同时使用, 但可与下列的旗标利用OR(|)运算符组合.
+O_CREAT 若欲打开的文件不存在则自动建立该文件.
+O_EXCL 如果O_CREAT 也被设置, 此指令会去检查文件是否存在. 文件若不存在则建立该文件, 否则将导致打开文件错误. 此外, 若O_CREAT 与O_EXCL 同时设置, 并且欲打开的文件为符号连接, 则会打开文件失败.
+O_NOCTTY 如果欲打开的文件为终端机设备时, 则不会将该终端机当成进程控制终端机.
+O_TRUNC 若文件存在并且以可写的方式打开时, 此旗标会令文件长度清为0, 而原来存于该文件的资料也会消失.
+O_APPEND 当读写文件时会从文件尾开始移动, 也就是所写入的数据会以附加的方式加入到文件后面.
+O_NONBLOCK 以不可阻断的方式打开文件, 也就是无论有无数据读取或等待, 都会立即返回进程之中.
+O_NDELAY 同O_NONBLOCK.
+O_SYNC 以同步的方式打开文件.
+O_NOFOLLOW 如果参数pathname 所指的文件为一符号连接, 则会令打开文件失败.
+
+
+S_IRWXU00700 权限, 代表该文件所有者具有可读、可写及可执行的权限.
+S_IRUSR 或S_IREAD, 00400 权限, 代表该文件所有者具有可读取的权限.
+S_IWUSR 或S_IWRITE, 00200 权限, 代表该文件所有者具有可写入的权限.
+S_IXUSR 或S_IEXEC, 00100 权限, 代表该文件所有者具有可执行的权限.
+S_IRWXG 00070 权限, 代表该文件用户组具有可读、可写及可执行的权限.
+S_IRGRP 00040 权限, 代表该文件用户组具有可读的权限.
+S_IWGRP 00020 权限, 代表该文件用户组具有可写入的权限.
+S_IXGRP 00010 权限, 代表该文件用户组具有可执行的权限.
+S_IRWXO 00007 权限, 代表其他用户具有可读、可写及可执行的权限.
+S_IROTH 00004 权限, 代表其他用户具有可读的权限
+S_IWOTH 00002 权限, 代表其他用户具有可写入的权限.
+S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
+```
+
+
 ### 进程关系
 ```
 
 ```
+
