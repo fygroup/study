@@ -29,8 +29,6 @@ url = https://github.com/BingGostar/c_project.git   //会提示你用账号密�
 url = git@github.com:BingGostar/c_project.git       //会用密钥登陆
 ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
 
-//示例
-
 
 ### 操作
 ```
