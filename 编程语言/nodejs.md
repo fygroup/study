@@ -613,17 +613,26 @@ timeout:一定时间后连接不再活跃时触发。
 (1)服务端
 ```
 var net = require('net');
+
 var server = net.createServer();
-server.on('connection',(socket)=>{
-	socket.on('data',(data)=>{
+server.on('connection',function(socket){
+	socket.on('data',function(data){
 		console.log(data.toString());
-		socket.write('你好');  //向套接字里写入 用于发送
-	});
-	socket.on('end',()=>{
-		console.log('连接断开')
+		socket.pipe(socket)
 	})
+
+	socket.on('end',function(){
+		console.log('断开');
+	})
+
+	socket.write('欢迎光临！！！');
 })
-server.listen(8124);
+
+server.on('listening',function(){
+	console.log('listen:8111')
+})
+
+server.listen(8111)
 ```
 
 (2)客户端
@@ -2038,9 +2047,6 @@ app.all("*",function(req,res,next){
 ```
 
 ---
-#### c++扩展
-```
-```
 
 #### 响应式编程
 ```
