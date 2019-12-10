@@ -22,13 +22,18 @@ git checkout 版本id号
 当pull冲突时
 git fetch --all
 git reset --hard origin/master
-//---权限控制--------------------------------
-你只有git pull的权利，并没有git push的权利
-url = https://github.com/BingGostar/c_project.git   //会提示你用账号密码登陆
 
-url = git@github.com:BingGostar/c_project.git       //会用密钥登陆
-ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
+### 认证方式
+```
+(1) 基于HTTPS
+	选择这种，我们每次向该库push代码的时候，都要输入用户名和密码(当然，我自然不愿意将密码告诉别人啦)。
+	url = https://github.com/BingGostar/c_project.git   //会提示你用账号密码登陆
 
+(2)基于SSH
+	选择这种，我们就可以通过公钥密钥的身份来验证自己的权限，下面重点介绍的就是这个。
+	url = git@github.com:BingGostar/c_project.git       //会用密钥登陆
+	ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
+```
 
 ### 操作
 ```
@@ -45,8 +50,19 @@ ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到
 	git clone https://github.com/BingGostar/study
 	...
 
-// 
-
+// pull request
+	https://www.zhihu.com/question/21682976
+	1) 先 fork 别人的仓库到自己的仓库
+		在浏览器上fork https://github.com/twbs/bootstrap.git
+	2) clone到本地
+		git clone https://github.com/BingGostar/bootstrap.git
+	3) 创建切换分支
+		git checkout -b test-pr
+	4) 添加修改
+		git add . && git commit -m 'test-pr'
+	5) 推送分支到远端							
+		git push origin test-pr
+	6) 等待作者merge
 ```
 
 ### config
@@ -90,7 +106,7 @@ ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到
 (1) 工作区（Working Directory）
 	就是你在电脑里能看到的目录
 
-(1) 版本库（Repository）
+(2) 版本库（Repository）
 	工作区有一个隐藏目录.git，这个不算工作区，而是Git的版本库
 	里面包含:
 	1) stage暂存区
@@ -99,7 +115,12 @@ ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到
 		创建Git版本库时，Git自动为我们创建了唯一一个master分支，git commit就是往master分支上提交更改。
 	3) HEAD
 
-	4) fetch
+	4) 分支
+
+(3) 分支策略
+	master分支应该是非常稳定的
+	干活都在dev分支上
+	每个人都有自己的分支，时不时地往dev分支上合并就可以了
 
 
 ```
@@ -115,6 +136,9 @@ ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到
 // git log
 查看提交历史，以便确定要回退到哪个版本
 
+// git log --graph
+分支合并图。
+
 // git reflog
 查看命令历史，以便确定要回到未来的哪个版本
 
@@ -125,23 +149,68 @@ ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到
 把暂存区的修改撤销掉（unstage），重新放回工作区
 场景：当你不但改乱了工作区某个文件的内容，还添加到了暂存区时，想丢弃修改
 
-
-// git checkout -- <file>		（注意 --）
-场景：当你改乱了工作区某个文件的内容，想直接丢弃工作区的修改时
-情形一：文件没有被放到暂存区，撤销修改就回到和版本库一模一样的状态；
-情形二：文件已经添加到暂存区后，又作了修改，撤销修改就回到添加到暂存区后的状态。
-
-// git checkout
-
 // git rm 
 删除文件，流程如下
 rm <file> && git rm <file> && git commit 
 
+// git checkout -- <file>		（注意 --）
+撤销文件修改
+场景：当你改乱了工作区某个文件的内容，想直接丢弃工作区的修改时
+情形一：文件没有被放到暂存区，撤销修改就回到和版本库一模一样的状态；
+情形二：文件已经添加到暂存区后，又作了修改，撤销修改就回到添加到暂存区后的状态。
+
+// git checkout -b <分支>
+我们创建分支，然后切换到分支
+相当于git branch <分支> && git checkout <分支>
+
+// git checkout -b <分支> origin/<分支>   （origin/<分支> 已存在？？？）
+在本地创建和远程分支对应的分支
+
+// git branch
+查看分支
+
+// git branch <分支>
+新建分支
+
+// git branch -d <分支>
+删除分支
+
+// git branch -D <分支>
+强行删除分支
+
+// git merge <分支>
+用于合并"指定分支"到"当前分支"
+当Git无法自动合并分支时，就必须首先解决冲突。解决冲突后，再提交，合并完成。
+解决冲突就是把Git合并失败的文件手动编辑为我们希望的内容，再提交。
+
+// git switch <分支>
+切换分支
+
+// git switch -c <分支>
+新建并切换分支
+
 // git remote 
+查看远程库的信息
+
+// git remote -v
+查看远程库的更详细信息
+
+// git push origin master
+推送主分支
+
+// git push origin <分支>
+推送其他分支
+
+// git pull
 
 
 ```
 
+### .gitignore
+```
+https://zhuanlan.zhihu.com/p/52885189
 
+git为我们提供了一个.gitignore文件，只要在这个文件中声明哪些文件你不希望添加到git中去，这样当你使用git add .的时候这些文件就会被自动忽略掉。
+```
 
 

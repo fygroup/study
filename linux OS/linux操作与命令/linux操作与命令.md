@@ -739,3 +739,15 @@ apt-get dist-upgrade
 vim /etc/apt/sources.list
 
 ```
+
+### 禁止端口转发和ip转发
+```
+/etc/ssh/sshd_config
+    AllowTcpForwarding no           禁止端口转发
+
+
+/etc/sysctl.conf
+    net.ipv4.ip_forward = 0         禁止ip转发
+
+
+```
