@@ -751,3 +751,133 @@ vim /etc/apt/sources.list
 
 
 ```
+
+### 系统数据文件
+1、/etc/password
+```
+存放着所有用户帐号的信息，包括用户名和密码，因此，它对系统来说是至关重要的
+格式如下：
+username:password:User ID:Group ID:comment:home directory:shell
+```
+2、/etc/shadow
+```
+存放系统的口令文件
+```
+3、/etc/group
+```
+用户组管理的文件,linux用户组的所有信息都存放在此文件中
+格式如下：
+组名:口令:组标识号:组内用户列表
+```
+4、/etc/hosts
+```
+Linux系统中一个负责IP地址与域名快速解析的文件
+例如：
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+
+此目录包含
+host.conf    hostname     hosts        hosts.allow  hosts.deny
+```
+5、/etc/services
+```
+Internet 守护程序（ineted）是 Linux 世界中的重要服务。它借助 /etc/services 文件来处理所有网络服务
+格式如下：
+service-name    port/protocol   [aliases..]  [#comment]
+service-name 是网络服务的名称。例如 telnet、ftp 等。
+port/protocol 是网络服务使用的端口（一个数值）和服务通信使用的协议（TCP/UDP）。
+alias 是服务的别名。
+comment 是你可以添加到服务的注释或说明。以 # 标记开头。
+```
+6、utmp和wtmp
+```
+/var/run/utmp（二进制） 命令 who
+/var/log/wtmp（二进制） 命令 w
+utmp记录当前登录到系统的用户
+wtmp跟踪各个登陆与注销事件
+```
+7、uname和hostname
+```
+命令uname显示操作系统信息
+命令hostname显示主机的域名
+```
+
+
+### /var 目录
+```
+系统一般运行时要改变的数据.每个系统是特定的，即不通过网络与其他计算机共享.  
+/var/lib            系统正常运行时要改变的文件.
+
+/var/local          /usr/local 中安装的程序的可变数据
+
+/var/lock           锁定文件.以支持他们正在使用某个特定的设备或文件.其他程序注意到这个锁定文件，将不试图使用这个设备或文件.  
+
+/var/log            各种程序的Log文件，
+/var/log/wtmp       永久记录每个用户登录、注销及系统的启动、停机的事件。
+/var/log/lastlog    记录最近成功登录的事件和最后一次不成功的登录事件，由login生成
+
+/var/run            保存到下次引导前有效的关于系统的信息文件
+/var/run/utmp       记录著現在登入的用戶。
+
+/var/tmp            比/tmp 允许的大或需要存在较长时间的临时文件
+```
+
+### stdout stderr
+```
+stdout是行缓冲的，他的输出会放在一个buffer里面，只有到换行的时候，才会输出到屏幕。而stderr是无缓冲的，会直接输出
+如果用转向标准输出到磁盘文件，则可看出两者区别。stdout输出到磁盘文件，stderr在屏幕。 
+
+```
+
+
+### /proc文件夹
+```
+/proc 文件系统是一种内核和内核模块用来向进程(process) 发送信息的机制, /proc 存在于内存之中而不是硬盘上。proc文件系统以文件的形式向用户空间提供了访问接口，这些接口可以用于在运行时获取相关部件的信息或者修改部件的行为，因而它是非常方便的一个接口。
+
+(1) 内容介绍
+    /proc/cpuinfo - CPU 的信息(型号, 家族, 缓存大小等)
+    /proc/meminfo - 物理内存、交换空间等的信息
+    /proc/mounts - 已加载的文件系统的列表
+    /proc/devices - 可用设备的列表
+    /proc/filesystems - 被支持的文件系统
+    /proc/modules - 已加载的模块
+    /proc/version - 内核版本
+    /proc/cmdline - 系统启动时输入的内核命令行参数
+
+    /proc/pid/*     pid进程的相关信息
+
+    /proc/sys/kernel    与内核相关
+```
+
+### /var/run
+```
+/var/run 目录中存放的是自系统启动以来描述系统信息的文件。比较常见的用途是daemon进程将自己的pid保存到这个目录。标准要求这个文件夹中的文件必须是在系统启动的时候清空，以便建立新的文件。
+
+(1) /var/run/*.pid
+在工作中遇到了很多在程序启动时检查是否已经重复启动的代码段，其核心就是调用fcntl设置pid文件的锁定F_SETLK状态，其中锁定的标志为F_WRLACK。如果成功锁定，则写入进程当前PID，进程继续往下执行。如果锁定不成功，说明已经有同样的进程在运行了，当前进程结束退出
+
+(2) 
+```
+
+### /opt
+```
+/opt目录用来安装附加软件包，是用户级的程序目录，
+```
+
+### /var/log
+```
+/var/log/boot.log：录了系统在引导过程中发生的事件，就是Linux系统开机自检过程显示的信息
+
+/var/log/lastlog ：记录最后一次用户成功登陆的时间、登陆IP等信息
+
+/var/log/messages ：记录Linux操作系统常见的系统和服务错误信息
+
+/var/log/secure ：Linux系统安全日志，记录用户和工作组变坏情况、用户登陆认证情况
+
+/var/log/btmp ：记录Linux登陆失败的用户、时间以及远程IP地址
+
+/var/log/syslog：只记录警告信息，常常是系统出问题的信息，使用lastlog查看
+
+/var/log/wtmp：该日志文件永久记录每个用户登录、注销及系统的启动、停机的事件，使用last命令查看
+
+/var/run/utmp：该日志文件记录有关当前登录的每个用户的信息。如 who、w、users、finger等就需要访问这个文件
+```
