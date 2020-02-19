@@ -148,6 +148,8 @@ mount -t proc none /mnt
     cat /proc/$$/mountinfo
 
 (6) 挂载nfs
+    https://help.ubuntu.com/lts/serverguide/network-file-system.html
+    
     mount -t nfs hostname:/directory /mount/point
     //注意：nfs只是个服务，不是个设备
     
@@ -173,7 +175,7 @@ iwconfig
 //地址管理
 0、显示所有设备
     ip addr show 
-1、显示设备的ip地址
+1、显示网络设备为eth1的信息
     ip addr show dev eth1
 2、增加删除设备的地址
     ip addr add 127.1.2.3/24 dev eth1
@@ -737,6 +739,12 @@ apt-get upgrade
 apt-get dist-upgrade
 //编辑软件源信息文件 
 vim /etc/apt/sources.list
+
+apt 和 apt-get 命令都是基于 dpkg
+
+// 查看已安装的软件
+apt list --installed 
+
 
 ```
 
