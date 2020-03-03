@@ -158,13 +158,8 @@ ofstream out("...", ios::out);
 ifstream in("...", ios::in);
 fstream foi("...", ios::in|ios::out);
 
-
-
 字符转int atoi
 int转字符 itoa
-
-
-char** 转 string
 
 string转换为char*有3中方法：
 1.data
@@ -177,7 +172,6 @@ const char *p=str.c_str();
 string str="good boy";
 char p[20];
 str.copy(p,5,0); //这里5，代表复制几个字符，0代表复制的位置
-
 *(p+5)='\0'; //要手动加上结束符
 
 或者:
@@ -188,14 +182,11 @@ int len = str.length();
 p=(char *)malloc((len+1)*sizeof(char));
 str.copy(p,len,0);
 
-
 读取文件
 o=ifstream()
 o.is_open()
 
-
 g++   -lz
-
 
 use namespace std;
 ios_base::fmtflags initial;
@@ -237,9 +228,11 @@ private:
 
       static const int d[10] = {0}; //错误，只有一般数据类型的static const才能在类里面初始化。
 
-                                                   //数组应该在.cpp文件里面初始化
+      static const int dd[10];   //外部初始化
 
-}
+};
+
+static const int A::dd[10] = {0};
 
 注意 静态变量是类级别的！！！！ 需要用类名去定义（无论这个变量是否在private中）
 例如: int my::b=3;要定义在全局变量里面
@@ -417,7 +410,14 @@ type == TiXmlNode::TINYXML_TEXT;
 方法二
 CDllHelper dllhelp;
 dllhelp.Open(pls_path)
-#define CC_AddFun(var,funname) {var = cc_type_convert(var,dllhelp.GetDllFunAddress(funname));if(!var){dllhelp.Close();return -1;}}
+#define CC_AddFun(var,funname) { \
+    var = cc_type_convert(var,dllhelp.GetDllFunAddress(funname)); \
+    if(!var){ \
+        dllhelp.Close();\
+        return -1;\
+    }\
+}\
+
 CC_AddFun(_GetTask,"GetTask");
 P1 cc_type_convert(P1 ,P2 tmp2){
 	return (P1)tmp2;
@@ -465,12 +465,13 @@ while(res->previous)
 	......;
 
 //---判断文件是否存在--------------
-if (0==access(filepath,0))
-	cout << "no file" << endl;
-00——只检查文件是否存在
-02——写权限
-04——读权限
-06——读写权限
+int access(const char* fileName, int mode)
+R_OK      测试读许可权
+W_OK      测试写许可权
+X_OK      测试执行许可权
+F_OK      测试文件是否存在
+
+成功执行时，返回0。失败返回-1
 
 //---得到工作路径-----------------
 /proc/self/exe 它代表当前程序
@@ -479,30 +480,6 @@ int nRet = readlink("/proc/self/exe", pPath, nLen - 1);
 
 //---改变工作目录-----------------
 chdir();
-
-//---重定向函数-------------------
-if(NULL == freopen("xxxxx","a+",stdout)){
-	return -1;
-}
-
-//---wait waitpid---------------------
-```
-#include <sys/wait.h>
-
-pid_t wait(int *statloc);
-pid_t waitpid(pid_t pid,int *statloc, int options);
-//statloc指向终止进程的终止状态，如果不关心终止状态可指定为空指针
-//pid有四种情况：
-//1.pid==-1 等待任意子进程
-//2.pid>0 等待进程ID与pid相等的子进程
-//3.pid==0 等待组ID等于调用进程组ID的任意子进程
-//4.pid<-1 等待组ID等于pid绝对值的任意子进程
-pid_t wait(int *statloc)
-{
-    return waitpid(-1, statloc, 0);
-}
-```
-
 
 //---RPC传输：PCFproto传输架构和protobuf序列化策略--------
 1、protobuf序列化协议（非常好非常快）
@@ -621,47 +598,9 @@ struct A
 //---read------------------------------------
 fIn.read((char*)InBuffer,InBufferSize); //返回一个流对象
 size_t InBufferSize_ = fIn.gcount();  //可以得到刚才的读入字节数
-//---map 判断键值是否存在-----------------
-（1）
-pair<map<int, string>::iterator, bool> Insert_Pair;  
-Insert_Pair = mapStudent.insert(pair<int, string>(1, "student_one"));  
-if(Insert_Pair.second == true)  
-	cout<<"Insert Successfully"<<endl;  
-（2）
-map<>::iterator it = m.find('key');
-if (it == m.end()) #不存在
-//---插入键值对---------------------------
-1.map[键] = 值；直接赋值。 这种方式：当要插入的键存在时，会覆盖键对应的原来的值。如果键不存在，则添加一组键值对。
- 2.map.insert()；这是map自带的插入功能。如果键存在的话，则插入失败，也就是不插入。 使用insert()函数，需要将键值对组成一组才可以插入
-//----map 排序--------------------------------
-struct cmpkeylen{
-bool operator()(const string & a, const string & b){
-return(a.length() > b.length());
-}
-};
-map<sting,int,cmpkeybylen> mymap; //注意 第三个参数是个函数对象，c++ 11中很多库函数都是函数对象
+
 //---sleep------------------------------
 # include <unistd.h>
-//---openmp-----------------------------
-g++ -fopenmp
-omp是多线程支持，只需定义即可走多线程
-定义环境变量export OMP_NUM_THREADS=10
-
-#pragma omp parallel for   //遇到for就开多线程
-for(){
-}
-
-void main()  
-{  
-#pragma omp parallel    //Initialization走的多线程，
-    {  
-        Initialization();  
-#pragma omp barrier  //设置屏障 等待当前线程完毕
-        printf("i=%d, thread_id=%d\n", sum, omp_get_thread_num());  
-    }  
-    system("pause");  
-}  
-
 //---构造函数-----------------------------
 Eigen::Matrix<double,Dynamic,Dynamic> mat;
 mat = Matrix<T,Dynamic,Dynamic>(m,n);
@@ -699,34 +638,8 @@ cout << (double)(end-start)/CLOCKS_PER_SEC << endl;
 //---转换 ---------------------------------------
 dynamic_cast
 static_cast
-//---iterator-----------------------------------
-vector<int> a;
-vector<int>::iterator i;
-for(i=a.begin();i!=a.end();i++){}
-const vector<int> a;
-vector<int>::const_iterator i;  //对于const 必须用const_iterator !!!
-for(i=a.begin();i!=a.end();i++){}
 //---class中的静态函数----------------------------
 静态函数只要在定义的时候需要static关键字，实现的时候就不需要了，否则会报错。
-//---class 中的 const----------------------------
-C++中，const 修饰的参数引用的对象，只能访问该对象的const函数，因为调用其他函数有可能会修改该对象的成员，
-编译器为了避免该类事情发生，会认为调用非const函数是错误的。
-struct Base
-{
-    Base() { std::cout << "  Base::Base()\n"; }
-    virtual ~Base() { std::cout << "  Base::~Base()\n"; }
-    virtual void test() { std::cout<< " test in base\n"; } <-------加上 const
-};
-
-void MyTest(const Base& b)
-{
-    b.test();
-}
- Base中声明test时加上const，即void test() const
-!!!!注意当函数后面加了const时，返回引用和指针时要加const，但是返回非引用可以不加
-const mat & func()const{...}
-const mat * func()const{...}
-mat func()const{...}
 //---引用 与 const----------------------------------
 int func(){
     return(2);
@@ -750,31 +663,13 @@ void func1(const int & a){
 //改正3
 void func1(int a){
 }
-//---initializer_list-------------------------------
-void g(std::vector<int> const &items){}; 
-void g(std::list<int> const &items){};
-g({ 1, 2, 3, 4 }); //会报错  编译器分不清 vector还是list
-
-//对于{}的固定数组initializer_list更合适
-void g(std::vector<int> const &items){}; 
-void g(std::list<int> const &items){}; 
-void g(std::initializer_list<int> const &items){}; 
-g({ 1, 2, 3, 4 });
-initializer_list不能修改，更符合参数的特点
 //---%------------------------------------------------
 % is only defined for integer types. That's the modulus operator.
 <cmath> fmod(m,n);
-//---string------------------------------------------
+//---string find------------------------------------------
 string a("dadsadsada");
 a.find_first_not_of("dda");   // 在字符串中查找第一个与str中的字符都不匹配的字符，返回它的位置。
 a.find_first_of("dda");   // 在字符串中查找第一个与str中的字符匹配的字符，返回它的位置。
-//---map com-------------------------------------------
-typedef struct classCom{
-	bool operator () (const int & a, const int & b)const{
-		return(b-a);
-	}
-}classCom;
-map<int,string,classCom> a;
 //---string_algo---------------------------------------
 $include <string>
 #include <boost/algorithm/string.hpp>
@@ -790,28 +685,6 @@ std::vector<std::string> param_vec {"dsadada","sadsada","gfgd"};
 std::string R_command;
 String_Algo::str_join(param_vec, " ", R_command);  //字符串拼接
 
-//---目录操作----------------------------------------
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-
-getcwd()获取的是当前工作路径，而不一定是程序的路径
-fchdir(); //改变当前工作目录
-rewinddir(); //重设读取目录的位置为开头位置
-
-DIR* dp = opendir(path);
-struct stat stat_buf;
-struct dirent* entry;
-while ((entry = readdir(dp)) != NULL){
-	stat(entry->d_name, &stat_buf);
-	if (S_ISREG(stat_buf.st_mode)){
-		cout << entry->d_name << endl;
-	}
-
-}
-
-rewinddir(dp);
-closedir(dp);
 //---error-------------------------------------------
 #include <errno.h>
 系统调用返回失败时，必须紧接着引用errno变量(errno值对应的错误提示信息)
@@ -837,34 +710,6 @@ func(int & a){}
 func(3); //错误
 int a = 3;
 func(a);
-//---function --------------------------------------------------
-#include <functional>
-void func1(int){....}
-
-std::function<void(int)> func = func1;
-std::function<void(int)> func = [](int)->void{....}  ([](int){....})
-
-struct A
-{
-    void func(int){.....}
-}
-std::function<void(A&, int)> my = &A::func; //注意此处必须为struct
-A a;
-my(a,2);
-
-//---bind 一般和function一起用---------------------------------------------------------
-void func(int i, int j){}
-
-std::function(void(int,int)) f = std::bind(&func,std::placeholders::_1,3);
-绑定class成员函数，必须是public
-class A
-{
-public:
-   void func(int i);
-};
-A a;
-std::function<void(int)> f = std::bind(&A::func,&a,std::placeholders::_1);
-f(3);
 
 //---不可拷贝类--------------------------------------
 显式地声明类的拷贝构造函数和赋值函数为私有函数
@@ -1236,9 +1081,32 @@ S_ISCHR(st_mode)：是否是一个字符设备.
 S_ISBLK(st_mode)：是否是一个块设备
 S_ISFIFO(st_mode)：是否 是一个FIFO文件.
 S_ISSOCK(st_mode)：是否是一个SOCKET文件 
+
+// 实例
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+
+getcwd()获取的是当前工作路径，而不一定是程序的路径
+fchdir(); //改变当前工作目录
+rewinddir(); //重设读取目录的位置为开头位置
+
+DIR* dp = opendir(path);
+struct stat stat_buf;
+struct dirent* entry;
+while ((entry = readdir(dp)) != NULL){
+	stat(entry->d_name, &stat_buf);
+	if (S_ISREG(stat_buf.st_mode)){
+		cout << entry->d_name << endl;
+	}
+
+}
+
+rewinddir(dp);
+closedir(dp);
+
 ```
 
----
 #### 指针数组
 ```
 const char* a[5] = {"aa","ab","ada","dadad","fddgds"};
@@ -1374,16 +1242,6 @@ int a[20]={2,4,1,23,5,76,0,43,24,65};
 sort(a,a+20,compare);
 ```
 
----
-#### 函数对象
-```
-#include <functional>  //c++11
-template<typename T, typename... Args> //T 返回 argvs参数
-static void forkRun(function<T(Args...)> func, Args... args);
-```
-
-
----
 #### lambda
 ```
 int main()
@@ -2349,4 +2207,197 @@ class basic_string
 {
 //...
 }
+```
+
+### freopen
+```
+#include <stdio.h>
+
+//把一个新的文件名 filename 与给定的打开的流 stream 关联
+FILE *freopen(const char *filename, const char *mode, FILE *stream)
+//mode 
+    "r"	打开一个用于读取的文件。该文件必须存在。
+    "w"	创建一个用于写入的空文件。如果文件名称与已存在的文件相同，则会删除已有文件的内容，文件被视为一个新的空文件。
+    "a"	追加到一个文件。写操作向文件末尾追加数据。如果文件不存在，则创建文件。
+    "r+"	打开一个用于更新的文件，可读取也可写入。该文件必须存在。
+    "w+"	创建一个用于读写的空文件。
+    "a+"	打开一个用于读取和追加的文件。
+
+FILE *fp, *fp1;
+fp1 = freopen("file1.txt", "r", stdin); // 输入重定向，输入数据将从file1.txt文件中读取 
+fp = freopen("file.txt", "w+", stdout); // /输出重定向，输出数据将保存在file.txt文件中 
+  
+```
+
+### wait waitpid
+```
+#include <sys/wait.h>
+
+pid_t wait(int *statloc);
+pid_t waitpid(pid_t pid,int *statloc, int options);
+//statloc指向终止进程的终止状态，如果不关心终止状态可指定为空指针
+//pid有四种情况：
+//1.pid==-1 等待任意子进程
+//2.pid>0 等待进程ID与pid相等的子进程
+//3.pid==0 等待组ID等于调用进程组ID的任意子进程
+//4.pid<-1 等待组ID等于pid绝对值的任意子进程
+pid_t wait(int *statloc)
+{
+    return waitpid(-1, statloc, 0);
+}
+```
+
+### map 判断键值是否存在
+```
+(1) 
+    pair<map<int, string>::iterator, bool> Insert_Pair;  
+    Insert_Pair = mapStudent.insert(pair<int, string>(1, "student_one"));  
+    if(Insert_Pair.second == true)  
+        cout<<"Insert Successfully"<<endl;  
+
+(2) 
+    map<>::iterator it = m.find('key');
+    if (it == m.end()) #不存在
+    
+    
+// 插入键值对的方法
+(1) map[键] = 值；直接赋值。 这种方式：当要插入的键存在时，会覆盖键对应的原来的值。如果键不存在，则添加一组键值对。
+(2) map.insert()；这是map自带的插入功能。如果键存在的话，则插入失败，也就是不插入。 使用insert()函数，需要将键值对组成一组才可以插入
+```
+
+### map 排序
+```
+struct cmpkeylen{
+    bool operator()(const string & a, const string & b){
+        return(a.length() > b.length());
+    }
+};
+
+map<sting,int,cmpkeybylen> mymap;
+//注意 第三个参数是个函数对象，c++ 11中很多库函数都是函数对象
+```
+
+### openmp
+```
+g++ -fopenmp
+omp是多线程支持，只需定义即可走多线程
+定义环境变量export OMP_NUM_THREADS=10
+
+#pragma omp parallel for   //遇到for就开多线程
+for(){
+}
+
+void main()  
+{  
+#pragma omp parallel    //Initialization走的多线程，
+    {  
+        Initialization();  
+#pragma omp barrier  //设置屏障 等待当前线程完毕
+        printf("i=%d, thread_id=%d\n", sum, omp_get_thread_num());  
+    }  
+    system("pause");  
+}  
+```
+
+### iterator
+```
+vector<int> a;
+vector<int>::iterator i;
+for(i=a.begin();i!=a.end();i++){}
+const vector<int> a;
+vector<int>::const_iterator i;  //对于const 必须用const_iterator !!!
+for(i=a.begin();i!=a.end();i++){}
+```
+
+### const 对象只能访问 const 函数
+```
+// C++中，const 修饰的参数引用的对象，只能访问该对象的const函数，因为调用其他函数有可能会修改该对象的成员，
+// 编译器为了避免该类事情发生，会认为调用非const函数是错误的。
+struct Base
+{
+    Base() { std::cout << "  Base::Base()\n"; }
+    virtual ~Base() { std::cout << "  Base::~Base()\n"; }
+    virtual void test() { std::cout<< " test in base\n"; } <-------加上 const
+};
+
+void MyTest(const Base& b)
+{
+    b.test();
+}
+
+// Base中声明test时加上const，即void test() const
+
+// 注意当函数后面加了const时，返回引用和指针时要加const，但是返回非引用可以不加
+const mat & func()const{...}
+const mat * func()const{...}
+mat func()const{...}
+```
+
+### initializer_list
+```
+void g(std::vector<int> const &items){}; 
+void g(std::list<int> const &items){};
+g({ 1, 2, 3, 4 }); //会报错  编译器分不清 vector还是list
+
+//对于{}的固定数组initializer_list更合适
+void g(std::vector<int> const &items){}; 
+void g(std::list<int> const &items){}; 
+void g(std::initializer_list<int> const &items){}; //注意const
+g({ 1, 2, 3, 4 });
+initializer_list不能修改，更符合参数的特点
+```
+
+### 函数对象
+```
+#include <functional>
+template<typename T, typename... Args> //T 返回 argvs参数
+static void forkRun(function<T(Args...)> func, Args... args);
+```
+
+### std::function
+```
+#include <functional>
+
+// 普通函数
+int add(int a, int b){return a+b;} 
+
+// lambda表达式
+auto mod = [](int a, int b){ return a % b;}
+
+// 函数对象类
+struct divide{
+    int operator()(int denominator, int divisor){
+        return denominator/divisor;
+    }
+};
+
+std::function<int(int ,int)>  a = add; 
+std::function<int(int ,int)>  b = mod ; 
+std::function<int(int ,int)>  c = divide(); //divide类构造
+
+```
+
+### std::bind
+```
+// 绑定普通函数
+double my_divide (double x, double y) {return x/y;}
+std::function<double(double,double)> fn_half = std::bind (my_divide,std::placeholders::_1,2);  // placeholders::_1 占位符
+std::cout << fn_half(10) << '\n';     // 2
+
+// 绑定一个成员函数
+struct Foo {
+    void print_sum(int n1, int n2)
+    {
+        std::cout << n1+n2 << '\n';
+    }
+    int data = 10;
+};
+int main() 
+{
+    Foo foo;
+    //bind绑定类成员函数时，第一个参数表示对象的成员函数的指针，第二个参数表示对象的地址
+    auto f = std::bind(&Foo::print_sum, &foo, 95, std::placeholders::_1);
+    f(5); // 100
+}
+
 ```
