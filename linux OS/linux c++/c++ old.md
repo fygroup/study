@@ -870,22 +870,21 @@ ptr->d_name
 ptr->d_type //8 file 10 linkfile 4 dir
 }
 
-//--------sort----------------------------------------------------------------------
-把list改成vector因为list的iterator不是random的而std::sort需要random的iterator
+
 ```
 
----
-#### container_of(已知结构体type的成员member的地址ptr，求解结构体type的起始地址)
+### container_of
 ```
+已知结构体type的成员member的地址ptr，求解结构体type的起始地址)
+
 #define container_of(ptr,type,member) ({\
-const typeof(((type*)0)->member)  *_mptr = (ptr);
-(type*)((char*)_mptr - offsetof(type,member));  })
+    const typeof(((type*)0)->member)  *_mptr = (ptr); \
+    (type*)((char*)_mptr - offsetof(type,member));  })
 
 #define offsetof(type,member) ((size_t)&((type*)0)->member)
 ```
 
----
-#### 特化 偏特化
+### 特化 偏特化
 (1)模板函数
 ```
 template<typename T, class N> void func(T num1, N num2)
@@ -927,8 +926,7 @@ public:
 ```
 特化 > 偏特化 > 模板类
 
----
-#### 处理模板化基类内的名称
+### 处理模板化基类内的名称
 ```
 template<typename T>
 class LoggingMsgSender:public MsgSender<T>
@@ -945,26 +943,22 @@ void func(const T & t){
 }
 ```
 
----
-#### for_each waitpid
+### for_each waitpid
 ```
 #include <algorithm>
 #include <sys/wait.h>
 for_each(vec.begin(),vec.end(),[](pid_t & pd){waitpid(pd,NULL,0);});
 ```
 
----
-#### 模板元编程 type mapping
+### 模板元编程 type mapping
 
----
-#### pthread_cond_timedwait
+### pthread_cond_timedwait
 ```
 pthread_cond_timedwait (pthread_cond_t * _cond,pthread_mutex_t * _mutex,_const struct timespec * _abstime);
 //比函数pthread_cond_wait()多了一个时间参数，经历abstime段时间后，即使条件变量不满足，阻塞也被解除
 ```
 
----
-#### class static struct初始化
+### class static struct初始化
 ```
 class my
 {
@@ -976,21 +970,19 @@ public:
 list<my::MY*> my::a;  
 ```
 
----
-#### operator重载template
+### operator重载template
 ```
 template<typename T>
 class my {
-    template<typename T1>
-    friend my<T1> & operator *(my<T1> & my1, my<T1> & my2){  //friend 
+    template<typename T1>   // 重要！！！
+    friend my<T1> & operator *(my<T1> & my1, my<T1> & my2){  // friend 
 	    my1.i *= my2.i;
 	    return(my1);
     }
 }
 ```
 
----
-#### 函数指针
+### 函数指针
 ```
 typedef (int*)(*func)(int,char);
 int* myfunc(int,char){}
@@ -998,32 +990,28 @@ func = myfunc;
 //&(func) 等价于 func
 ```
 
----
-#### static变量
+### static变量
 static 变量最好都写在cpp文件中，除非hpp用到的那个static变量
 
----
-#### makefile .o 文件有依赖时，是有顺序的
+### makefile .o 文件有依赖时，是有顺序的
 ```
 all: fz16.o fastqz.o libzpaq.o FastqReader.o FileOpt.o muti_Process.o
 	$(CXX) -o $(TARGET) $^ $(FLAGS) $(LIBS)
 fastqz.o依赖于muti_Process.o，muti_Process.o要写在fqstqz.o的后面
 ```
 
----
-#### ostringstream
+### ostringstream
 ```
 std::ostringstream str;
 str << "abc" << 2 << "dda";
 //格式化一个字符串，但通常并不知道需要多大的缓冲区
 ```
 
----
-#### 构造函数private
+### private构造函数的调用
 ```
 对于class本身，可以利用它的static公有成员，因为它们独立于class对象之外，不必产生对象也可以使用它们
 
-如果在外部使用private构造函数：
+如果在外部使用private构造函数，有以下两种方法：
 (1) 添加friend
     class Obj{
     public:
@@ -1050,23 +1038,20 @@ str << "abc" << 2 << "dda";
     Obj a = Obj::CreateObj();
 ```
 
----
-#### 获取文件绝对路径
+### 获取文件绝对路径
 ```
 realpath(file_name, abs_path_buff)
 返回值为0表示错误
 ```
 
----
-#### 判断文件夹是否存在，不存在创建文件夹
+### 判断文件夹是否存在，不存在创建文件夹
 ```
 if (access(tarDir,F_OK)!=0){
     ASSERT_ERROR(mkdir(tarDir,S_IRWXU),"mkdir tmp wrong");
 }
 ```
 
----
-#### 文件夹操作
+### 文件夹操作
 ```
 #include <sys/types.h>   
 #include <dirent.h>
@@ -1173,14 +1158,25 @@ while(!seq.empty()){
 }
 ```
 
----    
-#### deque queue array
-deque是双端队列
-queue是容器适配器，底层由deque存储
-array长度固定
+    
+### deque queue vector array list
+```
+// list 与 vector
+    > list 每个元素间用链表相连，访问随机元素没有vector快，随机地插入元素要比vector快
 
----
-#### 类函数指针
+// vector与deque
+    > deque是双端队列，是可以在两端扩展和收缩的连续容器。一般deque的实现是基于某种形式的动态数组，允许单个元素用随机获取。迭代器随机读取，数组容量自动管理。
+    > 它有和vector相似的函数，但在序列的开始也有高效的插入和删除。但不像vector，deque的元素并不是严格连续存储的。
+    > vector和deque有相似的接口和相似的目的，但内部实现截然不同
+
+// queue与deque
+    > queue 先进先出，不支持迭代器
+    > queue是容器适配器，底层由deque存储
+
+// array长度固定
+```
+
+### 类函数指针
 ```
 class CA
 {  
@@ -1244,6 +1240,10 @@ sort(a,a+20,compare);
 
 #### lambda
 ```
+auto f = [=]()->{};
+[=]   值
+[&]   引用
+
 int main()
 {
     int a = 123;
@@ -1275,6 +1275,21 @@ int main()
     a = 321;
     f(); // 输出：321
 }
+
+// 实例
+vector<int> mList(5);
+for (size_t i = 0; i<mList.size();i++) {
+    cout << &(mList[i]) << endl;
+}
+int i = 0;
+for_each(mList.begin(), mList.end(), [&i](int & x){
+    x = i++;
+});
+for_each(mList.begin(), mList.end(), [](int & x){
+    cout << x << endl;
+});
+
+
 ```
 
 ---
@@ -1289,6 +1304,9 @@ qsort(x,10,sizeof(int),func);
 int func(const void* a, const void* b){
 	return((*(int*)a)-(*(int*)b));
 }
+
+// 注意
+list不能排序，因为list的iterator不是随机的，而vector可以，因为他是随机的
 ```
 
 ---
