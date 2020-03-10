@@ -85,43 +85,42 @@ POSIX定义的可选头文件
 
 ```
 
-#### 异步的进化
+### 异步的进化
 ```
 1、远古时代（回调函数）
 2、promise时代
 	promise().then().then()
 3、Generator生成器
 	实现代码生成器，实现switch（）类型的协程，异步。但不是真正异步
-co(function *(){
-    let db, collection, result; 
-    let person = {name: "yika"};
-    try{
-        db = yield mongoDb.open();
-        collection = yield db.collection("users");
-        result = yield collection.insert(person);
-    }catch(e){
-        console.error(e.message);
-    }
-    console.log(result);
-});
+    co(function *(){
+        let db, collection, result; 
+        let person = {name: "yika"};
+        try{
+            db = yield mongoDb.open();
+            collection = yield db.collection("users");
+            result = yield collection.insert(person);
+        }catch(e){
+            console.error(e.message);
+        }
+        console.log(result);
+    });
 
 4、async/await时代
 	真正的协程，实现异步最优雅的方式，用同步的方式写异步！
-async function insertData(person){
-    let db, collection, result; 
-    try{
-        db = await mongoDb.open();   //切除该协程，
-        collection = await db.collection("users");
-        result = await collection.insert(person);
-    }catch(e){
-        console.error(e.message);
-    }
-    console.log(result);
-} 
+    async function insertData(person){
+        let db, collection, result; 
+        try{
+            db = await mongoDb.open();   //切出该协程，
+            collection = await db.collection("users");
+            result = await collection.insert(person);
+        }catch(e){
+            console.error(e.message);
+        }
+        console.log(result);
+    } 
 
 ```
 
----
 ### 协程的原理
 ```
 https://www.zhihu.com/question/65647171/answer/233495694
@@ -173,29 +172,25 @@ async/await的出现，实现了基于stackless coroutine的完整coroutine。�
 
 ```
 
----
 ### c++异步编程
+```
 c++11的promise、async、future属于多线程异步，所以单线程异步只能用协程和异步callback
 异步是协程的一种实现方式，协程是异步的封装方法
-```
 1、promise、async的多线程异步回调（异步工作流）
 2、协程（更优雅）
 ```
 
----
 ### c++高性能网络库 
 ```
 libevent、libev、boost::asio
 ```
 
----
 ### c++ asio
 ```
 推荐boost::asio
 c++20标准库网络部份将基于asio，c++ asio异步编程很重要！！！
 ```
 
----
 ### 有栈协程相关模块
 ```
 云风的coroutine库
@@ -204,7 +199,6 @@ golang
 boost::asio
 ```
 
----
 ### 无栈协程相关模块
 ```
 c++20的coroutine(基于asio)
@@ -213,10 +207,10 @@ Es6的async/wait模型
 boost::asio
 ```
 
----
 ### hook（linux钩子）
-由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
 ```
+由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
+
 //my_hook.c
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -259,10 +253,9 @@ gcc -o main main.c -fno-builtin-strcmp
 
 ```
 
----
 ### fuse 用户空间文件系统
-[fuse架构](../picture/fuse架构.png)
 ```
+[fuse架构](../picture/fuse架构.png)
 1、用户态app调用glibc open接口，触发sys_open系统调用。
 2、sys_open 调用fuse中inode节点定义的open方法。
 3、inode中open生成一个request消息，并通过/dev/fuse发送request消息到用户态libfuse。
@@ -270,7 +263,6 @@ gcc -o main main.c -fno-builtin-strcmp
 5、内核收到request消息的处理完成的唤醒，并将结果放回给VFS系统调用结果。
 ```
 
----
 ### 互斥量、信号量
 ```
 虽然mutex和semaphore可以相互替代，可以把 值最大为1 的Semaphore当Mutex用，也可以用Mutex＋计数器当Semaphore。
@@ -311,7 +303,6 @@ thread_join(t3);
 
 ```
 
----
 ### 终端
 ```
 通过网络登录或者终端登录建立的会话，会分配唯一一个tty终端或者pts伪终端（网络登录），实际上它们都是虚拟的，以文件的形式建立在/dev目录，而并非实际的物理终端。
@@ -321,7 +312,6 @@ thread_join(t3);
 在网络登录程序中，登录认证守护程序 fork 一个进程处理连接，并以ptys_open 函数打开一个伪终端设备（文件）获得文件句柄，并将此句柄复制到子进程中作为标准输入、标准输出、标准错误，所以位于此控制终端进程下的所有子进程将可以持有终端
 ```
 
----
 ### 守护进程 daemon
 ```
 一个守护进程的父进程是init进程，因为它真正的父进程在fork出子进程后就先于子进程exit退出了，所以它是一个由init继承的孤儿进程。
@@ -371,10 +361,10 @@ https://blog.csdn.net/Leezha/article/details/78019116
 #include <string.h>
 
 void create_daemon() {
-    signal(SIGTTOU,SIG_IGN);            //防止守护进行在没有运行起来前，控制终端受到干扰退出或挂起。
+    signal(SIGTTOU,SIG_IGN); // 防止守护进行在没有运行起来前，控制终端受到干扰退出或挂起。
     signal(SIGTTIN,SIG_IGN);   
     signal(SIGTSTP,SIG_IGN);   
-    signal(SIGHUP ,SIG_IGN); 
+    signal(SIGHUP ,SIG_IGN); // 防止会话首进程退出时，发送信号终止进程组中的进程
 
     pid_t pid = fork();
     if (pid == -1) {
@@ -445,8 +435,6 @@ int main(){
 
 ```
 
-
----
 ### syslog
 ```
 https://dearhwj.gitbooks.io/itbook/content/linux/linux_syslogd.html
@@ -503,7 +491,6 @@ LOG_LOCAL0.*    /var/log/my.log
 openlog('my', LOG_PID, LOG_LOCAL0)
 ```
 
----
 ### 进程、进程组、会话
 ```
 https://segmentfault.com/a/1190000009152815
@@ -536,7 +523,12 @@ session的leader退出后，session中的所有其它进程将会收到SIGHUP信
         deamon程序虽然也是一个session的leader，但一般它不会创建新的进程组，也没有job的管理功能，所以这种情况下一个session就只有一个进程组，所有的进程都属于同样的进程组和session。
 
 // SIGHUP 与 nohup
-sighup（挂断）信号在控制终端或者控制进程死亡时向关联会话中的进程发出，默认进程对SIGHUP信号的处理时终止程序，所以我们在shell下建立的程序，在登录退出连接断开之后，会一并退出。
+// SIGHUP
+SIGHUP会在以下3种情况下被发送给相应的进程：
+1、终端关闭时，该信号被发送到session首进程以及作为job提交的进程（即用 & 符号提交的进程）
+2、session首进程退出时，该信号被发送到该session中的前台进程组和后台进程组中的每一个进程
+3、若进程的退出，导致一个进程组变成了孤儿进程组，且新出现的孤儿进程组中有进程处于停止状态，则SIGHUP和SIGCONT信号会按顺序先后发送到新孤儿进程组中的每一个进程。
+系统对SIGHUP信号的默认处理是终止收到该信号的进程。所以若程序中没有捕捉该信号，当收到该信号时，进程就会退出。
 
 // nohup做了3件事情
 1、dofile函数将输出重定向到nohup.out文件
@@ -553,8 +545,6 @@ sighup（挂断）信号在控制终端或者控制进程死亡时向关联会�
     }
 
 ```
-
-
 
 ### 字符编码
 ```
@@ -725,7 +715,6 @@ S_IROTH 00004 权限, 代表其他用户具有可读的权限
 S_IWOTH 00002 权限, 代表其他用户具有可写入的权限.
 S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
 ```
-
 
 ### 进程关系
 ```
