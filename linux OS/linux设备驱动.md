@@ -138,6 +138,22 @@ struct buffer_head {
 ```
 
 ### 字符设备
+```
+1、cdev 结构体
+    struct cdev {
+        struct kobject kobj; /* 内嵌的kobject 对象 */
+        struct module *owner; /*所属模块*/
+        struct file_operations *ops; /*文件操作结构体*/
+        struct list_head list;
+        dev_t dev; /*设备号*/
+        unsigned int count;
+    };
+    > file_operations
+        file_operations定义了字符设备驱动提供给虚拟文件系统的接口函数
+
+
+```
+
 (1)设备编号
 ```
 //静态分配
