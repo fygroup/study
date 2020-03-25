@@ -1076,3 +1076,62 @@ umount /dev/loop0
 losetup -d /dev/loop0
 rm FS_on_file
 ```
+
+### http_proxy
+```
+// 设置 socks 代理，自动识别socks版本
+    export http_proxy=socks://10.0.0.52:1080
+// 设置 socks4 代理
+    export http_proxy=socks4://10.0.0.52:1080
+// 设置 socks5 代理
+    export http_proxy=socks5://10.0.0.52:1080
+// 代理使用用户名密码认证：
+    export http_proxy=user:pass@192.158.8.8:8080
+  　　
+//  如果需要为https网站设置代理，设置https_proxy环境变量即可；设置方法完全与http_proxy环境变量相同，例如：
+    export https_proxy=socks5://10.0.0.52:1080
+
+```
+
+### tcpdump
+```
+抓包工具
+
+1、关键字
+    (1) 类型
+        host    host 210.27.48.2        //指明ip地址
+        net     net http://www.aa.com   //指明net地址
+        port    port 23                 //指明端口号
+    (2) 传输方向
+        src 源地址，dst 目的地址
+        src host 12.12.1.2              //源IP地址是12.12.1.2
+        dst host 12.12.1.2              //目的IP地址是12.12.1.2
+    (3) 协议
+        ip, tcp, udp...
+
+2、实例
+    // 抓取所有经过eth1，'源地址'是192.168.1.1的网络数据
+    tcpdump -i eth1 src host 192.168.1.1
+
+    // 抓取所有经过eth1，'目的地址'是192.168.1.1的网络数据
+    tcpdump -i eth1 dst host 192.168.1.1
+
+    // 抓取所有经过eth1，源端口是25的网络数据
+    tcpdump -i eth1 src port 25
+
+    // 抓取所有经过eth1，目的端口是25的网络数据
+    tcpdump -i eth1 dst port 25
+
+    // 抓取所有经过eth1的所有tcp数据
+    tcpdump -i eth1 tcp
+
+    // 抓取所有经过eth1，目的地址是192.168.1.254或192.168.1.200端口是80的TCP数据
+    tcpdump -i eth1 '((tcp) and (port 80) and ((dst host 192.168.1.254) or (dst host 192.168.1.200)))'
+
+    // 抓取所有经过eth1，目标MAC地址是00:01:02:03:04:05的ICMP数据
+    tcpdump -i eth1 '((icmp) and ((ether dst host 00:01:02:03:04:05)))'
+
+    // 抓取所有经过eth1，目的网络是192.168，但目的主机不是192.168.1.200的TCP数据
+    tcpdump -i eth1 '((tcp) and ((dst net 192.168) and (not dst host 192.168.1.200)))'
+
+```
