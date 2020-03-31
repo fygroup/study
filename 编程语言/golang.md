@@ -920,3 +920,65 @@ unsafe.Sizeof("dasdas")  //16
 //
 
 ```
+
+### 模块管理
+```
+version > go1.11
+
+1、go env
+    GO111MODULE="on"
+    GOPATH="/home/malx/project/go"
+    GOPROXY="https://goproxy.io,direct"
+    GOMOD="/home/malx/test/test/go.mod"
+
+2、go get
+    // 更新当前模块
+    go get -u ./...
+3、go mod
+    (1) 设置环境变量 GO111MODULE
+        go env -w GO111MODULE=on
+    (2) 参数
+        download    下载依赖的module
+        edit        编辑go.mod文件
+        graph       打印模块依赖图
+        init        在当前目录初始化mod
+        tidy        拉取缺少的模块，移除不用的模块
+        vendor      将依赖复制到vendor下
+        verify      校验依赖
+        why         解释为什么需要依赖
+    (3) 用法
+        1) 初始化一个项目helloworld
+            // 随便找个文件夹
+            go mod init helloworld
+            // 写代码，中包含模块
+            // 运行项目
+            go build
+            // 或者先安装依赖
+            go mod tity
+        2) 老项目
+            // 进入项目目录
+            cd src/github.com/xxx/xxx
+            go mod init helloworld
+            // 安装依赖
+            go get ./...
+            // 或
+            go mod tidy
+            // 更新旧的package import 方式
+            // 例如之前 import "api"要改为以下方式
+            import "helloworld/api"
+
+4、GOPROXY
+    // version > 1.13
+    go env -w GOPROXY="https://goproxy.io,direct"
+    // 部署自己的库
+    // 安装
+    git clone https://github.com/goproxyio/goproxy.git && cd goproxy && make 
+    // 参数
+    -cacheDir   指定 Go 模块的缓存目录
+    -exclude    proxy 模式下指定哪些 path 不经过上游服务器
+    -listen     服务监听端口，默认 8081
+    -proxy      指定上游 proxy server，推荐 goproxy.io
+    // 运行
+    ./bin/goproxy -listen=0.0.0.0:80 -cacheDir=/tmp/test -proxy https://goproxy.io -exclude "git.corp.example.com,rsc.io/private"
+
+``` 
