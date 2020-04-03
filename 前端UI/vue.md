@@ -172,6 +172,9 @@ store的getter，不能进行watch！！！
 ---
 ### props watch mounted
 ```
+初始创建的组件并不会watch props，只有已经创建好的组件才会watch props
+
+
 监听props要谨慎，如果监听的参数需要驱动一些东西的话，最好放在mounted中。因为组件的v-if创建，并不会刷新props，不会被watch监听，除非此组建已存在
 
 
@@ -318,4 +321,31 @@ export的模块名必须与route中的path、name一样，否则不会持久化
 ```
 //获得当前组件绑定的事件
 this.$listeners
+```
+
+### form渲染
+```
+// 一定要先有form里的内容，再有渲染form的dom
+
+//例如
+
+<form>
+  <formItem v-for="formDom">
+    ...
+  </formItem>
+</form>
+
+init (){
+  form = {....}
+  this.nextTick(()=>{
+    formDom= {...}
+  })
+}
+
+data () {
+  return {
+    form: {}
+  }
+}
+form
 ```

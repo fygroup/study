@@ -700,7 +700,7 @@ B类:11111111 11111111 11111111    00000000
 
 ```
 
-TCP定时器
+### TCP定时器
 ```
 1、重传定时器
      为了控制丢失的报文段或丢弃的报文段，也就是对报文段确认的等待时间。当TCP发送报文段时，就创建这个特定报文段的重传计时器
@@ -714,4 +714,160 @@ TCP定时器
 
 4、2MSL定时器
      2MSL时间是为了让TCP有时间发送最后一个ACK,防止该ACK丢失
+```
+
+### TCP SYN队列和Accept队列
+```
+https://zhuanlan.zhihu.com/p/87437843
+https://www.jianshu.com/p/35e8c7d38809
+https://www.jianshu.com/p/e6f2036621f4
+
+1、SYN队列
+     (1) 作用
+          SYN队列存储了收到SYN包的连接(对应内核代码的结构体：struct inet_request_sock)
+          > 当收到客户端的SYN连接，回复SYN+ACK包，等待收到来自客户端的ACK。在没有收到ACK包时重传，直到超时
+          > 当收到来自客户端的ACK包时
+               > 首先找到对应的SYN队列，再在对应的SYN队列中检查相关的数据看是否匹配
+               > 如果匹配，内核将该连接相关的数据从SYN队列中移除，创建一个完整的连接（对应内核代码的结构体：struct inet_sock），并将这个连接加入Accept队列
+     (2) 队列大小
+          SYN队列用于保存半连接状态的请求
+          大小通过/proc/sys/net/ipv4/tcp_max_syn_backlog指定
+
+2、Accept队列
+     (1) 作用
+          Accept队列中存放的是已建立好的连接，也即等待被上层应用程序取走的连接。当进程调用accept()，这个socket从队列中取出，传递给上层应用程序
+     (2) 队列大小
+          Accept队列用于保存全连接状态的请求
+          其大小通过/proc/sys/net/core/somaxconn指定
+          也可以在使用listen函数时，backlog参数指定，int listen(int sockfd, int backlog)
+          最终取上面两个最小值
+```
+
+### TCP缓存接受队列
+```
+https://www.cnblogs.com/alreadyskb/p/4386565.html
+http://www.cnhalo.net/2016/07/13/linux-tcp-prequeue-backlog/
+https://zhuanlan.zhihu.com/p/121651317
+
+1、三个缓存队列
+     tcp协议栈数据接收实现了三个接收缓存分别
+     prequeue
+     sk_receive_queue
+     sk_backlog
+
+2、为什么需要的原因
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 两层锁的 backlog 机制
+```
+1、backlog队列
+    1)
+        进程上下文、中断上下文处理一个socket的skb队列时，必然会产生竞争
+
+        进程上下文(读取)
+        dequeue
+        ↓
+        ---------socket skb队列(backlog)------------   
+        ↑
+        enqueue
+        中断上下文(写入)
+    2)
+        enqueue(skb, sk)
+        {
+            spin_lock(sk->sk_receive_queue->lock);
+            skb_queue_tail(sk->sk_receive_queue, skb);
+            spin_unlock(sk->sk_receive_queue->lock);
+        }
+        sk_buff dequeue(sk)
+        {
+            spin_lock(sk->sk_receive_queue->lock);
+            skb = skb_dequeue(sk->sk_receive_queue);
+            spin_unlock(sk->sk_receive_queue->lock);
+            return skb;
+        }
+
+2、二级锁backlog队列
+    进程上下文与中断上下文竞争一个锁带来的延迟太高
+    所以从2.2版本内核，TCP就已经采用二级锁backlog队列
+
+    1) 两个锁
+        sk->higher_level_spin_lock      //主锁
+        sk->low_lock_owned_by_process   //次锁
+
+    2) 两个队列
+        sk->sk_receive_queue
+        backlog
+
+    2) 代码
+        low_lock_lock(sk)
+        {
+            spin_lock(sk->higher_level_spin_lock); 
+            sk->low_lock_owned_by_process = 1;
+            spin_unlock(sk->higher_level_spin_lock);
+        }
+        low_lock_unlock(sk)
+        {
+            spin_lock(sk->higher_level_spin_lock);
+            sk->low_lock_owned_by_process = 0;
+            spin_unlock(sk->higher_level_spin_lock);
+        }
+        udp_rcv(skb) // 中断上下文
+        {
+            sk = lookup(...);
+            spin_lock(sk->higher_level_spin_lock);
+            
+            if (sk->low_lock_owned_by_process) {
+                // 当进程上下文对socket的low锁占有，中断上下文将skb排入次level的backlog队列
+                enqueue_to_backlog(skb, sk);
+
+            } else {
+                //当进程上下文释放low锁的时候，顺序执行次level被排入的任务，即处理backlog中的skb。
+                enqueue(skb, sk);// 见上面的伪代码
+                update_statis(sk);
+                wakeup_process(sk);
+            }
+            spin_unlock(sk->higher_level_spin_lock);
+        }
+        udp_recv(sk, buff) // 进程上下文
+        {
+            skb = dequeue(sk); // 见上面的伪代码
+            if (skb) {
+                copy_skb_to_buff(skb, buff);
+                low_lock_lock(sk); 
+                update_statis(sk);
+                low_lock_unlock(sk);
+                dequeue_backlog_to_receive_queue(sk);
+            }
+        }
+
+```
+
+### TCP Prequeue队列和backlog队列
+```
+http://www.cnhalo.net/2016/07/13/linux-tcp-prequeue-backlog/
+
+
 ```

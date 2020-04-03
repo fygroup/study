@@ -94,9 +94,11 @@ if(bind(fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
 ```
 https://www.cnblogs.com/wangcq/p/3520400.html
 
-三次握手发生在这一步
 
-TCP服务器端依次调用socket()、bind()、listen()之后，就会监听指定的socket地址了。TCP客户端依次调用socket()、connect()之后就想TCP服务器发送了一个连接请求。TCP服务器监听到这个请求之后，就会调用accept()函数取接收请求，这样连接就建立好了。之后就可以开始网络I/O操作了，即类同于普通文件的读写I/O操作。
+
+TCP服务器端依次调用socket()、bind()、listen()之后，就会监听指定的socket地址了
+TCP客户端依次调用socket()、connect()之后就向服务器发送了一个连接请求
+TCP服务器监听到这个请求之后，就会调用accept()函数取接收请求，这样连接就建立好了。之后就可以开始网络I/O操作了，即类同于普通文件的读写I/O操作。
 
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 参数1：服务器的socket描述字
@@ -105,6 +107,8 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 返回值：由内核自动生成的一个全新的描述字，代表与返回客户的TCP连接。
 
 注意：内核为每个由服务器进程接受的客户连接创建了一个已连接socket描述字，当服务器完成了对某个客户的服务，相应的已连接socket描述字就被关闭。
+
+三次握手发生在这一步
 ```
 
 ### read/write的返回
@@ -150,8 +154,8 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 https://zhuanlan.zhihu.com/p/35367402
 
 (1) SO_REUSEADDR
-    1) 使用场景
-        server端在调用bind函数时
+    1) 使用的函数
+        服务端在调用bind函数时
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,(const void *)&reuse , sizeof(int));
     2) 目的
         当服务端出现timewait状态的链接时，确保server能够重启成功
@@ -529,9 +533,15 @@ for( ; ; )
 ```
 惊群效应（thundering herd）是指多进程（多线程）在同时阻塞等待同一个事件的时候（休眠状态），如果等待的这个事件发生，那么他就会唤醒等待的所有进程（或者线程），但是最终却只能有一个进程（线程）获得这个时间的“控制权”，对该事件进行处理，而其他进程（线程）获取“控制权”失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群效应。
 
-accept已解决
+1、accept惊群
+    (1) 场景
+        主进程创建了socket、bind、listen之后，fork()出来多个进程，每个子进程都开始循环处理accept这个listen_fd。每个进程都阻塞在accept上，当一个新的连接到来时候，所有的进程都会被唤醒，但是其中只有一个进程会接受成功，其余皆失败，重新休眠
+    (2) 存在
+        历史上，Linux的accpet确实存在惊群问题
+        在linux2.6版本以后，linux内核已经解决了accept()函数的“惊群”现象，大概的处理方式就是，当内核接收到一个客户连接后，只会唤醒等待队列上的第一个进程（线程）,所以如果服务器采用accept阻塞调用方式，在最新的linux系统中已经没有“惊群效应”了
 
-epoll惊群
+
+2、epoll惊群
 https://www.cnblogs.com/sduzh/p/6810469.html
 https://www.zhihu.com/question/24169490/answers/updated
 
@@ -539,9 +549,9 @@ https://www.zhihu.com/question/24169490/answers/updated
     当有一个新的连接到来时，唤醒的进程可能只有一个，也可能有部分，也可能是全部。
     但是只有一个进程是可以读写的，剩余的进程会获得一个EAGAIN信号，存在EAGAIN的进程不会继续读写，而错误退出
 
-(2) 水平模式
+(2) 水平模式下才会发生
     epoll惊群只会在水平模式下才会发生
-    在epoll的LT模式下，每次epoll_wait 将 readylist的event返回用户空间后，会将epi立刻再加入到ready_list里, 而不像ET模式下是清空当前的ready_list, 由于ready_list不为空了，会再次调用 waitqueue_active来唤醒epoll本身的等待队列， 即其他线程的 epoll_wait会返回, 造成惊群的现象;
+    在epoll的LT模式下，每次epoll_wait 将 readylist的event返回用户空间后，会将epi立刻再加入到ready_list里, 而不像ET模式下是清空当前的ready_list, 由于ready_list不为空了，会再次调用 waitqueue_active来唤醒epoll本身的等待队列， 即其他线程的 epoll_wait会返回, 造成惊群的现象
 
 (3) 解决办法
     https://www.jianshu.com/p/21c3e5b99f4a

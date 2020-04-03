@@ -287,11 +287,8 @@ func main() {
 #### 私有变量
 大小写来实现(大写开头的为共有，小写开头的为私有)
 
-#### interface
-interface{}类型的变量也被当作go语言中的void\*指针来使用interface{}类型的变量也被当作go语言中的void\*指针来使用
-其实 interface就是个协议，无论你输入指针，还是非指针，都一样
+#### 接口
 ```
-//interface == void*
 type Human interface{
     setName(name string)
     setAge(age int)
@@ -299,14 +296,38 @@ type Human interface{
     getAge()int
 }
 
-func NewHuman(){
-
+type xiaoming struct {
+    Name string,
+    Age int,
 }
+
+func(x *xiaoming) setName(name string) {
+    x.Name = name
+}
+func(x *xiaoming) setAge(age int) {
+    x.Age = age
+}
+func(x *xiaoming) getName() string{
+    return x.Name
+}
+func(x *xiaoming) getAge() int {
+    return x.Age
+}
+
+func printHuman(h *Human){
+    fmt.Println(h.getName(), h.getAge())
+}
+
+a:=&xiaoming{Name: "zzz", Age: 12}
+printHuman(a)
 
 ```
 
 #### interface{} 类型转换
 ```
+interface{}类型的变量也被当作go语言中的void\*指针来使用interface{}类型的变量也被当作go语言中的void\*指针来使用
+其实 interface就是个协议，无论你输入指针，还是非指针，都一样
+
 type __s struct{
     x int
 }
@@ -407,8 +428,6 @@ func main(){
 }
 
 ```
-
-
 
 #### 反射
 ```
