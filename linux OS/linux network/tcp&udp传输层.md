@@ -755,11 +755,77 @@ https://zhuanlan.zhihu.com/p/121651317
      sk_receive_queue
      sk_backlog
 
-2、为什么需要的原因
+2、为什么需要多队列的原因
+     进程上下文、中断上下文如果处理一个socket缓存队列时，必然会产生竞争(进程上下文与中断上下文对自旋锁的竞争)
+     图例
+          进程上下文(读取)
+               ↓
+          ---------socket 缓存队列------------   
+               ↑
+          中断上下文(写入)
+     
+     中断上下文自旋时间完全取决于进程上下文的行文，这不利于软中断的快速返回，极大地降低了系统的响应度
 
+3、解决方案
+     (1) tcp_v4_rcv
+          tcp_v4_rcv函数是ip层到tcp层的入口，此函数描述了怎么分发数据包
+     (2) 两个锁
+          tcp协议栈对struct sock *sk有两把锁，第一把是sk_lock.slock，第二把则是sk_lock.owned
+          sk_lock.slock用于获取struct sock *sk对象的成员的修改权限
+          sk_lock.owned用于区分当前是进程上下文或是软中断上下文，为进程上下文时sk_lock.owned会被置1，中断上下文为0
+     (3) 处理过程
+          当协议栈收到数据包时，struct sock *sk可能被进程上下文或中断上下文占用
+          > 当应用程序持有锁时
+               进程上下文持有锁，软中断暂时拿不到锁，所以让数据暂存在后备队列中(backlog)
+               当进程上下文处理完成后，释放锁，然后直接调用函数处理backlog队列里的数据
+          > 当应用程序没有持有锁时
+               那么处于中断上下文，数据可能被放置到receive_queue或者prequeue，数据优先放置到prequeue中，如果prequeue满了则会放置到receive_queue中
+          总之为了更快速的结束软中断数据处理流程：
+          协议栈(软中断上下文)先尝试把包加入backlog中，再尝试加入prequeue中，如果都不能则在软中断上下文中处理数据包。
+          无论加到哪个队列，最终进程上下文都会调用tcp_v4_do_rcv函数将数据有效地插入到sk_receive_queue中，最后被应用层取走
+     (4) 核心代码
+          int tcp_v4_rcv(struct sk_buff *skb) {
+               ...
+               //获得slock锁(第一把锁)
+               //要对sk修改，首先是必须拿锁sk_lock.slock
+               bh_lock_sock_nested(sk); 
+               tcp_segs_in(tcp_sk(sk), skb);
+               ret = 0;
+               //获得owned锁(第二把锁)，判断是是处于进程上下文还是中断上下文
+               if (!sock_owned_by_user(sk)) {
+                    // 处于中断上下文，优先放置prequeue队列中
+                    if (!tcp_prequeue(sk, skb)) 
+                         // 没有成功加入prequeue(可能prequeue已满)，则在软中断中直接处理(放置receive_queue中)
+                         ret = tcp_v4_do_rcv(sk, skb);
+               //处于进程上下文，则直接放到后被队列backlog中，等用户进程释放锁的时候处理          
+               } else if (tcp_add_backlog(sk, skb)) {	
+                    goto discard_and_release;
+               }
+               bh_unlock_sock(sk);
+               ...
+          }
 
+     (5) backlog
+          > sk_add_backlog
+               tcp_add_backlog -> sk_add_backlog
+               sk_add_backlog函数用于添加sbk到sk_backlog中
+          > release_sock
+               sk_backlog的处理必然中进程上下文进行
+               release_sock函数用于backlog数据的接收
+               此函数在进程中被tcp_recvmsg调用
+               release_sock -> _release_sock -> sk_backlog_rcv -> tcp_v4_do_rcv
+          
+     (6) prequeue
+          如果数据包加入backlog队列，则加入prequeue队列，如果prequeue队列满了，则直接加入到receive_queue队列中(软中断中直接处理)
+          tcp_prequeue -> __skb_queue_tail(将包添加到prequeue尾部)
+          如果prequeue满了:
+               while ((skb1 = __skb_dequeue(&tp->ucopy.prequeue)) != NULL)
+			     sk_backlog_rcv(sk, skb1);
+          否则唤醒用户进程，处理包
 
-
+     (7) tcp_recvmsg
+          函数功能：进程读完sk_receive_queue之后，如果没有读满应用程序缓存，则会处理prequeue和backlog队列
+          顺序：读取sk_receive_queue数据 -> 处理prequeue队列 -> 处理backlog队列
 ```
 
 
@@ -778,96 +844,3 @@ https://zhuanlan.zhihu.com/p/121651317
 
 
 
-
-
-
-### 两层锁的 backlog 机制
-```
-1、backlog队列
-    1)
-        进程上下文、中断上下文处理一个socket的skb队列时，必然会产生竞争
-
-        进程上下文(读取)
-        dequeue
-        ↓
-        ---------socket skb队列(backlog)------------   
-        ↑
-        enqueue
-        中断上下文(写入)
-    2)
-        enqueue(skb, sk)
-        {
-            spin_lock(sk->sk_receive_queue->lock);
-            skb_queue_tail(sk->sk_receive_queue, skb);
-            spin_unlock(sk->sk_receive_queue->lock);
-        }
-        sk_buff dequeue(sk)
-        {
-            spin_lock(sk->sk_receive_queue->lock);
-            skb = skb_dequeue(sk->sk_receive_queue);
-            spin_unlock(sk->sk_receive_queue->lock);
-            return skb;
-        }
-
-2、二级锁backlog队列
-    进程上下文与中断上下文竞争一个锁带来的延迟太高
-    所以从2.2版本内核，TCP就已经采用二级锁backlog队列
-
-    1) 两个锁
-        sk->higher_level_spin_lock      //主锁
-        sk->low_lock_owned_by_process   //次锁
-
-    2) 两个队列
-        sk->sk_receive_queue
-        backlog
-
-    2) 代码
-        low_lock_lock(sk)
-        {
-            spin_lock(sk->higher_level_spin_lock); 
-            sk->low_lock_owned_by_process = 1;
-            spin_unlock(sk->higher_level_spin_lock);
-        }
-        low_lock_unlock(sk)
-        {
-            spin_lock(sk->higher_level_spin_lock);
-            sk->low_lock_owned_by_process = 0;
-            spin_unlock(sk->higher_level_spin_lock);
-        }
-        udp_rcv(skb) // 中断上下文
-        {
-            sk = lookup(...);
-            spin_lock(sk->higher_level_spin_lock);
-            
-            if (sk->low_lock_owned_by_process) {
-                // 当进程上下文对socket的low锁占有，中断上下文将skb排入次level的backlog队列
-                enqueue_to_backlog(skb, sk);
-
-            } else {
-                //当进程上下文释放low锁的时候，顺序执行次level被排入的任务，即处理backlog中的skb。
-                enqueue(skb, sk);// 见上面的伪代码
-                update_statis(sk);
-                wakeup_process(sk);
-            }
-            spin_unlock(sk->higher_level_spin_lock);
-        }
-        udp_recv(sk, buff) // 进程上下文
-        {
-            skb = dequeue(sk); // 见上面的伪代码
-            if (skb) {
-                copy_skb_to_buff(skb, buff);
-                low_lock_lock(sk); 
-                update_statis(sk);
-                low_lock_unlock(sk);
-                dequeue_backlog_to_receive_queue(sk);
-            }
-        }
-
-```
-
-### TCP Prequeue队列和backlog队列
-```
-http://www.cnhalo.net/2016/07/13/linux-tcp-prequeue-backlog/
-
-
-```
