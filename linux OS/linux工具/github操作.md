@@ -215,10 +215,17 @@ git为我们提供了一个.gitignore文件，只要在这个文件中声明哪�
 
 ### 远端分支
 ```
+//查看远端分支
 git branch -r
+//创建本地分支
 git branch current
+//切换分支
 git checkout current
 // 推送分支
 git push origin current	
+// 更新分支
+git pull origin current	
+// 删除分支
+git push origin :current
 
 ```
