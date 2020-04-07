@@ -213,4 +213,12 @@ https://zhuanlan.zhihu.com/p/52885189
 git为我们提供了一个.gitignore文件，只要在这个文件中声明哪些文件你不希望添加到git中去，这样当你使用git add .的时候这些文件就会被自动忽略掉。
 ```
 
+### 远端分支
+```
+git branch -r
+git branch current
+git checkout current
+// 推送分支
+git push origin current	
 
+```
