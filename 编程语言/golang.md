@@ -489,12 +489,6 @@ for i:=0;i<elem.NumField();i++{
 
 }
 
-
-
-
-
-
-
 ```
 
 
@@ -1001,3 +995,74 @@ version > go1.11
     ./bin/goproxy -listen=0.0.0.0:80 -cacheDir=/tmp/test -proxy https://goproxy.io -exclude "git.corp.example.com,rsc.io/private"
 
 ``` 
+
+### go mod import
+```
+1、import当前目录的内容
+    (1) 目录结构
+        # tree
+        .
+        ├── go.mod
+        ├── main.go
+        └── test
+            └── test.go
+
+    (2) go.mod
+        # cat go.mod
+        module blog
+
+        go 1.13
+
+    (3) main.go
+        # cat main.go
+        package main
+
+        import (
+            "blog/test"             //注意
+        )
+
+        func main() {
+            test.Print()
+        }
+
+    (4) test.go
+        # cat test.go
+        package test
+        import "fmt"
+        func Print() {              // 注意大写
+            fmt.Println("aaa")
+        }
+
+2、import其他目录的内容
+    (1) 目录结构
+        # tree
+        .
+        ├── go.mod
+        └── main.go
+
+    (2) go.mod
+        # cat go.mod
+        module test1
+        replace blog => /home/malx/test/go/     //引用上面那个模块
+
+    (3) main.go
+        # cat main.go
+        package main
+        import (
+            test "blog/test"
+        )
+
+        func main () {
+            test.Printa()
+        }
+
+
+```
+
+### go install build
+```
+go install命令只比go build命令多做了一件事，即：安装编译后的结果文件到指定目录
+
+go install 编译目标文件的同时，也将编译产生的静态库文件保存在工作区的pkg目录下
+go build 只会编译目标文件产生最终结果
+```
