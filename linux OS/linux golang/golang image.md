@@ -42,8 +42,6 @@
     // 最小到最大
     RGB 158,47,200
     47 < x < 200
-    
-
 ```
 
 
@@ -102,7 +100,66 @@ Color   Model
 
 ### image
 ```
-image   PalettedImage   Config  
+1、Image
+    表示采用某色彩模型的颜色构成的有限矩形网格（即一幅图像）
+    (1) 接口
+        type Image interface {
+            // ColorModel方法返回图像的色彩模型
+            ColorModel() color.Model
+            // Bounds方法返回图像的范围，范围不一定包括点(0, 0)
+            Bounds() Rectangle
+            // At方法返回(x, y)位置的色彩
+            // At(Bounds().Min.X, Bounds().Min.Y)返回网格左上角像素的色彩
+            // At(Bounds().Max.X-1, Bounds().Max.Y-1) 返回网格右下角像素的色彩
+            At(x, y int) color.Color
+        }
+
+
+2、Point
+    Point是X, Y坐标对。坐标轴是向右（X）向下（Y）的
+    (1) 类型
+        type Point struct {
+            X, Y int
+        }
+        // 原点
+        var ZP Point
+
+
+3、Rectangle
+    Rectangle代表一个矩形
+    (1) 类型
+        type Rectangle struct {
+            Min, Max Point
+        }
+
+4、Image实例
+    (1) Uniform
+        Uniform类型代表一块面积无限大的具有同一色彩的图像
+        type Uniform struct {
+            C color.Color
+        }
+        func NewUniform(c color.Color) *Uniform
+
+    (2) Alpha
+        Alpha类型代表一幅内存中的图像
+        type Alpha struct {
+            // Pix保管图像的像素，内容为alpha通道值（即透明度）。
+            // 像素(x, y)起始位置是Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1]
+            Pix []uint8
+            // Stride是Pix中每行像素占用的字节数
+            Stride int
+            // Rect是图像的范围
+            Rect Rectangle
+        }
+        func NewAlpha(r Rectangle) *Alpha
+
+    (3) Gray
+        Gray类型代表一幅内存中的图像
+    
+
+image   PalettedImage   Config  Point   Rectangle
+
+
 
 
 ```
