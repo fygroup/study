@@ -100,9 +100,11 @@ Color   Model
 
 ### image
 ```
+image   PalettedImage   Config  Point   Rectangle
+
 1、Image
     表示采用某色彩模型的颜色构成的有限矩形网格（即一幅图像）
-    (1) 接口
+    (1) Image 接口
         type Image interface {
             // ColorModel方法返回图像的色彩模型
             ColorModel() color.Model
@@ -113,7 +115,24 @@ Color   Model
             // At(Bounds().Max.X-1, Bounds().Max.Y-1) 返回网格右下角像素的色彩
             At(x, y int) color.Color
         }
+        // 相关函数
+        // 函数解码并返回一个采用某种已注册格式编码的图像。字符串返回值是该格式注册时的名字。格式一般是在该编码格式的包的init函数中注册的
+        func Decode(r io.Reader) (Image, string, error)
 
+    (2) PalettedImage 接口
+        PalettedImage接口继承Image，他也代表一幅图像，但是它的像素可能来自一个有限的调色板
+        type PalettedImage interface {
+            // ColorIndexAt方法返回(x, y)位置的像素的（调色板）索引
+            ColorIndexAt(x, y int) uint8
+            Image
+        }
+
+    (3) Config
+        Config保管图像的色彩模型和尺寸信息
+        type Config struct {
+            ColorModel    color.Model
+            Width, Height int
+        }
 
 2、Point
     Point是X, Y坐标对。坐标轴是向右（X）向下（Y）的
@@ -123,7 +142,6 @@ Color   Model
         }
         // 原点
         var ZP Point
-
 
 3、Rectangle
     Rectangle代表一个矩形
@@ -155,11 +173,74 @@ Color   Model
 
     (3) Gray
         Gray类型代表一幅内存中的图像
-    
+        type Gray struct {
+            // Pix保管图像的像素，内容为灰度。
+            // 像素(x, y)起始位置是Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1]
+            Pix []uint8
+            // Stride是Pix中每行像素占用的字节数
+            Stride int
+            // Rect是图像的范围
+            Rect Rectangle
+        }
+        func NewGray(r Rectangle) *Gray
 
-image   PalettedImage   Config  Point   Rectangle
+    (4) RGBA
+        RGBA类型代表一幅内存中的图像
+        type RGBA struct {
+            // Pix保管图像的像素色彩信息，顺序为R, G, B, A
+            // 像素(x, y)起始位置是Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4]
+            Pix []uint8
+            // Stride是Pix中每行像素占用的字节数
+            Stride int
+            // Rect是图像的范围
+            Rect Rectangle
+        }
+        func NewRGBA(r Rectangle) *RGBA
 
+    (5) Paletted
+        Paletted类型是一幅采用uint8类型索引调色板的内存中的图像
+        type Paletted struct {
+            // Pix保存图像的象素，内容为调色板的索引。
+            // 像素(x, y)的位置是Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1]
+            Pix []uint8
+            // Stride是Pix中每行像素占用的字节数
+            Stride int
+            // Rect是图像的范围
+            Rect Rectangle
+            // Palette是图像的调色板
+            Palette color.Palette
+        }
+        func NewPaletted(r Rectangle, p color.Palette) *Paletted
 
+```
 
+### image draw
+```
+(1) Image 接口
+    type Image interface {
+        image.Image     // 继承image.Image
+        Set(x, y int, c color.Color)
+    }
+    // 注意：Image接口比image.Image接口多了Set方法，该方法用于修改单个像素的色彩
+
+(2) Op变量
+    const (
+        // 源图像透过遮罩后，覆盖在目标图像上（类似图层）
+        Over Op  = iota
+        // 源图像透过遮罩后，替换掉目标图像
+        Src
+    )
+
+(3) Draw
+    func Draw(dst Image, r image.Rectangle, src image.Image, sp image.Point, op Op)
+    func DrawMask(dst Image, r image.Rectangle, src image.Image, sp image.Point, mask image.Image, mp image.Point, op Op)
+    // 参数
+        dst  绘图的背景图
+        r 是背景图的绘图区域
+        src 是要绘制的图
+        sp 是 src 对应的绘图开始点
+        mask 是绘图时用的蒙版，控制替换图片的方式。
+        mp 是绘图时蒙版开始点
+        Op是Porter-Duff合成的操作符(draw.Op, draw.Src)
 
 ```

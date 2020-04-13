@@ -25,11 +25,6 @@ ulimit -u 4096 修改max user processes的值
 修改/etc/security/limits.d/90-nproc.conf文件中的值（永久生效）
 *          soft    nproc    4096
 
-//---so的查看---------------------------------
-ldd可以列出一个程序所需要得动态链接库
-ldconfig是一个动态链接库管理命令，为了让动态链接库为系统所共享,还需运行动态链接库的管理命令–ldconfig。
-nm /lib64/libc.so.6|grep '\sGLIBC_2' 查看动态库的相关信息
-strings 
 
 //---rpm-------------------------------------
 rpm -qpl xxx.rpm    //查看rpm软件将要安装的路径信息
@@ -44,6 +39,30 @@ PASV（被动）模式
 认证方式：匿名用户认证、本地用户认证（linux的/etc/password本地用户）和虚拟用户认证（ftp自己的用户）
 https://www.jianshu.com/p/f1788f596a57
 
+
+### 动态库操作
+```
+// 此文件记录了编译时使用的动态库的路径，也就是开机加载so库的路径
+    /etc/ld.so.conf 
+    默认情况下，编译器只会使用/lib和/usr/lib这两个目录下的库文件，其他目录需添加到此文件中
+
+// ldconfig
+    作用是将文件/etc/ld.so.conf列出的路径下的库文件缓存到/etc/ld.so.cache以供使用
+    当安装完一些库文件，或者修改/etc/ld.so.conf增加了库的新的搜索路径，需要运行一下ldconfig，使所有的库文件都被缓存
+    // 查看当前系统缓存的动态库
+    ldconfig -p
+
+
+// 列出一个程序所需要得动态链接库
+    ldd [软件]
+
+
+// 用于显示二进制目标文件的符号表
+    nm /lib64/libc.so.6|grep '\sGLIBC_2' 查看动态库的相关信息
+
+// 打印文件中可打印的字符，用于打印库中的字符
+    strings libxxx.so
+```
 
 ### sh重定向
 ```
@@ -869,7 +888,7 @@ date +"%Y-%m-%d"
 ```
 apt提供了大多数与apt-get及apt-cache有的功能，但更方便使用
 
-//根据名称列出软件包
+//列出系统包含的软件和库
 dpkg list
 //搜索软件包描述
 apt-cache search [软件]
