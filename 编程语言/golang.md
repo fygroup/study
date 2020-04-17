@@ -91,17 +91,7 @@ a.x = 1     //正确
 (*a).x = 1  //正确
 ```
 
-#### defer panic recover
-```
-defer func(){
-    if a:=recover();a!=nil{
-        .....
-    }
-}()
 
-panic("dadad")
-
-```
 
 #### init
 初始化导入的包（递归导入）
@@ -200,7 +190,7 @@ m.Add("item", "3") // panic: assignment to entry in nil map
 
 ```
 
-#### 函数值
+#### 函数变量
 ```
 type A struct{
     x int
@@ -704,21 +694,132 @@ func main() {
 
 #### defer panic recover
 ```
-//Defer function按照后进先出的规则执行。例如下面的代码打印“3210”。
-func b() {
-    for i := 0; i < 4; i++ {
-        defer fmt.Print(i)
-    }
-}
+1、defer
+    //Defer function按照后进先出的规则执行。例如下面的代码打印 "3210"
+        func b() {
+            for i := 0; i < 4; i++ {
+                defer fmt.Print(i)
+            }
+        }
 
-//Defer function在方法的return之后执行，如果defer function修改了return的值，返回的是defer function修改后的值。例如下面的例子返回2而不是1。
-func c() (i int) {
-    defer func() { i++ }()
-    return 1
-}
+    // Defer function在方法的return之后执行，如果defer function修改了return的值，返回的是defer function修改后的值。例如下面的例子返回2而不是1
+        func c() (i int) {
+            defer func() { i++ }()
+            return 1
+        }
+
+2、panic 和 recover
+    (1) defer 表达式的函数如果定义在 panic 后面，该函数在 panic 后就无法被执行到
+    (2) F中出现panic时，F函数会立刻终止，不会执行F函数内panic后面的内容，但不会立刻return，而是调用F的defer，如果F的defer中有recover捕获，则F在执行完defer后正常返回，调用函数F的函数G继续正常执行
+        func G() {
+            defer func() {
+                fmt.Println("c")
+            }()
+            F()
+            fmt.Println("继续执行")
+        }
+
+        func F() {
+            defer func() {
+                if err := recover(); err != nil {
+                    fmt.Println("捕获异常:", err)
+                }
+                fmt.Println("b")
+            }()
+            panic("a")
+        }
+        
+        //结果
+            捕获异常: a
+            b
+            继续执行
+            c
+
+    (3) 如果F的defer中无recover捕获，则将panic抛到G中，G函数会立刻终止，不会执行G函数内后面的内容，但不会立刻return，而调用G的defer...以此类推
+        func G() {
+            defer func() {
+                if err := recover(); err != nil {
+                    fmt.Println("捕获异常:", err)
+                }
+                fmt.Println("c")
+            }()
+            F()
+            fmt.Println("继续执行")
+        }
+
+        func F() {
+            defer func() {
+                fmt.Println("b")
+            }()
+            panic("a")
+        }
+        // 结果
+            b
+            捕获异常: a
+            c
+
+    (4) 如果一直没有recover，抛出的panic到当前goroutine最上层函数时，程序直接异常终止
+        func G() {
+            defer func() {
+                fmt.Println("c")
+            }()
+            F()
+            fmt.Println("继续执行")
+        }
+
+        func F() {
+            defer func() {
+                fmt.Println("b")
+            }()
+            panic("a")
+        }
+        //结果
+            b
+            c
+            panic: a
+
+            goroutine 1 [running]:
+            main.F()
+                /xxxxx/src/xxx.go:61 +0x55
+            main.G()
+                /xxxxx/src/xxx.go:53 +0x42
+            exit status 2
+
+    (5) recover都是在当前的goroutine里进行捕获的，这就是说，对于创建goroutine的外层函数，如果goroutine内部发生panic并且内部没有用recover，外层函数是无法用recover来捕获的，这样会造成程序崩溃
+        func G() {
+            defer func() {
+                //goroutine外进行recover
+                if err := recover(); err != nil {
+                    fmt.Println("捕获异常:", err)
+                }
+                fmt.Println("c")
+            }()
+            //创建goroutine调用F函数
+            go F()
+            time.Sleep(time.Second)
+        }
+
+        func F() {
+            defer func() {
+                fmt.Println("b")
+            }()
+            //goroutine内部抛出panic
+            panic("a")
+        }
+        // 结果
+            b
+            panic: a
+
+            goroutine 5 [running]:
+            main.F()
+                /xxxxx/src/xxx.go:67 +0x55
+            created by main.main
+                /xxxxx/src/xxx.go:58 +0x51
+            exit status 2
+
+    (6) recover返回的是interface{}类型而不是go中的 error 类型，如果外层函数需要调用err.Error()，会编译错误，也可能会在执行时panic
 
 ```
-
 
 ### 查看GC
 ```
