@@ -207,7 +207,7 @@ Es6的async/wait模型
 boost::asio
 ```
 
-### hook（linux钩子）
+### linux hook
 ```
 由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
 
@@ -250,6 +250,11 @@ LD_PRELOAD=./libmyhook.so ./main
 由于编译器存在内联优化，不会调用库中的目标函数，所以必须关闭目标函数优化
 -fno-builtin-strcmp，关闭 strcmp 函数的优化 
 gcc -o main main.c -fno-builtin-strcmp
+
+//dlsym
+void dlsym(RTLD_NEXT,"malloc")
+RTLD_DEFAULT: 使用默认的库搜索顺序查找所需符号的第一次出现
+RTLD_NEXT: 在当前库之后的搜索顺序中查找下一个出现的函数
 
 ```
 
