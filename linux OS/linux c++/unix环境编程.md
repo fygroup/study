@@ -70,143 +70,6 @@ POSIX定义的可选头文件
 <trace.h>     事件跟踪
 ```
 
-### 异步与非阻塞
-```
-1、讨论同步、异步、阻塞、非阻塞时，必须先明确是在哪个层次进行讨论
-2、讨论究竟是异步还是同步，一定要严格说明说的是哪一部分
-3、从Linux接口的角度说，阻塞和非阻塞都是同步。libaio那些才是异步。真正异步接口一般是你提供一个缓冲区给接口，然后接口立即返回，在一段时间之后通过另一种机制（回调，消息，信号等）通知你完成，在通知完成之前缓冲区你不能碰，系统在读写。
-4、在处理 IO 的时候，阻塞和非阻塞都是同步 IO，只有使用了特殊的 API 才是异步 IO。
-5、对unix来讲：阻塞式I/O(默认)，非阻塞式I/O(nonblock)，I/O复用(select/poll/epoll)都属于同步I/O，因为它们在数据由内核空间复制回进程缓冲区时都是阻塞的(不能干别的事)。只有异步I/O模型(linux的libaio)是符合异步I/O操作的含义的，即在1数据准备完成、2由内核空间拷贝回缓冲区后 通知进程，在等待通知的这段时间里可以干别的事。
-6、阻塞，非阻塞：进程/线程要访问的数据是否就绪，进程/线程是否需要等待；
-   同步，异步：访问数据的方式，同步需要主动读写数据，在读写数据的过程中还是会阻塞；异步只需要I/O操作完成的通知，并不主动读写数据，由操作系统内核完成数据的读写。
-7、《UNIX网络编程：卷一》对unix的io讲得明明白白。
-8、 说白了，同步需要从内核空间拷贝到用户空间，异步是内核帮你把数据拷贝到用户空间，所以异步需要底层api的支持。而阻塞和非阻塞是指进程访问的数据是否准备就绪，没有就绪则等待！！！
-9、异步有异步io和异步操作，异步io如第八步所说的，而异步操作就多了，多线程、协程。。。，所以要根据软件的涉及。
-
-```
-
-### 异步的进化
-```
-1、远古时代（回调函数）
-2、promise时代
-	promise().then().then()
-3、Generator生成器
-	实现代码生成器，实现switch（）类型的协程，异步。但不是真正异步
-    co(function *(){
-        let db, collection, result; 
-        let person = {name: "yika"};
-        try{
-            db = yield mongoDb.open();
-            collection = yield db.collection("users");
-            result = yield collection.insert(person);
-        }catch(e){
-            console.error(e.message);
-        }
-        console.log(result);
-    });
-
-4、async/await时代
-	真正的协程，实现异步最优雅的方式，用同步的方式写异步！
-    async function insertData(person){
-        let db, collection, result; 
-        try{
-            db = await mongoDb.open();   //切出该协程，
-            collection = await db.collection("users");
-            result = await collection.insert(person);
-        }catch(e){
-            console.error(e.message);
-        }
-        console.log(result);
-    } 
-
-```
-
-### 协程的原理
-```
-https://www.zhihu.com/question/65647171/answer/233495694
-https://zhuanlan.zhihu.com/p/25964339
-
-//对称与非对称
-对称类似于生产者、消费者之间协程的切换，并不涉及栈空间的销毁
-非对称类似于函数的调用
-
-//有栈与无栈
-有栈：比如ucontext中的，协程有自己的栈空间，协程的切换涉及寄存器的保存和栈内数据的恢复问题，所以性能一般
-无栈：用this来索引对象的成员变量，上下文就是对象自己。访问上下文数据也就是成员变量的时候，我们无需显式的使用this+成员偏移量（或者变量名）来访问，而是直接访问变量名。
-两种协程访问的上下文中的数据，生命周期都大于函数的返回：栈的生命周期晚于函数的返回，this对象的生命周期晚于函数的返回。后者更晚而且往往需要手工销毁。
-
-//hook
-协程的意义就是阻塞异步，所以一些io函数必须设计为，非阻塞异步
-
-//switch语法糖的实现协程
-    注意：此种实现不能用于try catch、递归循环
-
-    #define BEGIN_CORO void operator()() { switch(next_line) { case 0:
-    #define YIELD next_line=__LINE__; break; case __LINE__:
-    #define END_CORO }} int next_line=0
-
-    struct coroutine{
-        int n_;
-        coroutine(int n__):n_(n__){}
-        void operator()(){
-            case 0:
-                cout << n_++ << end;
-                next_line = __LINE__ + 2;
-                break;
-            case __LINE__:
-                cout << n_++ << end;
-                next_line = __LINE__ + 2;
-                break;
-            case __LINE__:
-                cout << n_++ << end;
-                next_line = __LINE__ + 2;
-                break;
-            case         
-                next_line = 0;
-        }
-        int next_line;
-    }
-    
-
-async/await的出现，实现了基于stackless coroutine的完整coroutine。在特性上已经非常接近stackful coroutine了，不但可以嵌套使用也可以支持try catch。所以是不是可以认为async/await是一个更好的方案？
-
-```
-
-### c++异步编程
-```
-c++11的promise、async、future属于多线程异步，所以单线程异步只能用协程和异步callback
-异步是协程的一种实现方式，协程是异步的封装方法
-1、promise、async的多线程异步回调（异步工作流）
-2、协程（更优雅）
-```
-
-### c++高性能网络库 
-```
-libevent、libev、boost::asio
-```
-
-### c++ asio
-```
-推荐boost::asio
-c++20标准库网络部份将基于asio，c++ asio异步编程很重要！！！
-```
-
-### 有栈协程相关模块
-```
-云风的coroutine库
-libgo
-golang
-boost::asio
-```
-
-### 无栈协程相关模块
-```
-c++20的coroutine(基于asio)
-知乎朱元的库
-Es6的async/wait模型
-boost::asio
-```
-
 ### linux hook
 ```
 由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
@@ -615,26 +478,10 @@ CAP_LEASE:允许修改文件锁的FL_LEASE标志
 ```
 #include <perror.h>
 
-当linux的系统C api函数发生异常时,一般会将errno变量赋一个整数值,不同的值表示不同的含义
+当linux的系统C api函数发生异常时, 会把错误码(一个整数)写进error全局变量；调用perror()库函数，可以把变量翻译成用户理解的字符串
 
 void perror(const char *s)
 用来将上一个函数发生错误的原因输出到标准错误(stderr)
-```
-
-### 可重入与不可重入函数
-```
-https://www.jianshu.com/p/2c8de98bf0db
-
-(1) 可重入的概念
-    若一个程序或子程序可以在任意时刻被中断，然后操作系统调度执行另外一段代码，这段代码又调用了该子程序不会出错，则称其为可重入（reentrant或re-entrant）的。
-
-    简单来说就是可以被中断的函数，也就是说，可以在这个函数执行的任何时刻中断它，转入OS调度下去执行另外一段代码，而返回控制时不会出现什么错误
-    
-    也就是说，当该子程序正在运行时，执行线程可以再次进入并执行它，仍然获得符合设计时预期的结果。与多线程并发执行的线程安全不同，可重入强调对单个线程执行时，重新进入同一个子程序，仍然是安全的。
-    
-    可重入的函数,并且不能在原子上下文中运行
-
-
 ```
 
 ### fork vs vfork
@@ -778,7 +625,6 @@ S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
 ```
 
 ```
-
 
 
 

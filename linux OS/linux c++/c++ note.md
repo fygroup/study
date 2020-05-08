@@ -789,35 +789,13 @@ pthread_cleanup_push((void*)rtn, NULL);
 pthread_cleanup_pop(1);
 }
 
-//---pthead------------------------------------------------------------------
-int pthread_create(pthread_t *restrict tidp,
-                              const pthread_attr_t *restrict attr,
-                              void *(*start_rtn)(void *),  //注意函数必须是 void* func(void*){}
-                              void *restrict arg);
+
 //---函数转换-----------------------------------------------------
 typedef void* (*func)(void*);
 
 void f(){
 }
 func new = (func)&f;
-//---class 多线程 调用成员函数------------------------------------
-class Myclass
-{
-public:
-    pthread_t id;
-    static Myclass* cur;
-    static void* callback(void*){
-	cur->func();
-	return(NULL);
-    }
-    void func();
-    void start(){
-	cur = this;
-	pthread_create(&id,NULL,callback,NULL);
-    
-    }
-}
-Myclass* Myclass::cur = NULL;
 
 //---vector resize-------------------------------------------
 vector<int> a;
@@ -881,7 +859,45 @@ ptr->d_name
 ptr->d_type //8 file 10 linkfile 4 dir
 }
 
+```
 
+### class中的pthread_create
+```
+在C++的类中，普通成员函数不能作为pthread_create的线程函数，如果要作为pthread_create中的线程函数，必须是static
+
+// 线程封装
+class CThread {
+
+public:
+    pthread_t tid;
+public:
+    CThread(){
+        tid = 0;
+    }
+
+    virtual ~CThread(){}
+
+    bool start() {
+        return 0 == pthread_create(&tid, NULL, CThread::callback, this);
+    }
+
+    void join() {
+        if (tid) {
+            pthread_join(tid, NULL);
+            tid = 0;
+        }
+    }
+
+    // 注意 static
+    static void *callback(void *arg) {
+        CThread *cur_cthread = (CThread*)arg;
+        // 调用成员函数
+        cur_cthread->run();
+        return (void*)NULL;
+    }
+
+    void run();
+};
 ```
 
 ### container_of
