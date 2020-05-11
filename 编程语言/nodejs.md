@@ -430,38 +430,6 @@ check: setTimeOut() setInterval() //事件保存在一个链表中，执行完�
 ```
 
 ---
-#### apply call
-call直接使用参数列表，apply使用参数数组
-使用call()和apply()方法时，就会改变this的指向
-* (1)
-```
-var pet = {
-    words:'...',
-    speak:function(somebody){
-        console.log(somebody+"speak"+this.words);
-    }
-}
-var dog = {
-    words:"wang"
-}
-pet.speak.call(dog,'dog'); //dog speak wang
-```
-* (2)继承
-```
-fucntion pet(name){
-	this.name = name;
-	this.speak = function(){
-		console.log(this.name);
-	}
-}
-function dog(name){
-	pet.call(this,name)
-}
-var my = new dog('malx')
-my.speak()
-```
-
----
 #### util.inherits
 `uitl.inherits(sub, super);  `
 注意：sub仅仅继承super.prototype的内容

@@ -1,17 +1,14 @@
-#### 原型
+### 原型
 ```
 (1)js中一切都是对象
 (2)方法（Function）是对象，方法的原型(Function.prototype)是对象
 (3)对象具有属性__proto__, 可称为隐式原型。实例化对象-->__proto__-->构造函数的原型，保证了能够访问构造函数原型中定义的属性和方法
-(4)
 ```
 
-
-#### 继承
+### 继承
+```
 javascript是基于phototype的，不是基于类的。
-![javascript prototype图](../picture/1.png)
 
-```
 在 JavaScript 中，不会创建类，也不会通过类来创建对象（就像在其他面向对象的语言中那样）。通过prototype.constructor()来实例化类。
 添加内容供实例访问，原型对象包含函数实例共享的方法和属性，其中 prototype.constructor()可以当作函数的构造函数用
 实例的__proto__ 指向函数的prototype
@@ -22,8 +19,8 @@ prototype属性中含有两个属性constructor和__proto__
 使用Object.getPrototypeOf()代替__proto__
 原型链可以理解为：Object.prototype.__proto__.prototype.__proto__.....
 继承是通过原型链一层一层的向上延续（找属性）
-
 ```
+![javascript prototype图](../picture/1.png)
 实例
 ```
 function Person(name){
@@ -57,29 +54,19 @@ my.prototype.b=1;
 <img src="../picture/2.png" width=500 height=300 alt='原型链'/>
 原型链
 
-#### new
-`var o = new Foo();`
-JavaScript 实际上执行的是：
+### new
 ```
-var o = new Object();
-o.__proto__ = Foo.prototype;
-Foo.call(o);
-
-```
-
-#### Object.creat(类似于继承)
-```
-Object.create =  function (o) { //注意o是一个实例
-    var F = function () {};
-    F.prototype = o;
-    return new F();
-};
+var o = new Foo()
+// JavaScript 实际上执行的是
+var o = new Object()
+o.__proto__ = Foo.prototype
+Foo.call(o)
 ```
 
-#### 继承的简单实现
-
-**下面的第一个函数表示 subFn构造函数是subFn，但是其他的变成了superFn**
+### 继承
 ```
+//下面的第一个函数表示 subFn构造函数是subFn，但是其他的变成了superFn
+
 function Extend(subFn, superFn){
     subFn.prototype = new superFn()   //注意 prototype 是一个原型对象
     subFn.prototype.constructor = subFn //新定义一个function
@@ -103,9 +90,8 @@ var tiger = new Tiger();
 tiger.say1();//"Animal"
 tiger.say2();//"Tiger"
 ```
-简直精辟！！！！
 
-#### canvas 旋转方法
+### canvas 旋转方法
 ```
 var c=document.getElementById("myCanvas");
 var ctx=c.getContext("2d");
@@ -125,7 +111,7 @@ ctx.translate(-tran.x[0],-tran.y[0]);
 ctx.strokeText("H",coorX[0],coorY[0]);
 ```
 
-#### 静态变量与实例变量
+### 静态变量与实例变量
 ```
 var obj = function(){
 }
@@ -136,25 +122,35 @@ var my = new obj()
 my.a   //1 
 ```
 
-#### prototype与__proto__
-函数（只有函数）中都有prototype属性，对象具有属性__proto__，可称为隐式原型，一个对象的隐式原型指向构造该对象的构造函数的原型，这也保证了实例能够访问在构造函数原型中定义的属性和方法。
+### prototype与__proto__
+```
+函数有prototype属性，对象有__proto__属性
+一个对象的__proto__指向构造该对象的函数的原型prototype
+可以保证实例能够访问在构造函数原型中定义的属性和方法
+
 对象具有属性__proto__，可称为隐式原型，一个对象的隐式原型指向构造该对象的构造函数的原型，这也保证了实例能够访问在构造函数原型中定义的属性和方法。
-prototype:
-constructor:this
-\_\_proto\_\_:object
-```
-var my = function(){}
-my.__prototype__.a = 1
-my.__prototype__ = new my1();
-my.__prototype__ = { 
-    .....
+
+let func = function(){}
+func.prototype.a = 1
+func.prototype.b = 2
+
+prototype: {
+    constructor: ()=>{}
+    __proto__: new Object()
 }
+
+var my = function(){}
+my.prototype.a = 1                  //添加一个属性
+my.prototype = new my1()            //继承my1
+my.prototype.constructor = ()=>{}   //构造函数
 ```
 
-#### 函数默认参数
-`var func=function(x,y=2){console.log(x,y);}`
+### 函数默认参数
+```
+var func=function(x,y=2){console.log(x,y);}
+```
 
-#### instanceof
+### instanceof
 instanceof 运算符是用来在运行时指出对象是否是特定类的一个实例。
 
 #### 原型的理解
@@ -344,7 +340,7 @@ ages = ages.filter(el => {return el > 20})
 ```
 
 ---
-#### hasOwnProperty
+### hasOwnProperty
 ```
 //判断属性是否存在
 o = new Object();
@@ -356,14 +352,7 @@ a = {c:1}
 Object.prototype.hasOwnProperty.call(a,'c') //true
 ```
 
----
-#### apply和call
-```
-
-```
-
-#### blob
-
+### blob
 ```
 //blob对象表示一个不可变、原始数据的类文件对象。
 //从前端读入的file就是blob对象，可以直接操作
@@ -420,8 +409,7 @@ link.download = fileName;
 link.href = URL.createObjectURL(blob);
 ```
 
----
-#### Blob、ArrayBuffer、TypeArray(Uint8Array)、String、dataUrl(base64)
+### Blob、ArrayBuffer、TypeArray(Uint8Array)、String、dataUrl(base64)
 ```
 //ArrayBuffer对象用来表示通用的、固定长度的原始二进制数据缓冲区。ArrayBuffer 不能直接操作,要通过类型数组对象
 buf = new ArrayBuffer(10)
@@ -453,8 +441,7 @@ reader.onload = function(e) {
 reader.readAsArrayBuffer(blob)
 ```
 
----
-#### 箭头函数
+### 箭头函数
 ```
 在非箭头函数下， this 指向调用其所在函数的对象，而且是离谁近就是指向谁
 
@@ -488,15 +475,14 @@ f()        //1
 
 ```
 
----
-#### console.log
+### console.log
 ```
 chrome 会对 log 的对象求一次值，打印出来是 Object ，可以继续展开的。但当你展开控制台中的 Object 的时候，chrome 又会对它求一次值，这一次是显示它的属性。所以才会有前后打印的东西不一样的情况发生，因为对象引用的实体的值改变了。
 如果把 console.log(a) 改为 console.log(JSON.stringify(a))， 这时就会输出
 {"b":{"c":1}}
 ```
 
-### promise 钩子
+### promise钩子
 ```
 var a
 new Promise((res,rej)=>{
@@ -525,4 +511,35 @@ if (typeof require !== 'undefined' && require.main === module) {
 }
 ```
 
+### apply call
+
+```
+call直接使用参数列表，apply使用参数数组
+使用call()和apply()方法时，就会改变this的指向
+
+// 实例1
+var pet = {
+    words:'wang1',
+    speak:function(somebody){
+        console.log(somebody+"speak"+this.words);
+    }
+}
+var dog = {
+    words:"wang"
+}
+pet.speak.call(dog,'dog'); //dog speak wang
+
+// 实例2
+function pet(name){
+	this.name = name;
+	this.speak = function(){
+		console.log(this.name);
+	}
+}
+function dog(name){
+	pet.call(this,name)
+}
+var my = new dog('malx')
+my.speak()
+```
 

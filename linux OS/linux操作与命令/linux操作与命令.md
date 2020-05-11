@@ -72,18 +72,23 @@ nohup sh start.sh 1>>log.txt 2>&1  &
 ```
 ### df
 ```
-查看系统整体磁盘(实体)使用情况
+查看挂载的文件系统使用情况
 df -h
 文件系统        容量  已用  可用 已用% 挂载点
-udev            1.9G     0  1.9G    0% /dev
-tmpfs           383M  2.1M  381M    1% /run
-/dev/sda2       916G   28G  841G    4% /
-tmpfs           1.9G     0  1.9G    0% /dev/shm
+udev            3.9G     0  3.9G    0% /dev
+tmpfs           785M  2.1M  783M    1% /run
+/dev/sda2       916G   35G  835G    4% /
+tmpfs           3.9G   15M  3.9G    1% /dev/shm
 tmpfs           5.0M  4.0K  5.0M    1% /run/lock
-tmpfs           1.9G     0  1.9G    0% /sys/fs/cgroup
-/dev/loop3       15M   15M     0  100% /snap/gnome-characters/375
-/dev/loop9      1.0M  1.0M     0  100% /snap/gnome-logs/73
-/dev/loop7      3.8M  3.8M     0  100% /snap/gnome-system-monitor/123
+tmpfs           3.9G     0  3.9G    0% /sys/fs/cgroup
+/dev/loop2      141M  141M     0  100% /snap/gnome-3-26-1604/97
+/dev/loop6      2.5M  2.5M     0  100% /snap/gnome-calculator/730
+/dev/loop3       94M   94M     0  100% /snap/core/8935
+/dev/loop5       94M   94M     0  100% /snap/core/9066
+/dev/loop8       15M   15M     0  100% /snap/gnome-characters/495
+/dev/loop1       63M   63M     0  100% /snap/gtk-common-themes/1506
+/dev/loop7      1.0M  1.0M     0  100% /snap/gnome-logs/93
+/dev/loop9       55M   55M     0  100% /snap/core18/1705
 ```
 
 ### fdisk
@@ -183,8 +188,8 @@ mount -t proc none /mnt
 硬盘、光盘、软盘等都是常见的块设备，他们在Linux下的目录一般是/dev/hda1, /dev/cdrom, /dev/sda1，/dev/fd0这样的。而loop device是虚拟的块设备，主要目的是让用户可以像访问上述块设备那样访问一个文件。 loop device设备的路径一般是/dev/loop0, dev/loop1...
 
                      虚拟成                         格式化特定文件系统          挂载文件夹  
-普通文件 -> 镜像文件 --------> （块）设备(/dev/loop) -------------------> ext4 ------------> /home/test
-           镜像文件 --------------------------------------------------> ext4 ------------> /home/test  
+普通文件或/dev/loop或/dev/zero -> 镜像文件 --------> （块）设备(/dev/loop) -------------------> ext4 ------------> /home/test
+                                 镜像文件 --------------------------------------------------> ext4 ------------> /home/test  
 
 1）ISO：
     //利用mkisofs构建一个用于测试的iso文件
@@ -324,13 +329,61 @@ mount -t proc none /mnt
 ```
 
 
-### 查看总线上的所有设备
+### 查看设备
 ```
+//查看cpu信息
+lscpu
+/proc/cpuinfo
+
+//内存
+dmidecode
+/proc/meminfo
+
 //查看总线上的所有设备
 lspci
+cat /proc/pci
 
 //查看网络设备的详细信息
 iwconfig
+
+//查看usb的设备
+lsusb
+
+```
+
+### ifconfig
+```
+用于显示或设置网络设备
+
+// 查看所有网络设备
+ifconfig
+
+// 启动关闭指定网卡
+ifconfig eth0 down
+ifconfig eth0 up
+
+// 为网卡配置和删除IPv6地址
+ifconfig eth0 add 33ffe:3240:800:1005::2/ 64 //为网卡设置IPv6地址
+ifconfig eth0 del 33ffe:3240:800:1005::2/ 64 //为网卡删除IPv6地址
+
+// 用ifconfig修改MAC地址
+ifconfig eth0 down //关闭网卡
+ifconfig eth0 hw ether 00:AA:BB:CC:DD:EE //修改MAC地址
+ifconfig eth0 up //启动网卡
+
+// 配置IP地址
+ifconfig eth0 192.168.1.56 
+// 给eth0网卡配置IP地址,并加上子掩码
+ifconfig eth0 192.168.1.56 netmask 255.255.255.0 
+// 给eth0网卡配置IP地址,加上子掩码,加上个广播地址
+ifconfig eth0 192.168.1.56 netmask 255.255.255.0 broadcast 192.168.1.255
+
+// 启用和关闭ARP协议
+ifconfig eth0 arp  //开启
+ifconfig eth0 -arp  //关闭
+
+// 设置最大传输单元
+ifconfig eth0 mtu 1500 //设置能通过的最大数据包大小为 1500 bytes
 
 ```
 
@@ -1011,17 +1064,15 @@ stdout是行缓冲的，他的输出会放在一个buffer里面，只有到换�
 /proc 文件系统是一种内核和内核模块用来向进程(process) 发送信息的机制, /proc 存在于内存之中而不是硬盘上。proc文件系统以文件的形式向用户空间提供了访问接口，这些接口可以用于在运行时获取相关部件的信息或者修改部件的行为，因而它是非常方便的一个接口。
 
 (1) 内容介绍
-    /proc/cpuinfo - CPU 的信息(型号, 家族, 缓存大小等)
-    /proc/meminfo - 物理内存、交换空间等的信息
-    /proc/mounts - 已加载的文件系统的列表
-    /proc/devices - 可用设备的列表
-    /proc/filesystems - 被支持的文件系统
-    /proc/modules - 已加载的模块
-    /proc/version - 内核版本
-    /proc/cmdline - 系统启动时输入的内核命令行参数
-
-    /proc/pid/*     pid进程的相关信息
-
+    /proc/cpuinfo       CPU 的信息(型号, 家族, 缓存大小等)
+    /proc/meminfo       物理内存、交换空间等的信息
+    /proc/mounts        已加载的文件系统的列表
+    /proc/devices       查看主设备号
+    /proc/filesystems   被支持的文件系统
+    /proc/modules       已加载的模块
+    /proc/version       内核版本
+    /proc/cmdline       系统启动时输入的内核命令行参数
+    /proc/pid/*         pid进程的相关信息
     /proc/sys/kernel    与内核相关
 ```
 
@@ -1153,4 +1204,15 @@ rm FS_on_file
     // 抓取所有经过eth1，目的网络是192.168，但目的主机不是192.168.1.200的TCP数据
     tcpdump -i eth1 '((tcp) and ((dst net 192.168) and (not dst host 192.168.1.200)))'
 
+```
+
+### dmesg
+```
+// 查看linux内核的输出信息
+dmesg
+```
+
+### mknod
+```
+/dev/目录下有许多设备节点文件，比如u盘的文件/dev/sda，mmc卡的文件/dev/mmcblk0，这些文件通常是由udev或mdev程序检测到uevent事件后自动创建的。我们也可以通过mknod命令手动创建。
 ```
