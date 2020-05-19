@@ -35,6 +35,11 @@ git reset --hard origin/master
 	ssh-keygen -t rsa -C "you@example.com" //生成密钥，然后将公钥复制到github
 ```
 
+### 权限控制
+```
+git 权限控制就是linux的权限控制
+```
+
 ### 操作
 ```
 // github上新建一个新库，然后将本地库推上去

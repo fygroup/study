@@ -495,7 +495,7 @@ a("hello")
 
 ```
 
-### like __main__
+### like python 的 __main__
 ```
 // node
 var fnName = function() {
@@ -543,3 +543,14 @@ var my = new dog('malx')
 my.speak()
 ```
 
+### Object.entries
+```
+const object1 = {
+    a: 'somestring',
+    b: 42
+}
+
+for (let [key, value] of Object.entries(object1)) {
+    console.log(`${key}: ${value}`)
+}
+```

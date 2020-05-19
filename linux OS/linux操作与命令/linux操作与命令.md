@@ -942,7 +942,7 @@ date +"%Y-%m-%d"
 apt提供了大多数与apt-get及apt-cache有的功能，但更方便使用
 
 //列出系统包含的软件和库
-dpkg list
+dpkg --list
 //搜索软件包描述
 apt-cache search [软件]
 //显示软件包细节 
@@ -1215,4 +1215,65 @@ dmesg
 ### mknod
 ```
 /dev/目录下有许多设备节点文件，比如u盘的文件/dev/sda，mmc卡的文件/dev/mmcblk0，这些文件通常是由udev或mdev程序检测到uevent事件后自动创建的。我们也可以通过mknod命令手动创建。
+```
+
+### 切换显卡
+```
+prime-select
+```
+
+### xrandr
+```
+https://www.jianshu.com/p/4c37e52632da
+
+// 列出系统支持的视频接口名称和设备连接情况
+    xrandr
+
+// 将视频输出发送到某个接口设备
+    xrandr --output DFP1 --auto
+
+// 设置分辨率时需要指定设置的output及mode，如将LVDS-1的分辨率改为1920×1080
+    xrandr --output eDP1 --mode 1920x1080 
+    --output:指定显示器。 
+    --mode:指定一种有效的分辨率。 
+    --rate:指定刷新率。
+
+// 关闭某个接口设备的视频输出
+    xrandr --output LVDS --off
+
+// 设置双屏幕显示
+// 打开外接显示器，双屏幕显示相同的内容--克隆，（auto为最高分辨率）
+    xrandr --output VGA-0 --same-as DVI-D-0 --auto
+
+// 若要指定外接显示器的分辨率可以使用下面的命令（1280*1024）
+    xrandr --output VGA-0 --same-as DVI-D-0 --mode 1280x1024
+
+//  调节显示器亮度
+    xrandr --output HDMI-1-1 --brightness 0.8
+
+```
+
+### inotify
+```
+使用 inotify 监控 Linux 文件系统事件
+
+有inotify相关API
+
+估计前端实时编译更新，可能用的就是这个
+```
+
+### sysctl
+```
+sysctl命令被用于在内核运行时动态地修改内核的运行参数，可用的内核参数在目录/proc/sys中
+
+它包含一些TCP/ip堆栈和虚拟内存系统的高级选项， 这可以让有经验的管理员提高引人注目的系统性能
+
+用sysctl可以读取设置超过五百个系统变量
+
+
+sysctl --write sys.fs.inotify.max_user_watches='81920'
+
+永久保留配置，修改/etc/sysctl.conf文件
+
+
 ```
