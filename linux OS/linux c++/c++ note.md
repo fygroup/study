@@ -739,56 +739,6 @@ class A:public nocopy  //此时A不能被拷贝
 
 }
 
-//---互斥 条件变量-----------------------------------
-pthread_mutex_t mutex;
-pthread_mutex_init()  
-pthread_mutex_lock()   锁定互斥锁，如果尝试锁定已经被上锁的互斥锁则阻塞至可用为止
-pthread_mutex_unlock() 	释放互斥锁
-pthread_mutex_destory()  互斥锁销毁函数
-
-
-1.条件变量创建
-静态创建：pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
-动态创建：pthread_cond _t cond;
-  pthread_cond_init(&cond,NULL);
-其中的第二个参数NULL表示条件变量的属性，虽然POSIX中定义了条件变量的属性，但在LinuxThread中并没有实现，因此常常忽略。
-2.条件等待
-pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_lock(&mutex);
-while(条件1)
-  pthread_cond_wait(&cond,&mutex);
-函数操作1;
-pthread_mutex_unlock(&mutex);
-当条件1成立的时候，执行pthread_cond_wait(&cond,&mutex)这一句，开放互斥锁，然后线程被挂起。当条件1不成立的时候，跳过while循环体，执行函数操作1，然后开放互斥锁。
-3.条件激发
-pthread_mutex_lock(&mutex);
-函数操作2;
-if(条件1不成立)
-pthread_cond_signal(&cond);
-pthread_mutex_unlock(&mutex);
-先执行函数操作2，改变条件状态，使得条件1不成立的时候,执行pthread_cond_signal(&cond)这句话。这句话的意思是激发条件变量cond，使得被挂起的线程被唤醒。
-pthread_cond_broadcast(&cond);
-这句话也是激发条件变量cond，但是，这句话是激发所有由于cond条件被挂起的线程。而signal的函数则是激发一个由于条件变量cond被挂起的线程。
-4.条件变量的销毁
-pthread_cond_destroy(&cond);
-在linux中，由于条件变量不占用任何资源，所以，这句话除了检查有没有等待条件变量cond的线程外，不做任何操作。
-5.pthread_cancle
-线程取消需要设置取消点，比如在无限循环中加入pthread_testcancel（）
-然后在pthread_join。
-6、pthread_exit()和return类似就是推出的作用，不涉及资源释放。
-7、pthread_kill()
-8、线程退出时 回调函数
-void rtn(void)
-{
-...
-}
-
-{
-pthread_cleanup_push((void*)rtn, NULL);
-....
-pthread_cleanup_pop(1);
-}
-
 
 //---函数转换-----------------------------------------------------
 typedef void* (*func)(void*);
@@ -861,7 +811,7 @@ ptr->d_type //8 file 10 linkfile 4 dir
 
 ```
 
-### class中的pthread_create
+### pthread_create在类中的使用
 ```
 在C++的类中，普通成员函数不能作为pthread_create的线程函数，如果要作为pthread_create中的线程函数，必须是static
 
@@ -888,10 +838,11 @@ public:
         }
     }
 
-    // 注意 static
+    // static函数
+    // 里面不能访问非静态成员变量
     static void *callback(void *arg) {
         CThread *cur_cthread = (CThread*)arg;
-        // 调用成员函数
+        // 调用成员函数，run函数可以访问成员变量
         cur_cthread->run();
         return (void*)NULL;
     }
@@ -988,12 +939,6 @@ for_each(vec.begin(),vec.end(),[](pid_t & pd){waitpid(pd,NULL,0);});
 ```
 
 ### 模板元编程 type mapping
-
-### pthread_cond_timedwait
-```
-pthread_cond_timedwait (pthread_cond_t * _cond,pthread_mutex_t * _mutex,_const struct timespec * _abstime);
-//比函数pthread_cond_wait()多了一个时间参数，经历abstime段时间后，即使条件变量不满足，阻塞也被解除
-```
 
 ### class static struct初始化
 ```
@@ -1197,7 +1142,7 @@ closedir(dp);
 
 ```
 
-### 指针数组
+### 字符串数组初始化
 ```
 const char* a[5] = {"aa","ab","ada","dadad","fddgds"};
 ```
@@ -1385,7 +1330,6 @@ for_each(mList.begin(), mList.end(), [&i](int & x){
 for_each(mList.begin(), mList.end(), [](int & x){
     cout << x << endl;
 });
-
 
 ```
 
@@ -1787,8 +1731,7 @@ decltype和auto都可以用来推断类型，但是二者有几处明显的差�
 4.auto推断时会实际执行，decltype不会执行，只做分析
 ```
 
-
-#### 类型转换
+### 类型转换
 ```
 //const_cast 去掉类型的const或volatile属性
 //static_cast 基本数据类型转换，不能进行无关类型（如非基类和子类）指针之间的转换。把空指针转换成目标类型的空指针。把任何类型的表达式转换成void类型。static_cast不能去掉类型的const、volitale属性(用const_cast)。
@@ -1831,11 +1774,6 @@ int main(){
 2、若某个线程正欲操作对象时，如何得知其它线程是否在析构该对象，且正析构一半....
 ```
 
-### c++11 mutex lock
-```
-#include <mutex>
-```
-
 ### class -> static function-> static variable
 ```
 class中的static函数中放置此函数自己使用的变量
@@ -1853,16 +1791,16 @@ public:
 
 ```
 
-### 遍历对象
-```
-
-```
-
 ### 工厂模式
 ```
 工厂   --->  产品
 抽象工厂     抽象产品
 具体工厂     具体产品
+```
+
+### 遍历对象
+```
+
 ```
 
 ### 序列化
@@ -1901,7 +1839,7 @@ https://www.zhihu.com/question/33594512?sort=created
     > 取值switch typeid type return value
 ```
 
-### 指针operator
+### operator[]
 ```
 this->operator[](3)
 ```
@@ -1939,9 +1877,9 @@ union PopupInfo
 };
 
 union My {
-    vector<int>* a; 
-    map<int,int>* b;
-    vector<int> c;  //错误 此为 non-POD 类型
+    vector<int>* a; // 指针是POD
+    map<int,int>* b; // 指针是POD
+    vector<int> c;  //错误！non-POD 类型
 }
 ```
 
@@ -1958,24 +1896,40 @@ struct bs {
 data为struct bs的变量，其中位域a占8位，位域b占2位，位域c占6位
 ```
 
-### 明确构造、析构、copy构造、拷贝
+### 构造、移动构造、移动赋值、拷贝构造、拷贝赋值
 ```
 template<typename T>
 class Object {
 public:
     Object();                                       //默认构造
+
     virtual ~Object(){}                             //析构
-    Object(const Object &);                         //拷贝构造
+
+    Object(const Object & ob);                      //拷贝构造
+
     template<typename T1>
-    Object(const Object<T1> &);                     //泛化的拷贝构造 !!!
-    Object<T> & operator=(const Object<T> & ob)     //拷贝
+    Object(const Object<T1> &);                     //泛化的拷贝构造
+
+    Object(Object && ob);                           //移动构造
+
+    Object<T> & operator=(const Object<T> & ob)     //拷贝赋值
     template<typename T1>
     Object<T> & operator=(const Object<T1> & ob)    //泛化拷贝
+
+    Object<T> & operator=(const Object<T> && ob)    //移动赋值
+
 public:
     Object create(){}                               //新建    
     void clean(){}                                  //清除
     void swap(Object & ob){}                        //交换
-}；
+};
+
+
+Object<int> a = Object<int>::Object();  // 移动构造函数
+Object<int> a;
+a = 
+
+
 ```
 
 ### 可变参数实例
@@ -2221,7 +2175,7 @@ struct TestS a {1, "dasda", 'c'};
 ### {}一个用法
 ```
 #define var(x) (*({     \
-    &a;}))
+    &x;}))
 
 int a = 0;
 
@@ -2815,4 +2769,412 @@ https://cloud.tencent.com/developer/article/1008625
         }
         std::cout << cnt << '\n';
     2) 自定义缓冲区
+```
+
+### 异常
+```
+// 异常处理机制
+    其基本思想是：函数 A 在执行过程中发现异常时可以不加处理，而只是"拋出一个异常"给 A 的调用者，假定为函数 B
+    拋出异常而不加处理会导致函数 A 立即中止，在这种情况下，函数 B 可以选择捕获 A 拋出的异常进行处理，也可以选择置之不理。如果置之不理，这个异常就会被拋给 B 的调用者，以此类推
+    如果一层层的函数都不处理异常，异常最终会被拋给最外层的 main 函数。main 函数应该处理异常。如果main函数也不处理异常，那么程序就会立即异常地中止
+
+// try {} catch {}
+    try {
+        if (n == 0)
+            throw -1;  //抛出整型异常
+        else if (m == 0)
+            throw -1.0;  //拋出 double 型异常
+        else
+            cout << m / n << endl;
+        cout << "after dividing." << endl;
+    } catch (double d) {
+        cout << "catch (double)" << d << endl;
+    } catch (...) {
+        cout << "catch (...)" << endl;
+    }
+
+// 函数的异常声明
+    void func() throw(); // 声明不会抛出异常
+    void func() noexcept; // c++11 声明不会抛出异常
+    void func() throw(int, double); // 声明抛出(int, double)类型的异常
+
+
+
+// <exception>
+    (1) 标准异常架构
+        std::exception	该异常是所有标准 C++ 异常的父类
+            std::bad_alloc	该异常可以通过 new 抛出
+            std::bad_cast	该异常可以通过 dynamic_cast 抛出
+            std::bad_exception	这在处理 C++ 程序中无法预期的异常时非常有用
+            std::bad_typeid	该异常可以通过 typeid 抛出
+            std::logic_error	理论上可以通过读取代码来检测到的异常
+                std::domain_error	当使用了一个无效的数学域时，会抛出该异常
+                std::invalid_argument	当使用了无效的参数时，会抛出该异常
+                std::length_error	当创建了太长的 std::string 时，会抛出该异常
+                std::out_of_range	该异常可以通过方法抛出，例如 std::vector 和 std::bitset<>::operator[]()
+            std::runtime_error	理论上不可以通过读取代码来检测到的异常
+                std::overflow_error	当发生数学上溢时，会抛出该异常
+                std::range_error	当尝试存储超出范围的值时，会抛出该异常
+                std::underflow_error	当发生数学下溢时，会抛出该异常
+
+    (2) exception应用
+        try {
+            char * p = new char[0x7fffffff];  //无法分配这么多空间，会抛出异常
+        } catch (std::bad_alloc & e)  {
+            cerr << e.what() << endl;
+        }
+
+        try {
+            int a[10] {0};
+            a[10] = 100;  //拋出 out_of_range 异常
+        } catch (out_of_range & e) {
+            cerr << e.what() << endl;
+        }
+
+    (3) 继承exception
+        class MyException : public exception{
+            const char *what() const throw() {
+                return "it is my exception";
+            }
+        };
+
+        try {
+            throw MyException();
+        }catch(MyException & e) {
+            cout << e.what() << endl;
+        }catch(std::exception & e) {
+            // 其他错误
+        }
+```
+
+### pthread
+```
+// 互斥锁
+pthread_mutex_t mutex;
+pthread_mutex_init()  
+pthread_mutex_lock()    锁定互斥锁，如果尝试锁定已经被上锁的互斥锁则阻塞至可用为止
+pthread_mutex_unlock() 	释放互斥锁
+pthread_mutex_destory() 互斥锁销毁函数
+
+// pthread_exit()和return类似就是推出的作用，不涉及资源释放
+
+1、pthread_create
+    // 注意函数定义: void* (*)(void*)
+    void* test(void *ptr){
+        cout << "hello world." << endl;
+    }
+    pthread_t tid;
+    pthread_create(&tid, NULL, test, NULL);
+    pthread_join(tid, NULL);
+
+2、pthread_join
+    // 子线程合入主线程，主线程阻塞等待子线程结束，然后回收子线程资源
+    int pthread_join(pthread_t thread, void **retval)
+    // 第一个参数为线程标识符，即线程ID
+    // 第二个参数retval为用户定义的指针，用来存储线程的返回值
+
+4、pthread_detach
+    // 主线程与子线程分离，子线程结束后，资源自动回收
+    // pthread有两种状态joinable状态和unjoinable状态
+    // joinable: 当线程函数自己返回退出时或pthread_exit时都不会释放线程所占用的资源，只有当你调用了pthread_join之后这些资源才会被释放
+    // unjoinable: 这些资源在线程函数退出时或pthread_exit时自动会被释放
+    
+    int pthread_detach(pthread_t pid)
+
+5、pthread_self
+    获取当前线程id
+
+6、pthread_once
+    // pthread_once在多线程环境中只执行一次
+    int pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+    // 第一个参数为pthread_once_t变量
+    // 第二个参数为无参数函数指针，type: void(*func)(void)
+    
+    pthread_once_t once = PTHREAD_ONCE_INIT;
+
+    void *func_once(){
+        cout << "func once" << endl;
+    }
+    void *func1(void *arg){
+        func_once(&once, func_once);
+    }
+    void *func2(void *arg){
+        func_once(&once, func_once);
+    }
+    pthread_t td1, td2;
+    pthread_create(&td1, NULL, func1, NULL);
+    pthread_create(&td2, NULL, func2, NULL);
+    // 结果只会输出一次func once
+
+7、线程取消
+    // 线程取消的方法是向目标线程发Cancel信号
+    // 但如何处理Cancel信号则由目标线程自己决定，或者忽略、或者立即终止、或者继续运行至Cancelation-point(取消点)
+
+    // 取消点
+    > 通过pthread_testcancel调用以编程方式建立线程取消点
+    > 线程等待pthread_cond_wait或pthread_cond_timewait()中的特定条件
+    > 被sigwait(2)阻塞的函数
+    > 一些标准的库调用。通常，这些调用包括线程可基于阻塞的函数???
+
+    (1) pthread_cancle
+        int pthread_cancel(pthread_t thread)
+        // pthread_cancel调用并不等待线程终止，它只提出请求
+        // 发送终止信号给thread线程，如果成功则返回0，否则为非0值。发送成功并不意味着thread会终止
+
+    (2) pthread_setcancelstate
+        int pthread_setcancelstate(int state, int *oldstate)
+        // 设置本线程对Cancel信号的反应
+        // state有两种值：PTHREAD_CANCEL_ENABLE（缺省）和PTHREAD_CANCEL_DISABLE
+        // old_state如果不为 NULL则存入原来的Cancel状态以便恢复
+
+    (3) pthread_setcanceltype
+        int pthread_setcanceltype(int type, int *oldtype) 
+        // 设置本线程取消动作的执行时机
+        // type有两种取值：PTHREAD_CANCEL_DEFFERED 和 PTHREAD_CANCEL_ASYCHRONOUS
+        // 仅当Cancel状态为Enable时有效，分别表示收到信号后继续运行至下一个取消点再退出和立即执行取消动作(退出)
+        // oldtype如果不为NULL则存入运来的取消动作类型值
+    
+    (4) pthread_testcancel
+        void pthread_testcancel(void) 
+        // 手动创建一个取消点，检查本线程是否处于Cancel状态，如果是，则进行取消动作(退出)，否则直接返回
+
+8、线程终止的清理
+    https://blog.csdn.net/caianye/article/details/5912172
+    // 线程终止有两种情况：正常终止和非正常终止
+    // 需要注意线程退出时的锁资源的清除
+
+    void pthread_cleanup_push(void (*routine) (void  *),  void *arg)
+    void pthread_cleanup_pop(int execute)
+    // pthread_cleanup_push()/pthread_cleanup_pop()采用先入后出的栈结构管理
+    // 多次对pthread_cleanup_push()的调用将在清理函数栈中形成一个函数链，在执行该函数链时按照压栈的相反顺序弹出
+    // execute参数表示执行到pthread_cleanup_pop()时是否在弹出清理函数的同时执行该函数，为0表示不执行，非0为执行，这个参数并不影响异常终止时清理函数的执行
+    
+    // 宏的表现形式
+    #define pthread_cleanup_push(routine,arg)                                     
+    { struct _pthread_cleanup_buffer _buffer;                                   
+        _pthread_cleanup_push (&_buffer, (routine), (arg));
+    #define pthread_cleanup_pop(execute)                                          
+        _pthread_cleanup_pop (&_buffer, (execute)); }
+
+    // 实例
+    // 当线程在/*do some work*/终止时，将主动调用pthread_mutex_unlock(&mutex)
+    void *func(void *arg){
+        pthread_cleanup_push(pthread_mutex_unlock, (void*)&mutex);
+        thread_mutex_lock(&mutex);
+        /*do some work*/
+        pthread_mutex_unlock(&mutex);
+        pthread_cleanup_pop(0);
+        pthread_exit(NULL);
+    }
+
+9、pthread_kill
+    int pthread_kill(pthread_t thread, int sig);
+    // 向线程发送signal，如果线程的代码内不做任何信号处理，则会按照信号默认的行为影响整个进程
+    // 也就是说，如果你给一个线程发送了SIGQUIT，但线程却没有实现signal处理函数，则整个进程退出
+    // 注意子线程信号共享父进程，所以会影响整个进程
+
+    pthread_kill(ptd, 0)
+    // 如果int sig的参数是0呢，这是一个保留信号，一个作用就是用来判断线程是不是还活着
+    // 返回值0，线程仍然活着
+    // 返回值ESRCH，线程已不存在
+    // 返回值EINVAL，信号不合法
+
+
+10、条件变量
+    (1) 条件变量创建
+        // 静态创建
+        pthread_cond_t cond=PTHREAD_COND_INITIALIZER;
+        // 动态创建
+        pthread_cond _t cond;
+        pthread_cond_init(&cond,NULL);
+        其中的第二个参数NULL表示条件变量的属性，虽然POSIX中定义了条件变量的属性，但在LinuxThread中并没有实现，因此常常忽略
+
+    (2) 条件等待
+        pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
+        pthread_mutex_lock(&mutex);
+        while(条件1成立)
+            pthread_cond_wait(&cond,&mutex);
+            ...
+        pthread_mutex_unlock(&mutex);
+        当'条件1'成立的时候，执行pthread_cond_wait(&cond,&mutex)，获得互斥锁，然后线程被挂起
+
+    (3) 条件激发
+        pthread_mutex_lock(&mutex);
+        if(条件1不成立)
+            pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&mutex);
+        条件1不成立的时候,执行pthread_cond_signal(&cond)，激发条件变量cond，使得被挂起的线程被唤醒
+
+        pthread_cond_broadcast(&cond1)
+        // 唤醒所有正在pthread_cond_wait(&cond1,&mutex1)的线程
+        pthread_cond_signal(&cond1)
+        // 唤醒所有正在pthread_cond_wait(&cond1,&mutex1)的至少一个线程
+
+        // 可能存在的情况
+        > 多个线程等待同一个cond,并且想对同一个mutex加锁
+            > 当使用broadcast方式时
+                > 两个被阻塞的线程都被唤醒了，被唤醒的线程将变为pthread_mutex_lock(mutex)的状态，他们将抢着对mutex加锁
+                > 在本次运行过程中thread_1加锁成功了，thread_2没有成功抢到锁，于是它就被阻塞了在thread_1执行完毕释放锁后，会通知所有被阻塞在mutex1上的线程，于是thread_2最终成功拿到了锁，然后顺利执行
+            > 当使用signal方式时
+                > thread_1和thread_2中只被唤醒了一个线程，在本次运行中是thread_1被唤醒了，而因为thread_2没有被唤醒，他就一直卡在pthread_cond_wait处呼呼大睡，所以最终只有thread_1执行完毕
+
+        > 多个线程等待同一个cond，并且分别不同的mutex加锁
+            > 使用broadcast方式时
+                因为两个线程都被唤醒了，且它们想要加的锁并没有竞争关系，因此它们是并发执行的，而不必像前一种情况中那样必须一前一后执行。
+            > 当使用signal方式时，只被唤醒了一个线程，因此只有一个线程成功执行
+
+    (4) 条件变量的销毁
+        pthread_cond_destroy(&cond);
+        在linux中，由于条件变量不占用任何资源，所以，这句话除了检查有没有等待条件变量cond的线程外，不做任何操作
+
+11、pthread_cond_timedwait
+    pthread_cond_timedwait(pthread_cond_t * _cond,pthread_mutex_t * _mutex,_const struct timespec * _abstime);
+    //比函数pthread_cond_wait()多了一个时间参数，经历abstime段时间后，即使条件变量不满足，阻塞也被解除
+
+```
+
+### thread
+```
+// 头文件
+    C++11 新标准中引入了四个头文件来支持多线程编程，分别是
+    (1) <atomic>
+        该头文主要声明了两个类, std::atomic 和 std::atomic_flag，另外还声明了一套 C 风格的原子类型和与 C 兼容的原子操作的函数
+    (2) <thread>
+        该头文件主要声明了 std::thread 类
+    (3) <mutex>
+        该头文件主要声明了与互斥量(mutex)相关的类，包括 std::mutex 系列类
+    (4) <condition_variable>
+        该头文件主要声明了与条件变量相关的类
+    (5) <future>
+        该头文件主要声明了 std::promise, std::package_task 两个 Provider 类
+
+1、<thread>
+    (1) std::this_thread
+        std::this_thread::sleep_for(std::chrono::seconds(n))
+    
+    (2) std::thread
+        1) std::thread构造
+            > default
+                // 默认构造函数，创建一个空的 thread 执行对象
+                thread() noexcept;
+            > initialization
+                // 初始化构造函数
+                template <class Fn, class... Args>
+                explicit thread (Fn && fn, Args&&... args);
+            > copy
+                // 拷贝构造函数(被禁用)，不允许拷贝构造
+                thread (const thread &) = delete;
+            > move
+                // move 构造函数
+                thread (thread && x) noexcept; // x是右值
+        2) 其他成员
+            get_id
+                获取线程 ID
+            joinable
+                检查线程是否可被 join
+            join
+                Join 线程
+            detach
+                Detach 线程
+            swap
+                Swap 线程 
+            native_handle
+                返回 native handle
+            hardware_concurrency [static]
+                检测硬件并发特性
+
+2、<mutex>
+    (1) 系列类(四种)
+        1) std::mutex，最基本的 Mutex 类
+            1> 构造函数
+                std::mutex不允许拷贝构造，也不允许 move 拷贝，最初产生的 mutex 对象是处于 unlocked 状态的
+            2> 成员函数
+                > lock()
+                    调用线程将锁住该互斥量
+                    线程调用该函数会发生下面3种情况
+                    1> 如果该互斥量当前没有被锁住，则调用线程将该互斥量锁住，直到调用 unlock之前，该线程一直拥有该锁
+                    2> 如果当前互斥量被"其他线程锁住"，则当前的调用线程被阻塞住
+                    3> 如果当前互斥量被"当前调用线程锁住"，则会产生死锁(deadlock)
+                
+                > unlock()
+                    解锁，释放对互斥量的所有权
+                
+                > try_lock()
+                    尝试锁住互斥量，如果互斥量被其他线程占有，则当前线程也"不会被阻塞"
+                    线程调用该函数也会出现下面3种情况
+                    1> 如果当前互斥量没有被其他线程占有，则该线程锁住互斥量，直到该线程调用 unlock 释放互斥量
+                    2> 如果当前互斥量被其他线程锁住，则当前调用线程返回 false，而并不会被阻塞掉
+                    3> 如果当前互斥量被当前调用线程锁住，则会产生死锁(deadlock)
+
+        2) std::recursive_mutex，递归 Mutex 类
+            和std::mutex不同的是，std::recursive_mutex允许同一个线程对互斥量多次上锁(即递归上锁)，来获得对互斥量对象的多层所有权
+            
+            std::recursive_mutex 释放互斥量时需要调用与该锁层次深度相同次数的 unlock()，可理解为 lock() 次数和 unlock() 次数相同，除此之外，std::recursive_mutex 的特性和 std::mutex 大致相同
+
+        3) std::time_mutex，定时 Mutex 类
+            比std::mutex多了两个成员函数，try_lock_for()和try_lock_until()
+            > try_lock_for
+                接受一个"时间范围"，表示在这一段时间范围之内线程如果没有获得锁则被阻塞住
+                如果在此期间其他线程释放了锁，则该线程可以获得对互斥量的锁
+                如果超时(即在指定时间内还是没有获得锁)，则返回 false
+            > try_lock_until
+                函数则接受一个"时间点"作为参数，在指定时间点未到来之前线程如果没有获得锁则被阻塞住
+                如果在此期间其他线程释放了锁，则该线程可以获得对互斥量的锁
+                如果超时（即在指定时间内还是没有获得锁），则返回 false。
+
+            // 注意使用时间类std::chrono
+
+        4) std::recursive_timed_mutex，定时递归 Mutex 类
+    
+    (2) Lock类(两种)
+        std::lock_guard，与 Mutex RAII 相关，方便线程对互斥量上锁
+        std::unique_lock，与 Mutex RAII 相关，方便线程对互斥量上锁，但提供了更好的上锁和解锁控制
+
+    (3) 其他类型
+        std::once_flag
+        std::adopt_lock_t
+        std::defer_lock_t
+        std::try_to_lock_t
+
+    (4) 函数
+        std::try_lock，尝试同时对多个互斥量上锁
+        std::lock，可以同时对多个互斥量上锁
+        std::call_once，如果多个线程需要同时调用某个函数，call_once 可以保证多个线程对该函数只调用一次
+
+
+
+
+
+```
+
+### RAII
+```
+C++语言的一种管理资源、避免泄漏的机制
+
+C++标准保证任何情况下，已构造的对象最终会销毁，即它的析构函数最终会被调用
+
+RAII 机制就是利用了C++的上述特性，构造一个临时对象(T)，在其构造T时获取资源，最后在T析构的时候释放资源。以达到安全管理资源对象，避免资源泄漏的目的
+
+C++11中lock_guard对mutex互斥锁的管理就是典型的RAII机制
+
+template<typename _Mutex>
+class lock_guard {
+public:
+    typedef _Mutex mutex_type;
+    explict lock_guard(mutex_type & m):_M_device(m) {
+        _M_device.lock();
+    }
+
+    ~lock_guard() {
+        _M_device.unlock();
+    }
+
+    // 禁止复制构造
+    lock_guard()
+    // 禁止赋值构造
+
+
+private:
+    mutex_type & _M_device;
+}
 ```
