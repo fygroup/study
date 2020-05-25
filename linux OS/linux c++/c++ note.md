@@ -147,9 +147,6 @@ https://zh.cppreference.com/w/%E9%A6%96%E9%A1%B5
 (18) 文件系统库
     <filesystem> (C++17 起)	std::path 类及 支持函数
 
-
-
-
 ```
 
 ```
@@ -2190,6 +2187,13 @@ int b = a;        // b = a
 
 ```
 
+### constexpr
+```
+constexpr表示这玩意儿在编译期就可以算出来（前提是为了算出它所依赖的东西也是在编译期可以算出来的）
+
+const只保证了运行时不直接被修改（但这个东西仍然可能是个动态变量）
+```
+
 ### __attribute__
 ```
 (1) 概念
@@ -3035,6 +3039,8 @@ pthread_mutex_destory() 互斥锁销毁函数
 
 ### thread
 ```
+https://www.cnblogs.com/haippy/p/3284540.html
+
 // 头文件
     C++11 新标准中引入了四个头文件来支持多线程编程，分别是
     (1) <atomic>
@@ -3048,10 +3054,47 @@ pthread_mutex_destory() 互斥锁销毁函数
     (5) <future>
         该头文件主要声明了 std::promise, std::package_task 两个 Provider 类
 
-1、<thread>
+1、<atomic>
+    最常见的同步机制就是std::mutex和std::atomic。然而，从性能角度看，通常使用std::atomic会获得更好的性能
+
+    std::atomic 是模板类，一个模板类型为 T 的原子对象中封装了一个类型为 T 的值
+    template<typename T>struct atomic;
+
+    C++11标准库std::atomic提供了针对"整形"和"指针类型"的特化实现
+
+    (1) 构造
+        atomic() noexcept = default;
+        constexpr atomic (T val) noexcept;
+        
+        // 实例
+        std::atomic<bool> ready(false);
+        std::atomic<int> foo = 0;
+
+    (2) is_lock_free
+        bool is_lock_free() const noexcept;
+        // 判断该 std::atomic 对象是否具备 lock-free 的特性
+        // 如果某个对象满足 lock-free 特性，在多个线程访问该对象时不会导致线程阻塞
+
+    (3) store
+        void store(T val, memory_order sync = memory_order_seq_cst) noexcept;
+        // 具体见memory order
+
+    (4) load
+        T load(memory_order sync = memory_order_seq_cst) const noexcept;
+        // 具体见memory order
+
+2、<thread>
     (1) std::this_thread
+        // 当前线程休眠一段时间，休眠期间不与其他线程竞争CPU，根据线程需求，等待若干时间
         std::this_thread::sleep_for(std::chrono::seconds(n))
-    
+
+        // 当前线程放弃执行(让出时间片)，操作系统调度另一线程继续执行
+        // 即当前线程将未使用完的"CPU时间片"让给其他线程使用，等其他线程使用完后再与其他线程一起竞争"CPU"
+        std::this_thread::yield()
+
+        // 获取当前线程的id
+        std::this_thread::get_id()
+
     (2) std::thread
         1) std::thread构造
             > default
@@ -3141,10 +3184,102 @@ pthread_mutex_destory() 互斥锁销毁函数
         std::lock，可以同时对多个互斥量上锁
         std::call_once，如果多个线程需要同时调用某个函数，call_once 可以保证多个线程对该函数只调用一次
 
+3、<condition_variable>
+    https://www.cnblogs.com/haippy/p/3252041.html
+```
 
+### future
+```
+https://www.jianshu.com/p/7945428c220e
 
+1、promise
+    void read(std::future<std::string> * future){
+        // future会一直阻塞，直到有值到来
+        std::cout << future->get() << std::endl;
+    }
 
+    std::promise<std::string> promise;
+    // future 相当于消费者, 右值构造
+    std::future<std::string> future = promise.get_future();
+    // 另一线程中通过future来读取promise的值
+    std::thread thread(read, &future);
 
+    promise.set_value("hello future");
+
+    // 注意：一个std::promise实例只能与一个std::future关联共享状态
+```
+
+### Memory Order
+```
+https://zhuanlan.zhihu.com/p/45566448
+
+Memory Order它本身与多线程无关，是限制的单一线程当中指令执行顺序
+
+最常见的同步机制就是std::mutex和std::atomic。然而，从性能角度看，通常使用std::atomic会获得更好的性能
+
+std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Consume, Sequentially-consistent
+
+默认情况下，std::atomic使用的是 Sequentially-consistent ordering
+在某些场景下，合理使用其它三种 ordering，可以让编译器优化生成的代码，从而提高性能
+
+1、Relaxed ordering
+    memory_order_relaxed
+
+    只保证当前操作的原子性，不考虑线程间的同步，其他线程可能读到新值，也可能读到旧值
+    std::atomic的load()和store()都要带上memory_order_relaxed参数
+    Relaxed ordering 仅仅保证load()和store()是原子操作，除此之外，不提供任何跨线程的同步
+
+2、Release-Acquire ordering
+    (1) memory_order_release
+        对写入施加 release 语义（store），在代码中这条语句前面的所有读写操作都无法被重排到这个操作之后
+
+        store()使用memory_order_release，表明在store()之前的所有读写操作，不允许被移动到这个store()的后面
+        
+        类似于mutex的unlock
+
+    (2) memory_order_acquire
+        对读取施加 acquire 语义（load），在代码中这条语句后面所有读写操作都无法重排到这个操作之前
+
+        load()使用memory_order_acquire，表明在load()之后的所有读写操作，不允许被移动到这个load()的前面
+
+        类似于mutex的lock
+
+    // 注意：上述release和acquire会同步所有的读写操作，开销能较大
+
+    // 例如
+    c = 0;
+    thread1 {
+        a = 1;
+        b.store(2, memory_order_relaxed);
+        c.store(3, memory_order_release);
+    }
+
+    thread2 {
+        while (c.load(memory_order_acquire) != 3);
+        assert(b == 2 && a == 1);  // 一定成功
+    }
+
+3、Release-Consume ordering
+    可以精确控制一块内存的同步
+
+    对当前要读取的内存施加 release 语义(store)，在代码中这条语句后面所有与这块内存有关的读写操作都无法被重排到这个操作之前
+    在这个原子变量上施加 release 语义的操作发生之后，consume 可以保证读到所有在 release 前发生的并且与这块内存有关的写入
+
+    // 例如
+    a = 0; c = 0;
+    thread1 {
+        a = 1;
+        c.store(3, memory_order_release);
+    }
+
+    thread2 {
+        while (c.load(memory_order_consume) != 3);
+        assert(a == 1); // assert 可能失败也可能不失败
+    }
+
+4、Sequentially-consistent ordering
+    对所有的变量的所有原子操作都同步
+    默认使用是这个
 ```
 
 ### RAII
@@ -3170,9 +3305,9 @@ public:
     }
 
     // 禁止复制构造
-    lock_guard()
+    lock_guard(const lock_guard &)=delete;      // c++11 
     // 禁止赋值构造
-
+    lock_guard & operator=(const lock_guard &)=delete;
 
 private:
     mutex_type & _M_device;
