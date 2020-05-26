@@ -2835,6 +2835,13 @@ https://cloud.tencent.com/developer/article/1008625
             cerr << e.what() << endl;
         }
 
+        try {
+            ...
+            throw(std::logic_error("logic error"));
+        } catch(std::logic_error & e) {
+            cerr << e.what() << endl;
+        }
+
     (3) 继承exception
         class MyException : public exception{
             const char *what() const throw() {
@@ -3125,6 +3132,26 @@ https://www.cnblogs.com/haippy/p/3284540.html
                 返回 native handle
             hardware_concurrency [static]
                 检测硬件并发特性
+        
+        3) 成员函数作为线程函数
+            一般的类成员函数是不能用作回调函数的，因为库函数在使用回调函数时，都会传递指定的符合回调函数声明的的参数给回调函数，而类成员函数隐式包含一个this指针参数，所以把类成员函数当作回调函数编译时因为参数不匹配会出错
+
+            1> 方法一
+                把成员函数设成静态成员函数，不属于某个对象，属于整个类
+            2> 方法二
+                class A{
+                public:
+                    int a;
+
+                    void member (int b){
+                        cout << a << endl;
+                        cout << b << endl;
+                    }
+
+                    void start () {
+                        thread(&A::member, this, 2);
+                    }
+                }
 
 2、<mutex>
     (1) 系列类(四种)
@@ -3185,7 +3212,78 @@ https://www.cnblogs.com/haippy/p/3284540.html
         std::call_once，如果多个线程需要同时调用某个函数，call_once 可以保证多个线程对该函数只调用一次
 
 3、<condition_variable>
-    https://www.cnblogs.com/haippy/p/3252041.html
+    condition_variable类是同步原语，能用于阻塞一个线程，或同时阻塞多个线程，直至另一线程修改共享变量(条件)并通知condition_variable
+
+    // 实例
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool ready = false;
+
+    void do_print_id(int id) {
+        std::unique_lock<std::mutex> lck(mtx);
+        while (!ready)
+            cv.wait(lck);
+    }
+
+    void go() {
+        std::unique_lock<std::mutex> lck(mtx);
+        ready = ture;
+        cv.notify_all();
+    }
+
+    std::thread threads = std::thread(do_print_id, i);
+    go();
+    threads.join();
+
+    (1) 通知
+        1) notify_one
+            通知一个等待的线程
+            唤醒某个等待(wait)线程。如果当前没有等待线程，则该函数什么也不做，如果同时存在多个等待线程，则唤醒某个线程是不确定的
+
+        2) notify_all
+            通知所有等待的线程
+            唤醒所有的等待(wait)线程。如果当前没有等待线程，则该函数什么也不做
+
+    (2) 等待
+        1) wait
+            阻塞当前线程，直到条件变量被唤醒
+            > 原理            
+                当前线程调用wait()后将被阻塞(此时当前线程应该获得了锁(mutex))，直到另外某个线程调用 notify_* 唤醒了当前线程
+                
+                在线程被阻塞时，该函数会自动调用unlock()释放锁，使得其他被阻塞在锁竞争上的线程得以继续执行
+                
+                一旦当前线程获得通知(notified)，wait()函数也是自动调用lck.lock()加锁，以防止其他线程的竞争
+            > 一般用法
+                std::mutex  mut;
+                std::condition_variable cv;
+
+                func1 {
+                    unique_lock<mutex> lck(mut);
+                    // 这块一定要判断条件
+                    while (判断条件) {
+                        cv.wait(mux);
+                    }
+                }
+
+                func2 {
+                    unique_lock<mutex> lck(mut);
+                    条件改变...
+                    cv.notify_**();
+                }
+                
+        2) wait_for
+            阻塞当前线程，直到条件变量被唤醒，或到指定时限时长后
+            > 原理
+                wait_for可以指定一个时间段，在当前线程收到通知或者指定的时间rel_time超时之前，该线程都会处于阻塞状态
+                一旦超时或者收到了其他线程的通知，wait_for 返回，剩下的处理步骤和 wait() 类似
+                
+        3) wait_until
+            阻塞当前线程，直到条件变量被唤醒，或直到抵达指定时间点
+
+    (3) 原生句柄
+        std::condition_variable::native_handle
+        POSIX 系统上，这可以是 pthread_cond_t* 类型值
+    
 ```
 
 ### future
