@@ -3287,22 +3287,29 @@ https://www.cnblogs.com/haippy/p/3284540.html
         POSIX 系统上，这可以是 pthread_cond_t* 类型值
 
 4、<semaphore.h>
-(1) 初始化
-    int sem_init(sem_t *sem,int pshared,unsigned int value); 
-    > pshared
-        指明信号量是由进程内线程共享，还是由进程之间共享
-        pshare为0表明进程间共享
+    (1) 初始化
+        int sem_init(sem_t *sem,int pshared,unsigned int value); 
+        > pshared
+            指明信号量是由进程内线程共享，还是由进程之间共享
+            pshare为0表明进程内的线程共享，非零表明进程间可共享
+        > 返回
+            成功时返回 0；错误时，返回 -1，并把 errno 设置为合适的值
 
+    (2) 销毁
+        int sem_destroy(sem_t *sem); 
 
-// 销毁
-int sem_destroy(sem_t *sem); 
+    (3) 成员函数
+        int sem_wait(sem_t *sem); 
+        // 每次调用sem_wait，信号量减一
+        // 当信号量为0时，sem_wait函数阻塞。等待信号量 >0 时，才进行
 
-// 成员函数
-int sem_wait(sem_t *sem);  // 资源减少1
-int sem_trywait(sem_t *sem);  
-int sem_post(sem_t *sem);  // 资源增加1
-int sem_getvalue(sem_t *sem); 
+        int sem_trywait(sem_t *sem);  
+        // 非阻塞版本
 
+        int sem_post(sem_t *sem);
+        // 调用sem_post，信号量加一
+        
+        int sem_getvalue(sem_t *sem); 
 ```
 
 ### future
