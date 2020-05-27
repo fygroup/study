@@ -3044,7 +3044,7 @@ pthread_mutex_destory() 互斥锁销毁函数
 
 ```
 
-### thread
+### thread相关
 ```
 https://www.cnblogs.com/haippy/p/3284540.html
 
@@ -3060,6 +3060,8 @@ https://www.cnblogs.com/haippy/p/3284540.html
         该头文件主要声明了与条件变量相关的类
     (5) <future>
         该头文件主要声明了 std::promise, std::package_task 两个 Provider 类
+    (6) <semaphore.h>
+        信号量
 
 1、<atomic>
     最常见的同步机制就是std::mutex和std::atomic。然而，从性能角度看，通常使用std::atomic会获得更好的性能
@@ -3283,7 +3285,24 @@ https://www.cnblogs.com/haippy/p/3284540.html
     (3) 原生句柄
         std::condition_variable::native_handle
         POSIX 系统上，这可以是 pthread_cond_t* 类型值
-    
+
+4、<semaphore.h>
+(1) 初始化
+    int sem_init(sem_t *sem,int pshared,unsigned int value); 
+    > pshared
+        指明信号量是由进程内线程共享，还是由进程之间共享
+        pshare为0表明进程间共享
+
+
+// 销毁
+int sem_destroy(sem_t *sem); 
+
+// 成员函数
+int sem_wait(sem_t *sem);  // 资源减少1
+int sem_trywait(sem_t *sem);  
+int sem_post(sem_t *sem);  // 资源增加1
+int sem_getvalue(sem_t *sem); 
+
 ```
 
 ### future
