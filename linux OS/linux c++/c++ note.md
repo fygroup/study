@@ -3300,8 +3300,8 @@ https://www.cnblogs.com/haippy/p/3284540.html
 
     (3) 成员函数
         int sem_wait(sem_t *sem); 
-        // 每次调用sem_wait，信号量减一
-        // 当信号量为0时，sem_wait函数阻塞。等待信号量 >0 时，才进行
+        // sem_wait将信号量的值减去一个1，但它永远会先等待该信号量为一个非零值才开始做减法
+        // 先判断，再做减法
 
         int sem_trywait(sem_t *sem);  
         // 非阻塞版本
@@ -3436,4 +3436,28 @@ public:
 private:
     mutex_type & _M_device;
 }
+```
+
+### 模板与数组参数
+```
+// reference to array of unknown bound 'int []'
+
+
+// 没有引用
+template<typename T> void func(T a);
+// 特化数组
+template<>
+void func<int[]>(int a []) {}
+
+
+
+// 有引用
+template<typename T> void func(T & a);
+// 特化数组(注意下面的数字)
+template<>
+void func<int[]>(int (&a) [10]) {}  
+// 特化指针
+template<>
+void func<int*>(int *(&a)) {}
+
 ```
