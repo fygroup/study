@@ -6,9 +6,8 @@
     协程
     goroutine、MPG
 
-
 3、数据结构与算法
-
+    动态规划
 
 4、linux操作系统
     进程控制、信号处理
@@ -16,14 +15,13 @@
     多线程和多进程
     同步原语
     内存管理
-    虚拟化 docker
-    git
+    虚拟化概念和docker的使用
+    git的使用
 
     系统调用
     内核调度
     虚拟文件系统
     
-
 5、linux网络
     TCP/IP协议
     TCP 三次握手与四次挥手
@@ -33,22 +31,20 @@
     多路IO复用，select poll epoll高并发
 
 6、设计模式
-
+    工厂
 
 7、数据库
     mysql
     mongodb
     redis
 
-
 8、分布式
     CAP BASE理论
-    paxos、raft
-    rpc、消息队列
-    存储
+    paxos、raft协议
+    rpc(gorpc, thrift)、消息队列(Kafka)
+    存储(nosql)
     计算
-    调度
-
+    调度(etcd)
 ```
 
 

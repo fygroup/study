@@ -21,6 +21,29 @@ this.state = {a: null, b: null}
 	}))	
 ```
 
+### setState
+```
+// 修改state
+	this.setState({
+		a: a
+	})
+
+// state更新可能是异步的
+	// React 为了优化性能，有可能会将多个 setState() 调用合并为一次更新
+	// 因为this.props和this.state 可能是异步更新的，你不能依赖他们的值计算下一个state
+	this.setState((proState, prop) => ({
+		a: prop.a
+	}))
+
+// 修改state后，怎么拿到最新的值
+	// 通过回调方式
+	this.setState((state, props)=>({
+		a: props.a
+	}), ()=>{
+		console.log(this.state)
+	})
+```
+
 ### 条件渲染
 ```
 // 1
@@ -33,23 +56,23 @@ this.state = {a: null, b: null}
 // 2
 	let a = true
 	<div>
-		{a==true && 
+		{a==true && (
 			<h1>aaaa</h1>
 			<h1>aaaa</h1>
 			<h1>aaaa</h1>
-		}
+		)}
 	</div>
 	
 // 3
 	{a == true 
-	?	<div>
+	?	(<div>
 			<h1>aaaaaa</h1>
 			<h1>aaaaaa</h1>
-		</div>
-	:	<div>
+		</div>)
+	:	(<div>
 			<h1>bbbbbb</h1>
 			<h1>bbbbbb</h1>
-		</div>
+		</div>)
 	}
 ```
 
@@ -631,7 +654,312 @@ const ref = React.createRef();
 <FancyButton ref={ref}>Click me!</FancyButton>;
 // ref 挂载完成，ref.current 将指向 <button> DOM 节点
 
-// 2
+
+```
+
+### react生命周期
+```
+			Mounting							Updating					Unmounting
+				|																|
+				|					NewProps	setState	forceUpdate			|
+				↓						|			|			|				|			
+			constructor					|			|			|				|
+				|						|			|			|				|
+				↓						↓			↓			↓				|
+			+--------------------------------------------------------+			|
+			|				getDerivedStateFromProps  				 |			|
+			+--------------------------------------------------------+			|
+				|						↓			↓			|				|
+				|				 +--------------------------+	|				|
+				|				 |	shouldComponentUpdate   |	|				|
+				|				 +--------------------------+	|				|
+				↓							  ↓ true/false		↓				|
+			+--------------------------------------------------------+			|
+			|							render						 |			|
+			+--------------------------------------------------------+			|
+				|									↓							|
+				|					+---------------------------------+			|
+				|					|		getSnapshotBeforeUpdate	  |			|
+				|					+---------------------------------+			|
+				|									|							|
+				↓									↓							|
+			+--------------------------------------------------------+			|
+			|				React updates DOM and refs				 |			|
+			+--------------------------------------------------------+	 		|
+				|									|							|
+				↓									↓							↓
+			componentDidMount				componentDidUpdate			componentWillUnmount
 
 
+// mount(挂载)
+	当组件实例被创建并插入 DOM 中时，其生命周期调用顺序如下
+	(1) constructor(props)
+		1) 可以忽略
+			如果不初始化 state 或不进行方法绑定，则不需要为 React 组件实现构造函数
+		2) 禁止setState
+			在 constructor() 函数中不要调用 setState() 方法。如果你的组件需要使用内部 state，请直接在构造函数中为 this.state 赋值初始 state
+		3) 避免将props的值复制给state
+			props的改变不会改变state
+
+	(2) static getDerivedStateFromProps(props, state)
+		在调用 render 方法之前调用，并且在初始挂载及后续更新时都会被调用
+		它应"返回一个对象"来更新 state，如果返回 null 则不更新任何内容
+		此为静态函数，不能通过this访问成员
+
+	(3) render()
+	(4) componentDidMount()
+		componentDidMount()会在组件挂载后(插入 DOM 树中)立即调用
+		1) 调用setState的代价
+			在 componentDidMount() 里直接调用 setState()，它将触发额外渲染，但此渲染会发生在浏览器更新屏幕之前
+			如此保证了即使在 render() 两次调用的情况下，用户也不会看到中间状态请谨慎使用该模式，因为它会导致性能问题
+			通常应该在 constructor() 中初始化 state
+
+// update(更新)
+	当组件的 props 或 state 发生变化时会触发更新。组件更新的生命周期调用顺序如下
+	(1) static getDerivedStateFromProps()
+		props的改变会执行这个函数，state的改变不会
+	(2) shouldComponentUpdate(nextProps, nextState, nextContext)
+		1) 当 props 或 state 发生变化时，shouldComponentUpdate() 会在渲染执行之前被调用。返回值默认为 true。如果为false将不会渲染
+		2) 首次渲染或使用 forceUpdate() 时不会调用该方法
+		3) 考虑使用内置的 PureComponent 组件
+			此方法仅作为性能优化的方式而存在。不要企图依靠此方法来"阻止"渲染，因为这可能会产生 bug。你应该考虑使用内置的 PureComponent 组件，而不是手动编写 shouldComponentUpdate()
+
+	(3) render()
+	(4) getSnapshotBeforeUpdate(prevProps, prevState)
+		这函数会在render之后执行，而执行之时DOM元素还没有被更新，给了一个机会去获取DOM信息
+		getSnapshotBeforeUpdate把snapshot返回，然后DOM改变，然后snapshot传递给componentDidUpdate
+
+	(5) componentDidUpdate(prevProps, prevState, snapshot)
+		componentDidUpdate() 会在更新后会被立即调用。首次渲染不会执行此方法
+		1) 调用setState需要注意
+			在 componentDidUpdate() 中直接调用 setState()，但请注意它必须被包裹在一个条件语句里
+				否则可能会导致死循环
+				可能会导致额外的重新渲染，影响组件性能
+			不要将props镜像给state，请考虑直接使用 props
+		2) 如果 shouldComponentUpdate() 返回值为 false，则不会调用 componentDidUpdate()
+		3) 尽量使用 componentDidUpdate 生命周期，因为它保证每次更新只调用一次
+// 卸载
+	当组件从 DOM 中移除时会调用如下方法：
+	componentWillUnmount()
+		componentWillUnmount() 会在组件卸载及销毁之前直接调用
+		1) 不应该调用setState
+			componentWillUnmount() 中不应调用 setState()，因为该组件将永远不会重新渲染。组件实例卸载后，将永远不会再挂载它
+
+// 错误处理
+	当渲染过程，生命周期，或子组件的构造函数中抛出错误时，会调用如下方法：
+	static getDerivedStateFromError()
+	componentDidCatch()
+
+// 其他API
+	forceUpdate()
+		当组件的 state 或 props 发生变化时，组件将重新渲染。如果 render() 方法依赖于其他数据，则可以调用 forceUpdate() 强制让组件重新渲染
+		调用 forceUpdate() 将致使组件调用 render() 方法，此操作会跳过该组件的 shouldComponentUpdate()。但其子组件会触发正常的生命周期方法，包括 shouldComponentUpdate() 方法
+		应该避免使用 forceUpdate()
+	setState()
+		setState() 并不总是立即更新组件，调用 setState() 后立即读取 this.state 成为了隐患
+		请使用 componentDidUpdate 或者 setState 的回调函数（setState(updater, callback)）
+
+
+```
+
+### Component 和 PureComponent
+```
+React.PureComponent 是一个和 React.Component 几乎相同，唯一不同的是 React.PureComponent 帮助我们完成了 shouldComponentUpdate 的一些交浅的比较
+
+React创建了PureComponent组件创建了默认的shouldComponentUpdate行为。这个默认的shouldComponentUpdate行为会一一比较props和state中所有的属性，只有当其中任意一项发生改变是，才会进行重绘
+```
+
+### Component 和 FC
+```
+interface InitProps {
+
+}
+
+interface InitState {
+
+}
+
+// 写法一，类的写法
+class App extend React.Component<InitProps, Initstate> {
+
+}
+
+// 写法二，函数的写法
+// 注意：函数类型组件要干净，仅通过props来渲染
+const App: React.FC<InitProps> = (props)=>{
+
+}
+
+```
+
+### ComponentClass 和 FC 类型的声明
+```
+interface T {
+	name: string
+}
+
+const App: React.ComponentClass<T> | React.FC<T>
+
+// 实例
+	interface AutoHeightProps {
+		height?: number;
+	}
+
+	// 模板函数  <>():type => {}
+	const App = <P extends AutoHeightProps>(
+		WrappedComponent: React.ComponentClass<P> | React.FC<P>,
+	): React.ComponentClass<P> => {
+		class AutoHeightComponent extends React.Component<P> {
+			state = {
+
+			};
+			componentDidMount(){
+
+			};
+			render(){
+				return <>...
+			}
+		}
+
+		return AutoHeightComponent
+	}
+```
+
+### Fragments
+```
+public render(){
+  return (
+    <React.Fragment>
+      <div></div>
+      <div></div>
+    </React.Fragment>
+  )
+}
+
+//or
+
+public render(){
+  return (
+    <>
+      <div></div>
+      <div></div>
+    </>
+  )
+}
+```
+
+### memo
+```
+// useMemo
+	用于性能优化
+	// 例如
+	const App = ()=>{
+		const [index, setIndex] = useState(0);
+		const [str, setStr] = useState('');
+		const add = ()=>{
+			return index * 100;
+		}
+		return (
+			<div>{index}-{str}-{add()}</div>
+		)
+	}
+	// 无论如何修改 index 或 str 都会引发 add() 的执行，这对于性能来说是很难接受的
+	
+	// add() 只依赖于 index ，因此我们可以使用 useMemo 来优化此项
+	const App = ()=>{
+		const [index, setIndex] = useState(0);
+		const [str, setStr] = useState('');
+		const add = useMemo(()=>{
+			return index * 100;
+		}, [index])
+		return (
+			<div>{index}-{str}-{add}</div>
+		)
+	}
+	// 此时add只依赖index的改变而渲染
+
+// useCallback
+	那么 useCallback 的使用和 useMemo 比较类似，但它返回的是缓存函数
+
+// React.memo
+	React.memo 为高阶组件。它与 React.PureComponent 非常相似，但只适用于函数组件，而不适用 class 组件
+	
+	function MyComponent(props) {
+	/* 使用 props 渲染 */
+	}
+
+	function areEqual(prevProps, nextProps) {
+	/*
+	如果把 nextProps 传入 render 方法的返回结果与
+	将 prevProps 传入 render 方法的返回结果一致则返回 true，
+	否则返回 false
+	*/
+	}
+
+	export default React.memo(MyComponent, areEqual);
+
+	//注意
+	与 class 组件中 shouldComponentUpdate() 方法不同的是，如果 props 相等，areEqual 会返回 true；如果 props 不相等，则返回 false。这与 shouldComponentUpdate 方法的返回值相反。
+```
+
+### ReactNode
+```
+React.ReactNode 是组件的返回值
+
+ReactNode 可以是 ReactElement, ReactFragment, string, number, boolean, 数组 ReactNodes, null, undefined
+
+render(): React.ReactNode {
+
+}
+```
+
+### Hook
+
+```
+useState： setState
+useReducer： setState
+useRef: ref
+useImperativeMethods: ref
+useContext: context
+useCallback: 可以对setState的优化
+useMemo: useCallback的变形
+useLayoutEffect: 类似componentDidMount/Update, componentWillUnmount
+useEffect: 类似于setState(state, cb)中的cb，总是在整个更新周期的最后才执行
+
+// useState
+
+// useContext
+
+// useReducer
+
+// useEffect
+	https://juejin.im/post/5c9827745188250ff85afe50
+
+	Function Component 是更彻底的状态驱动抽象，甚至没有 Class Component 生命周期的概念，只有一个状态，而 React 负责同步到 DOM
+
+	useEffect Hook 看做 componentDidMount，componentDidUpdate 和 componentWillUnmount 这三个函数的组合
+
+	(1) 避免无限执行
+		const [data, setData] = useState()
+		useEffect(()=>{
+			setData(...)
+		})
+		这个会无限循环
+
+	(2) 仅在mount时执行
+		const [data, setData] = useState()
+		useEffect(()=>{
+			setData(...)
+		}, [])
+
+	(3) 仅在data不同时才执行
+		const [data, setData] = useState()
+		useEffect(()=>{
+			setData(...)
+		}, [data])
+		
+// useLayoutEffect
+
+
+// useCallback
 ```
