@@ -243,6 +243,7 @@ class App extends React.component {
 
 ### redux
 ```
+
 // 同步Actions
 
 1、Action
@@ -638,6 +639,64 @@ Immutable 实现的原理是 Persistent Data Structure（持久化数据结构�
 
 ```
 
+### dva
+```
+// 数据流向
+	dispatch -> action -> effect -> reducer -> state -> props -> view
+
+// model
+	import {Effect, Reducer} from 'umi'
+	export interface StateType {
+
+	}
+	interface ModelType {
+		namespace: string;
+		state: StateType;
+		effects: {
+			fetch: Effect
+		};
+		reducers: {
+			change: Reducer<StateType>
+		}
+	}
+	const initState: StateType = {}
+	const Model: ModelType {
+		namespace: 'modelTest',
+		state: initState,
+		effects: {
+			*fetch(_, {call, put, select}) {
+
+			}
+		},
+		reducers: {
+			change(state, {value}) {
+				return {
+					...state,
+					...value
+				}
+			}
+		}
+	}
+
+// connect
+	import {connect, Dispatch} from 'umi'
+	import {StateType} from './model'
+	interface AppProps {
+		modelTest: StateType;
+		dispatch: Dispatch<any>;
+		loading: boolean;
+	}
+	class App extends Component<AppProps> {
+
+	}
+	export default connect(({ 	modelTest, 
+							  	loading,
+							}: {
+								modelTest: StateType,
+								loading: boolean
+							}))
+```							
+
 ### refs
 ```
 Ref 转发是一项将 ref 自动地通过组件传递到其一子组件的技巧
@@ -717,8 +776,12 @@ const ref = React.createRef();
 // update(更新)
 	当组件的 props 或 state 发生变化时会触发更新。组件更新的生命周期调用顺序如下
 	(1) static getDerivedStateFromProps()
-		props的改变会执行这个函数，state的改变不会
+		props或state的改变，会执行此函数
+		它应"返回一个对象"来更新 state，如果返回 null 则不更新任何内容
+		此为静态函数，不能通过this访问成员
+
 	(2) shouldComponentUpdate(nextProps, nextState, nextContext)
+		nextProps和nextState是更新后的内容，this.props和this.state是更新前的内容
 		1) 当 props 或 state 发生变化时，shouldComponentUpdate() 会在渲染执行之前被调用。返回值默认为 true。如果为false将不会渲染
 		2) 首次渲染或使用 forceUpdate() 时不会调用该方法
 		3) 考虑使用内置的 PureComponent 组件
@@ -731,6 +794,7 @@ const ref = React.createRef();
 
 	(5) componentDidUpdate(prevProps, prevState, snapshot)
 		componentDidUpdate() 会在更新后会被立即调用。首次渲染不会执行此方法
+		prevProps和prevState是更新前的内容，this.props和this.state是更新后的内容
 		1) 调用setState需要注意
 			在 componentDidUpdate() 中直接调用 setState()，但请注意它必须被包裹在一个条件语句里
 				否则可能会导致死循环
@@ -962,4 +1026,20 @@ useEffect: 类似于setState(state, cb)中的cb，总是在整个更新周期的
 
 
 // useCallback
+```
+
+
+### ant-design
+```
+// antd 重要组件
+
+> Table
+	> 虚拟列表
+		通过 react-window 引入虚拟滚动方案，实现 100000 条数据的高性能表格
+	> 拖拽排序
+		使用自定义元素，我们可以集成 react-dnd 来实现拖拽排序。
+	> 可编辑行
+		带行编辑功能的表格
+
+
 ```
