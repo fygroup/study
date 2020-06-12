@@ -554,3 +554,32 @@ for (let [key, value] of Object.entries(object1)) {
     console.log(`${key}: ${value}`)
 }
 ```
+
+### typescript 类型映射
+```
+ReadOnly和Partial的类型映射
+
+interface Person {
+    name: string;
+    age: number;
+}
+
+// 只读
+interface Person1 extends ReadOnly<Person> {}
+
+// 属性可以不完整
+interface Person2 extends Partial<Person> {}
+
+let a: Person       // 不严谨，相当于var a，最好初始化
+let a: Person = {}  // 错误，必须给name和age赋值
+
+let a: Person1 = {
+    name: 'a',
+    age: 12
+}
+a.name = 'aa'       // 错误，只读
+
+let a: Person2 = {
+    name: 'a'       // 正确，初始化属性可以不完整
+}
+```
