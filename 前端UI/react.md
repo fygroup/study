@@ -887,6 +887,11 @@ const App: React.ComponentClass<T> | React.FC<T>
 
 		return AutoHeightComponent
 	}
+	// 使用模板函数
+	<App<AutoHeightProps>
+		...
+	/>
+
 ```
 
 ### Fragments
