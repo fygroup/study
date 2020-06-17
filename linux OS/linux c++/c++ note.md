@@ -2337,7 +2337,7 @@ struct cmpkeylen{
     }
 };
 
-map<sting,int,cmpkeybylen> mymap;
+map<sting,int,cmpkeylen> mymap;
 //注意 第三个参数是个函数对象，c++ 11中很多库函数都是函数对象
 ```
 
