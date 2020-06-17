@@ -477,11 +477,21 @@ CAP_LEASE:允许修改文件锁的FL_LEASE标志
 ### perror
 ```
 #include <perror.h>
-
-当linux的系统C api函数发生异常时, 会把错误码(一个整数)写进error全局变量；调用perror()库函数，可以把变量翻译成用户理解的字符串
-
 void perror(const char *s)
-用来将上一个函数发生错误的原因输出到标准错误(stderr)
+
+当linux的系统C api函数发生异常时, 会把错误码(一个整数)写进error全局变量
+
+调用perror(string)用来将上一个函数发生错误的原因输出到标准错误(stderr)
+
+参数string所指的字符串会先打印出可以把变量翻译成用户理解的字符串
+
+// 例如
+fp = fopen("file.txt", "r");    // 没有文件，系统把错误已经写进error中
+if( fp == NULL ) {
+    perror("Error: ");          // 输出error得内容，并在前面加上"Error: "
+    return(-1);
+}
+
 ```
 
 ### fork vs vfork

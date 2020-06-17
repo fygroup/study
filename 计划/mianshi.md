@@ -31,7 +31,7 @@
     多路IO复用，select poll epoll高并发
 
 6、设计模式
-    工厂
+    
 
 7、数据库
     mysql
