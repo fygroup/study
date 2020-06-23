@@ -1200,21 +1200,74 @@ while(!seq.empty()){
 }
 ```
 
-### deque queue vector array list
+### 容器简介
 ```
-// list 与 vector
-    > list 每个元素间用链表相连，访问随机元素没有vector快，随机地插入元素要比vector快
+list vector array deque
+stack queue priority_queue
+map set
 
-// vector与deque
-    > deque是双端队列，是可以在两端扩展和收缩的连续容器。一般deque的实现是基于某种形式的动态数组，允许单个元素用随机获取。迭代器随机读取，数组容量自动管理。
-    > 它有和vector相似的函数，但在序列的开始也有高效的插入和删除。但不像vector，deque的元素并不是严格连续存储的。
-    > vector和deque有相似的接口和相似的目的，但内部实现截然不同
+> list
+    list底层数据结构是双向链表，支持快速增删
+    
+> vector
+    vector底层数据结构是数组，支持快速随机访问
 
-// queue与deque
-    > queue 先进先出，不支持迭代器
-    > queue是容器适配器，底层由deque存储
+> array
+    长度固定的vector
 
-// array长度固定
+> deque
+    deque是双端队列，底层数据结构是分段连续线性空间
+    中控器(map)是一块连续的空间，其中每个元素是指向缓冲区的指针，缓冲区才是deque存储数据的主体
+    可以在两端进行push, pop 
+    可以在内部进行插入和删除操作，但性能不及list
+    支持随机访问，但性能不及vector
+
+> stack
+    栈是先进后出FILO数据结构，底层默认用deque实现
+    // 模板类型
+    template <class T, class Container = deque<T>>
+    class stack
+
+> queue
+    队列是先进先出FIFO数据结构，底层默认用deque实现
+    // 模板类型
+    template <class T, class Container = deque<T>>
+    class queue
+
+> priority_queue
+    priority_queue 容器适配器定义了一个元素有序排列的队列。默认队列头部的元素优先级最高，需要定义优先级
+    它具有队列的属性，所以只能访问第一个元素
+    底层默认用vector实现
+    //模板类型
+    template <typename T, typename Container=std::vector<T>, typename Compare=std::less<T>>
+    class priority_queue
+
+// 上述 stack、queue、priority_queue不是容器，而是容器适配器
+
+> map
+    底层数据结构为红黑树，有序，不重复
+
+> multimap
+    底层数据结构为红黑树，有序，可重复
+
+> hash_map
+    底层数据结构为hash表，无序，不重复
+
+> hash_multimap
+    底层数据结构为hash表，无序，可重复
+
+> set
+    底层数据结构为红黑树，有序，不重复
+
+> multiset
+    底层数据结构为红黑树，有序，可重复
+
+> hash_set
+    底层数据结构为hash表，无序，不重复
+
+> hash_multiset
+    底层数据结构为hash表，无序，可重复 
+
 ```
 
 ### 类函数指针
