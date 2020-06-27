@@ -322,21 +322,7 @@ struct equal_to:public binary_function<T,T,bool>
 		return a == b;
 	}
 };
-//---typename 函数---------------
-struct cmp
-{
-	bool operator()(int & a, int & b){
-		return a == b;
-	}
-};
-
-bool cmp1(int & a, int & b){
-	return a == b;
-}
-
-priority_queue<int,vector<int>,cmp> a;
-priority_queue<int,vector<int>,bool(*)(int & a, int & b)> b(cmp1);
-
+// 当前程序
 readlink("/proc/self/exe", pPath, 1024); 当前程序的绝对路径
 
 #ifndef GOOGLE_GLOG_DLL_DECL
@@ -1187,17 +1173,20 @@ class X
 
 ### 优先队列
 ```
-priority_queue<element> seq;
-seq.push(element(4,"aaa"));
-seq.push(element(2,"bbb"));
-seq.push(element(5,"ccc"));
+struct cmp
+{
+	bool operator()(int & a, int & b){
+		return a == b;
+	}
+};
 
-while(!seq.empty()){
-    element c = seq.top();  //注意这里是值，不能是引用，如果要提高性能，可以把element改为指针
-    cout << c.i << endl;
-    cout << c.name << endl;
-    seq.pop();
+bool cmp1(int & a, int & b){
+	return a == b;
 }
+
+priority_queue<int,vector<int>,cmp> a;
+priority_queue<int,vector<int>,bool(*)(int & a, int & b)> b(cmp1);
+
 ```
 
 ### 容器简介
@@ -1237,7 +1226,7 @@ map set
 > priority_queue
     priority_queue 容器适配器定义了一个元素有序排列的队列。默认队列头部的元素优先级最高，需要定义优先级
     它具有队列的属性，所以只能访问第一个元素
-    底层默认用vector实现
+    底层存储用vector，用heap来组织数据结构
     //模板类型
     template <typename T, typename Container=std::vector<T>, typename Compare=std::less<T>>
     class priority_queue
@@ -3523,4 +3512,22 @@ void func<int*>(int *(&a)) {}
 或者
 
 #define size_t typeof(sizeof(xxx))
+```
+
+### 容器的emplace操作
+```
+针对vector、deque、list引入了三个新成员，emplace_front、emplace和emplace_back，这些操作分别对应push_front、insert和push_back
+
+目的：避免不必要的临时对象的产生
+
+struct Foo {
+    Foo(int m, double n);
+};
+
+std::vector<Foo> v;
+v.push_back(Foo(1, 3.14));   // 产生一个临时变量
+v.push_back({1, 3.14});          // 产生一个临时变量
+v.emplace_back(1, 3.14);    // 没有产生临时变量，直接构造
+
+
 ```
