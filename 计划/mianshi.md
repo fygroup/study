@@ -7,22 +7,24 @@
     goroutine、MPG
 
 3、数据结构与算法
-    动态规划
+    刷leetcode
 
-4、linux操作系统
-    进程控制、信号处理
-    进程IPC
-    多线程和多进程
+4、linux kernel❗
+    进程(结构、调度、地址空间)
+    内存
+    中断
     同步原语
-    内存管理
-    虚拟化概念和docker的使用
-    git的使用
-
     系统调用
-    内核调度
     虚拟文件系统
-    
-5、linux网络
+
+5、linux api❗
+    进程IPC
+    多线程、多进程
+    同步
+    内存控制
+    信号控制
+
+6、linux网络❗
     TCP/IP协议
     TCP 三次握手与四次挥手
     常见的网络协议（网桥、ARP、IP、ICMP、TCP、UDP、DNS、DHCP）
@@ -30,21 +32,40 @@
     socket概念、类型、编程API
     多路IO复用，select poll epoll高并发
 
-6、设计模式
-    
+7、linux高性能编程❗
+    进程、线程的api和异同点
+    各种锁应用的场景
+    协程和有栈无栈协程
+    线程池
+    内存(对象)池
+    事件处理模型(同步和异步、Reactor和Proactor)
+    无锁编程(CAS+版本号、优缺点)
 
-7、数据库
+8、数据库❗
     mysql
     mongodb
-    redis
 
-8、分布式
+9、中间件❗
+    缓存 redis
+    消息队列 kafka
+    rpc (gorpc, thrift)
+    etcd
+
+10、分布式
     CAP BASE理论
     paxos、raft协议
-    rpc(gorpc, thrift)、消息队列(Kafka)
-    存储(nosql)
+    存储❗
     计算
-    调度(etcd)
+    调度
+    k8s
+
+11、设计模式❗
+    针对不同场景的架构
+
+12、重要工具使用
+    docker(注意linux虚拟化概念namespace、cgroups、union文件系统)
+    git
+
 ```
 
 
