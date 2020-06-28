@@ -10,7 +10,7 @@
     刷leetcode
 
 4、linux kernel❗
-    进程(结构、调度、地址空间)
+    进程(管理、调度、地址空间)
     内存
     中断
     同步原语
@@ -33,13 +33,14 @@
     多路IO复用，select poll epoll高并发
 
 7、linux高性能编程❗
-    进程、线程的api和异同点
+    进程和线程相关api
     各种锁应用的场景
     协程和有栈无栈协程
     线程池
     内存(对象)池
     事件处理模型(同步和异步、Reactor和Proactor)
     无锁编程(CAS+版本号、优缺点)
+    boost::asio库
 
 8、数据库❗
     mysql
