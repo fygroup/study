@@ -250,23 +250,9 @@ std:cerr << 错误输出
 把一个成员函数声明为const可以保证这个输入的成员函数不修改数据成员，但是，如果据成员是指针，则const成员函数并不能保证不修改指针指向的对象
 
 
-//----const------------------------
-顶层const
-
-底层const
-
-
-c++中有一块const内存，并且不同变量，一样的内容，他们的指针地址是一样的，凡是const的变量都在const内存中
 //---重写 重载 重定义--------------
 函数重载是指在一个类中声明多个名称相同但参数列表不同的函数，这些的参数可能个数或顺序，类型不同，但是不能靠返回类型来判断。
 函数重写是指子类重新定义基类的虚函数。
-
-c++中可以对const进行赋值
-class my{
-	const int a;
-}
-
-my::a
 
 //--转换--------------------------
 肯定没问题的转换
@@ -634,29 +620,6 @@ dynamic_cast
 static_cast
 //---class中的静态函数----------------------------
 静态函数只要在定义的时候需要static关键字，实现的时候就不需要了，否则会报错。
-//---引用 与 const----------------------------------
-int func(){
-    return(2);
-}
-
-void func1(int & a){
-}
-
-int main()  
-{  
-
-func1(func()); //错误 func() 返回的是临时变量，func1没法确定是否可修改
-
-}
-//改正1
-int a = func();
-func1(a);
-//改正2
-void func1(const int & a){
-}
-//改正3
-void func1(int a){
-}
 //---%------------------------------------------------
 % is only defined for integer types. That's the modulus operator.
 <cmath> fmod(m,n);
@@ -1773,7 +1736,7 @@ decltype和auto都可以用来推断类型，但是二者有几处明显的差�
 ### 类型转换
 ```
 //const_cast 去掉类型的const或volatile属性
-//static_cast 基本数据类型转换，不能进行无关类型（如非基类和子类）指针之间的转换。把空指针转换成目标类型的空指针。把任何类型的表达式转换成void类型。static_cast不能去掉类型的const、volitale属性(用const_cast)。
+//static_cast 基本数据类型转换，不能进行无关类型（如非基类和子类）指针之间的转换。把空指针转换成目标类型的空指针。把任何类型的表达式转换成void类型。static_cast不能去掉类型的const、volatile属性(用const_cast)。
 
 //实例 const char* ==> void*
 const char* a = "dadada";
@@ -3529,5 +3492,23 @@ v.push_back(Foo(1, 3.14));   // 产生一个临时变量
 v.push_back({1, 3.14});          // 产生一个临时变量
 v.emplace_back(1, 3.14);    // 没有产生临时变量，直接构造
 
+
+```
+
+### const与优化
+```
+// 例子
+const int a=1;
+int* b=(int*)&a;
+*b=10;      // 此时内存a可能是1
+
+当开启优化是-O2,当编译器看到这里的a被const修饰，从语义上讲这里的a是不期望被改变的
+优化的时候就可以把a的值存放到寄存器中。可以用volatile解决此情况
+
+volatile const int a = 1;
+int* b = (int*)&a;
+*b=10;  // 此时内存a是10
+
+c++中有一块const内存，并且不同变量，一样的内容，他们的指针地址是一样的，凡是const的变量都在const内存中
 
 ```
