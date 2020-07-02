@@ -3439,3 +3439,29 @@ int* b = (int*)&a;
 c++中有一块const内存，并且不同变量，一样的内容，他们的指针地址是一样的，凡是const的变量都在const内存中
 
 ```
+
+### 模板类调用成员模板函数
+```c++
+template <typename T>
+struct A{
+    template<typename T1>
+    void func(){}
+
+    template<typename T1>
+    void func1(T1*){}
+};
+
+template<typename T>
+void test() {
+    A<T> a;
+    a.func<T>();                                               // 错误
+    a.template func<T>();                           // 正确
+    a.func1(static_cast<T*>(NULL));     // 正确
+}
+
+int main(){
+    A<int> a;
+    a.func<int>();                      // 正确
+}
+
+```
