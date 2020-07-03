@@ -104,33 +104,42 @@ http.HandlerFunc()
 ### serveFile
 ```
 type Dir string
+
 func (d Dir) Open(name string) (File, error) {
-  // ...
+  ...
 }
+
 type FileSystem interface {
   Open(name string) (File, error)
 }
-http.FileServer()
-http.FileServer() 方法返回的是 fileHandler 实例，而 fileHandler 结构体实现了 Handler 接口的方法 ServeHTTP()。ServeHTTP 方法内的核心是 serveFile() 方法。
-// 所属文件: src/net/http/fs.go, 690-716行
-type fileHandler struct {
-  root FileSystem
-}
-func FileServer(root FileSystem) Handler {
-  return &fileHandler{root}
-}
-func (f *fileHandler) ServeHTTP(w ResponseWriter, r *Request) {
-  upath := r.URL.Path
-  if !strings.HasPrefix(upath, "/") {
-    upath = "/" + upath
-    r.URL.Path = upath
+
+http.FileServer()方法返回的是fileHandler实例，fileHandler结构体实现了Handler接口的方法 ServeHTTP()
+
+ServeHTTP 方法内的核心是 serveFile() 方法
+
+(1) handler接口
+  type Handler interface {
+    ServeHTTP(ResponseWriter, *Request)
   }
-  serveFile(w, r, f.root, path.Clean(upath), true)
-}
-// 所属文件: src/net/http/server.go, 82行
-type Handler interface {
-  ServeHTTP(ResponseWriter, *Request)
-}
+
+(2) FileServer返回handler
+  func FileServer(root FileSystem) Handler {
+    return &fileHandler{root}
+  }
+
+(3) fileHandler实现handler接口
+  type fileHandler struct {
+    root FileSystem
+  }
+  func (f *fileHandler) ServeHTTP(w ResponseWriter, r *Request) {
+    upath := r.URL.Path
+    if !strings.HasPrefix(upath, "/") {
+      upath = "/" + upath
+      r.URL.Path = upath
+    }
+    http.serveFile(w, r, f.root, path.Clean(upath), true)
+  }
+
 
 //实例
 var rootPath = "/data_dir/malx/test/"

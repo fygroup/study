@@ -33,13 +33,15 @@
     多路IO复用，select poll epoll高并发
 
 7、linux高性能编程❗
+    原子操作与cpu内存模型
+    同步原语应用的场景
+    std::atmoic的使用
     进程和线程相关api
-    各种锁应用的场景
-    协程和有栈无栈协程
+    无锁编程(lock-free)
+    有栈无栈协程
     线程池
     内存(对象)池
     事件处理模型(同步和异步、Reactor和Proactor)
-    无锁编程(CAS+版本号、优缺点)
     boost::asio库
 
 8、数据库❗
