@@ -3448,8 +3448,8 @@ struct A{
 template<typename T>
 void test() {
     A<T> a;
-    a.func<T>();                                               // 错误
-    a.template func<T>();                           // 正确
+    a.func<T>();                        // 错误
+    a.template func<T>();               // 正确
     a.func1(static_cast<T*>(NULL));     // 正确
 }
 
@@ -3457,5 +3457,47 @@ int main(){
     A<int> a;
     a.func<int>();                      // 正确
 }
+
+```
+
+### 继承virtual注意的记录
+```
+// 情景一
+class A {
+public:
+    virtual void func(int x) {
+        cout << "A: int " << x << endl;
+    }
+    virtual void func(float x) {
+        cout << "A: float " << x << endl;
+    }
+};
+
+// 情景二
+class A
+{
+public :
+    virtual void func(int x)
+    {
+        cout << "A: int " << x << endl;
+    }
+};
+class B :public A
+{
+public :
+    virtual void func(float x)
+    {
+        cout << "B: float " << x << endl;
+    }
+};
+A *a = new B();
+a->func(12);
+a->func(12.12);
+// 结果
+A: int 12
+A: int 12
+
+
+
 
 ```
