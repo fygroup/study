@@ -1,23 +1,27 @@
-# socket
+### socket
 ```
 #include <sys/socket.h>
 int socket(int domain, int type, int protocol)
+
 //domain(域)
 AF_INET     IPv4
 AF_INET6    IPv6
 AF_UNIX     UNIX域
+
 //type
-SOCK_DGRAM  UDP（固定长度、无连接、不可靠报文传递）
-SOCK_RAM    ip协议数据报接口，用于直接访问网络层，绕过传输层（tcp、udp），需要超级用户特权
+SOCK_DGRAM  UDP(固定长度、无连接、不可靠报文传递)
+SOCK_RAM    ip协议数据报接口，用于直接访问网络层，绕过传输层(tcp、udp)，需要超级用户特权
 SOCK_STREAM TCP(有序、可靠、双向、面向连接字节流)
+
 //protocol
 0           表示为给定的域和套接字选择默认协议
 ```
 
-# 字节序
+### 字节序
 ```
-  小端/大端         大端
+小端/大端         大端
 处理器字节序 ---> 网络字节序
+
 #include <arpa/inet.h>
 uint32_t htonl(uint32_t hostint32)  返回 网络字节序32位整数
 uint16_t htons(uint16_t hostint16)  返回 网络字节序16位整数
@@ -25,98 +29,100 @@ uint32_t ntonl(uint32_t netint32)   返回 主机字节序32位整数
 uint16_t ntons(uint16_t netint16)   返回 主机字节序16位整数
 ```
 
-# 地址
+### 地址
+```
 1、通用socket地址
-```
-不同的地址格式必须转换为此格式
-#include <sys/socket.h>
-struct sockaddr {
-    sa_family_t  sa_family;     //地址族,unsigned short,AF_xxx
-    char         sa_data[14];   //14字节，包含套接字中的目标地址和端口信息     
-}
-```
+    不同的地址格式必须转换为此格式
+    #include <sys/socket.h>
+    struct sockaddr {
+        sa_family_t  sa_family;     //地址族 unsigned short, AF_xxx
+        char         sa_data[14];   //14字节 包含套接字中的目标地址和端口信息     
+    }
+    // 大小16个字节
 2、专用socket地址
-```
-//IPv4
-#include<netinet/in.h>
-typedef uint16_t in_port_t;
-typedef uint32_t in_addr_t;
-struct sockaddr_in {    
-    sa_family_t    sin_family;    //地址族
-    in_port_t      sin_port;      //16位端口号
-    struct in_addr sin_addr;      //32位IP地址
-    unsigned  char  sin_zero[8];         /* Same size as struct sockaddr */
-}
-struct in_addr {
-    in_addr_t      s_addr         //32位IPv4地址
-}
+    (1) IPv4
+        #include<netinet/in.h>
+        typedef uint16_t in_port_t;
+        typedef uint32_t in_addr_t;
+        struct sockaddr_in {    
+            sa_family_t     sin_family;     // 地址族 AF_INET
+            in_port_t       sin_port;       // 16位端口号
+            struct in_addr  sin_addr;       // 32位IP地址
+            unsigned char   sin_zero[8];    // Same size as struct sockaddr，补齐剩余的字符
+        }
+        struct in_addr {
+            in_addr_t       s_addr           // 32位IPv4地址；A.B.C.D 
+        }
 
-//IPv6
-...
+    (2) IPv6
+        struct sockaddr_in6 { 
+            sa_family_t     sin6_family;    // AF_INET6
+            in_port_t       sin6_port;      // 16位端口号
+            uint32_t        sin6_flowinfo;  // IPv6 flow information
+            struct in6_addr sin6_addr;      // IPv6 address
+            uint32_t        sin6_scope_id;  // 
+        }
+        struct in6_addr { 
+            unsigned char   s6_addr[16];    // 128位IPv6地址长度；XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX
+        }
 
-//unix域套接字地址
-#include <sys/un.h>
-struct sockaddr_un {
-    sa_family    sun_family;    /* AF_UNIX */
-    char         sun_path[108];    /* pathname */
-};
+    (3) unix域套接字地址
+        #include <sys/un.h>
+        struct sockaddr_un {
+			sa_family_t     sun_family;     // AF_UNIX
+            char            sun_path[108];  // pathname
+        }
 
-
-```
 3、addr转换
-```
-//tcp套接字转换
-struct sockaddr_in my_addr;
-my_addr.sin_family      = AF_INET;
-my_addr.sin_port        = htons(80);                 //uint16转换成网络字节序
-my_addr.sin_addr.s_addr = inet_addr("192.168.2.201") //inet_addr将字符串转换为网络addr字节， inet_ntoa相反
-bzero(&(my_addr.sin_zero), 8);                       //sin_zero置0
-struct sockaddr* myaddr = (struct sockaddr*)&my_addr //转换成sockaddr
+    (1) tcp套接字转换
+		struct sockaddr_in my_addr;
+		my_addr.sin_family      = AF_INET;
+		my_addr.sin_port        = htons(80);                 //uint16转换成网络字节序
+		my_addr.sin_addr.s_addr = inet_addr("192.168.2.201") //inet_addr将字符串转换为网络字节序，inet_ntoa则将网络字节序转换为字符串
+		bzero(&(my_addr.sin_zero), 8);                       //sin_zero置0
+		struct sockaddr* myaddr = (struct sockaddr*)&my_addr //转换成sockaddr
 
-//unix域套接字转换
-struct sockaddr_un un;
-memset(&un, 0, sizeof(un));
-un.sun_family = AF_UNIX;
-strcpy(un.sun_path, "foo.socket");
-if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-        err_sys("socket failed");
-if(bind(fd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0)
-        ERR_EXIT("bind");
-
-
-```
-4、hostent地址查询
-```
-
+	(2) unix域套接字转换
+		struct sockaddr_un un;
+		memset(&un, 0, sizeof(un));
+		un.sun_family = AF_UNIX;
+		strcpy(un.sun_path, "foo.socket");
+		struct sockaddr *myaddr = (struct sockaddr*)&un;
+	
+	// socket绑定addr
+	if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+		err_sys("socket failed");
+	if(bind(fd, myaddr, sizeof(myaddr)) < 0)
+		ERR_EXIT("bind");
 ```
 
 ### accept
 ```
 https://www.cnblogs.com/wangcq/p/3520400.html
 
-
-
 TCP服务器端依次调用socket()、bind()、listen()之后，就会监听指定的socket地址了
 TCP客户端依次调用socket()、connect()之后就向服务器发送了一个连接请求
-TCP服务器监听到这个请求之后，就会调用accept()函数取接收请求，这样连接就建立好了。之后就可以开始网络I/O操作了，即类同于普通文件的读写I/O操作。
+TCP服务器监听到这个请求之后，就会调用accept()函数取接收请求，这样连接就建立好了。之后就可以开始网络I/O操作了，即类同于普通文件的读写I/O操作
 
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-参数1：服务器的socket描述字
-参数2：客户端的协议地址
-参数3：第三个参数为协议地址的长度
-返回值：由内核自动生成的一个全新的描述字，代表与返回客户的TCP连接。
+// sockfd 	服务器的socket描述字
+// addr		客户端的协议地址
+// addrlen	第三个参数为协议地址的长度
+// 返回		生成一个全新的描述字，代表与返回客户的TCP连接
 
-注意：内核为每个由服务器进程接受的客户连接创建了一个已连接socket描述字，当服务器完成了对某个客户的服务，相应的已连接socket描述字就被关闭。
+// 内核为每个由服务器进程接受的客户连接创建了一个已连接socket描述字，当服务器完成了对某个客户的服务，相应的已连接socket描述字就被关闭
 
-三次握手发生在这一步
+// 三次握手发生在这一步
 ```
 
 ### read/write的返回
 ```
 (1) 对于阻塞socket
-    能read时，读缓冲区没有数据，或者write时，写缓冲区满了。这是就发生阻塞，如果返回-1代表网络出错了
+	read:	读缓冲区没有数据，发生阻塞
+	write:	写缓冲区满了，发生阻塞
+    如果返回-1代表网络出错了
 (2) 对于非阻塞socket
-    不能read或write时，就会返回-1，同时errno设置为EAGAIN（再试一次）。
+    不能read或write时，就会返回-1，同时errno设置为EAGAIN(再试一次)
 ```
 
 ### tcp输出
@@ -131,22 +137,50 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 ### socket IO
 ```
 (1) 读事件
-    1) 句柄从不可读变成可读，或者句柄写缓冲区有新的数据进来且超过SO_RCVLOWAT。
+    1) 句柄从不可读变成可读，或者句柄写缓冲区有新的数据进来且超过SO_RCVLOWAT
     2) 产生事件的情况
-        > socket有一个未清除的错误。如非阻塞的connect连接错误会使socket变成可读写状态。
-        > 非阻塞accept有新的连接进来。
-        > socket写对端关闭，read返回0。
+        > socket有一个未清除的错误。如非阻塞的connect连接错误会使socket变成可读写状态
+        > 非阻塞accept有新的连接进来
+        > socket写对端关闭，read返回0
         > socket读缓冲区有新的数据进来且超过SO_RCVLOWAT
 
 (2) 写事件
-    1) 句柄从不可写变成可写，或者句柄写缓冲区有新的数据进来而且缓冲区水位高于SO_SNDLOWAT。
+    1) 句柄从不可写变成可写，或者句柄写缓冲区有新的数据进来而且缓冲区水位高于SO_SNDLOWAT
     2) 产生事件的情况
-        > socket有一个未清除的错误。例如非阻塞connect连接出错会导致socket变成可读可写状态。
-        > 非阻塞connect连接成功后端口状态会变成可写。
-        > socket读对端关闭，socket变成可写状态，产生SIGPIPE信号。
+        > socket有一个未清除的错误。例如非阻塞connect连接出错会导致socket变成可读可写状态
+        > 非阻塞connect连接成功后端口状态会变成可写
+        > socket读对端关闭，socket变成可写状态，产生SIGPIPE信号
         > socket写缓冲区有新的数据进来且超过SO_SNDLOWAT
     
-在epoll中，读事件对应EPOLLIN，写事件对应EPOLLOUT。
+在epoll中，读事件对应EPOLLIN，写事件对应EPOLLOUT
+```
+
+### 套接字关联的选项
+```
+#include <sys/socket.h>
+
+int setsockopt(int socket, int level, int option_name,const void *option_value, socklen_t option_len);
+int getsockopt(int socket, int level, int option_name, void *option_value, socklen_t *option_len);
+
+// socket		套接字
+// level		所在的协议层，一般设置SOL_SOCKET
+// option_name	设置的选项，选项如下
+				SO_DEBUG 		打开或关闭排错模式
+				SO_REUSEADDR 	允许在bind()过程中本地地址可重复使用
+				SO_TYPE 		返回socket形态
+				SO_ERROR 		返回socket已发生的错误原因
+				SO_DONTROUTE 	送出的数据包不要利用路由设备来传输
+				SO_BROADCAST 	使用广播方式传送
+				SO_SNDBUF 		设置送出的暂存区大小
+				SO_RCVBUF 		设置接收的暂存区大小
+				SO_KEEPALIVE 	定期确定连线是否已终止
+				SO_OOBINLINE	当接收到OOB数据时会马上送至标准输入设备
+				SO_LINGER		确保数据安全且可靠的传送出去
+// option_value	代表欲设置的值
+// option_len	则为option_value的长度
+// 返回值		成功则返回0, 错误返回-1, 错误原因存于errno
+
+
 ```
 
 ### SO_REUSEADDR和SO_REUSEPORT
@@ -154,8 +188,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 https://zhuanlan.zhihu.com/p/35367402
 
 (1) SO_REUSEADDR
-    1) 使用的函数
-        服务端在调用bind函数时
+    1) 设置套接字属性
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,(const void *)&reuse , sizeof(int));
     2) 目的
         当服务端出现timewait状态的链接时，确保server能够重启成功
@@ -531,7 +564,7 @@ for( ; ; )
 
 ### 惊群
 ```
-惊群效应（thundering herd）是指多进程（多线程）在同时阻塞等待同一个事件的时候（休眠状态），如果等待的这个事件发生，那么他就会唤醒等待的所有进程（或者线程），但是最终却只能有一个进程（线程）获得这个时间的“控制权”，对该事件进行处理，而其他进程（线程）获取“控制权”失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群效应。
+惊群效应（thundering herd）是指多进程(多线程)在同时阻塞等待同一个事件的时候(休眠状态)，如果等待的这个事件发生，那么他就会唤醒等待的所有进程(或者线程)，但是最终却只能有一个进程(线程)获得这个时间的"控制权"，对该事件进行处理，而其他进程(线程)获取"控制权"失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群效应。
 
 1、accept惊群
     (1) 场景
@@ -551,7 +584,7 @@ https://www.zhihu.com/question/24169490/answers/updated
 
 (2) 水平模式下才会发生
     epoll惊群只会在水平模式下才会发生
-    在epoll的LT模式下，每次epoll_wait 将 readylist的event返回用户空间后，会将epi立刻再加入到ready_list里, 而不像ET模式下是清空当前的ready_list, 由于ready_list不为空了，会再次调用 waitqueue_active来唤醒epoll本身的等待队列， 即其他线程的 epoll_wait会返回, 造成惊群的现象
+    在epoll的LT模式下，每次epoll_wait 将 readylist的event返回用户空间后，会将epi立刻再加入到ready_list里, 而不像ET模式下是清空当前的ready_list, 由于ready_list不为空了，会再次调用 waitqueue_active来唤醒epoll本身的等待队列，即其他线程的 epoll_wait会返回, 造成惊群的现象
 
 (3) 解决办法
     https://www.jianshu.com/p/21c3e5b99f4a
