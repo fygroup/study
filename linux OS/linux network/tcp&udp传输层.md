@@ -333,7 +333,7 @@ B类:11111111 11111111 11111111    00000000
      FIN_WAIT_1                                           CLOSE_WAIT
                          <--------ACK m+1-------          read返回0
      FIN_WAIT_2
-                         <--------FIN n---------          close
+                         <--------FIN n---------          close()
                                                           LAST_ACK                    
                          --------ACK n+1------->          CLOSED       
      TIME_WAIT
@@ -412,14 +412,14 @@ B类:11111111 11111111 11111111    00000000
           3) shutdown API
                #include <sys/socket.h>
                int shutdown(int sockfd, int how);
-               //sockfd: 需要关闭的socket的描述符
-               //how:    允许为shutdown操作选择以下几种方式:
-               //SHUT_RD(0)： 关闭sockfd上的读功能，此选项将不允许sockfd进行读操作。该套接字不再接受数据，任何当前在套接字接受缓冲区的数据将被无声的丢弃掉。
-               //SHUT_WR(1):  关闭sockfd的写功能，此选项将不允许sockfd进行写操作。进程不能在对此套接字发出写操作。
-               //SHUT_RDWR(2):关闭sockfd的读写功能。相当于调用shutdown两次：首先是以SHUT_RD,然后以SHUT_WR。
+               // sockfd 需要关闭的socket的描述符
+               // how    允许为shutdown操作选择以下几种方式:
+                    SHUT_RD(0)     关闭sockfd上的读功能，此选项将不允许sockfd进行读操作。该套接字不再接受数据，任何当前在套接字接受缓冲区的数据将被无声的丢弃掉
+                    SHUT_WR(1)     关闭sockfd的写功能，此选项将不允许sockfd进行写操作。进程不能在对此套接字发出写操作
+                    SHUT_RDWR(2)   关闭sockfd的读写功能。相当于调用shutdown两次：首先是以SHUT_RD,然后以SHUT_WR
 
           4) close和shutdown的注意内容
-               1) 只要TCP栈的读缓冲里还有未读取（read）数据，则调用close时会直接向对端发送RST
+               1) 只要TCP栈的读缓冲里还有未读取(read)数据，则调用close时会直接向对端发送RST
                2) 即使调用shutdown(fd, SHUT_RDWR)也不会关闭fd，最终还需close(fd)。
                3) 当有多个socket描述符指向同一socket对象时，调用close时首先会递减该对象的引用计数，计数为0时才会发送FIN包结束TCP连接。shutdown不同，只要以SHUT_WR/SHUT_RDWR方式调用即发送FIN包。
 

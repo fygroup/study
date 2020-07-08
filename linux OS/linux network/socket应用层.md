@@ -1,119 +1,4 @@
-### socket
-```
-#include <sys/socket.h>
-int socket(int domain, int type, int protocol)
 
-//domain(域)
-AF_INET     IPv4
-AF_INET6    IPv6
-AF_UNIX     UNIX域
-
-//type
-SOCK_DGRAM  UDP(固定长度、无连接、不可靠报文传递)
-SOCK_RAM    ip协议数据报接口，用于直接访问网络层，绕过传输层(tcp、udp)，需要超级用户特权
-SOCK_STREAM TCP(有序、可靠、双向、面向连接字节流)
-
-//protocol
-0           表示为给定的域和套接字选择默认协议
-```
-
-### 字节序
-```
-小端/大端         大端
-处理器字节序 ---> 网络字节序
-
-#include <arpa/inet.h>
-uint32_t htonl(uint32_t hostint32)  返回 网络字节序32位整数
-uint16_t htons(uint16_t hostint16)  返回 网络字节序16位整数
-uint32_t ntonl(uint32_t netint32)   返回 主机字节序32位整数
-uint16_t ntons(uint16_t netint16)   返回 主机字节序16位整数
-```
-
-### 地址
-```
-1、通用socket地址
-    不同的地址格式必须转换为此格式
-    #include <sys/socket.h>
-    struct sockaddr {
-        sa_family_t  sa_family;     //地址族 unsigned short, AF_xxx
-        char         sa_data[14];   //14字节 包含套接字中的目标地址和端口信息     
-    }
-    // 大小16个字节
-2、专用socket地址
-    (1) IPv4
-        #include<netinet/in.h>
-        typedef uint16_t in_port_t;
-        typedef uint32_t in_addr_t;
-        struct sockaddr_in {    
-            sa_family_t     sin_family;     // 地址族 AF_INET
-            in_port_t       sin_port;       // 16位端口号
-            struct in_addr  sin_addr;       // 32位IP地址
-            unsigned char   sin_zero[8];    // Same size as struct sockaddr，补齐剩余的字符
-        }
-        struct in_addr {
-            in_addr_t       s_addr           // 32位IPv4地址；A.B.C.D 
-        }
-
-    (2) IPv6
-        struct sockaddr_in6 { 
-            sa_family_t     sin6_family;    // AF_INET6
-            in_port_t       sin6_port;      // 16位端口号
-            uint32_t        sin6_flowinfo;  // IPv6 flow information
-            struct in6_addr sin6_addr;      // IPv6 address
-            uint32_t        sin6_scope_id;  // 
-        }
-        struct in6_addr { 
-            unsigned char   s6_addr[16];    // 128位IPv6地址长度；XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX
-        }
-
-    (3) unix域套接字地址
-        #include <sys/un.h>
-        struct sockaddr_un {
-			sa_family_t     sun_family;     // AF_UNIX
-            char            sun_path[108];  // pathname
-        }
-
-3、addr转换
-    (1) tcp套接字转换
-		struct sockaddr_in my_addr;
-		my_addr.sin_family      = AF_INET;
-		my_addr.sin_port        = htons(80);                 //uint16转换成网络字节序
-		my_addr.sin_addr.s_addr = inet_addr("192.168.2.201") //inet_addr将字符串转换为网络字节序，inet_ntoa则将网络字节序转换为字符串
-		bzero(&(my_addr.sin_zero), 8);                       //sin_zero置0
-		struct sockaddr* myaddr = (struct sockaddr*)&my_addr //转换成sockaddr
-
-	(2) unix域套接字转换
-		struct sockaddr_un un;
-		memset(&un, 0, sizeof(un));
-		un.sun_family = AF_UNIX;
-		strcpy(un.sun_path, "foo.socket");
-		struct sockaddr *myaddr = (struct sockaddr*)&un;
-	
-	// socket绑定addr
-	if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-		err_sys("socket failed");
-	if(bind(fd, myaddr, sizeof(myaddr)) < 0)
-		ERR_EXIT("bind");
-```
-
-### accept
-```
-https://www.cnblogs.com/wangcq/p/3520400.html
-
-TCP服务器端依次调用socket()、bind()、listen()之后，就会监听指定的socket地址了
-TCP客户端依次调用socket()、connect()之后就向服务器发送了一个连接请求
-TCP服务器监听到这个请求之后，就会调用accept()函数取接收请求，这样连接就建立好了。之后就可以开始网络I/O操作了，即类同于普通文件的读写I/O操作
-
-int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-// sockfd 	服务器的socket描述字
-// addr		客户端的协议地址
-// addrlen	第三个参数为协议地址的长度
-// 返回		生成一个全新的描述字，代表与返回客户的TCP连接
-
-// 内核为每个由服务器进程接受的客户连接创建了一个已连接socket描述字，当服务器完成了对某个客户的服务，相应的已连接socket描述字就被关闭
-
-// 三次握手发生在这一步
-```
 
 ### read/write的返回
 ```
@@ -155,140 +40,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 在epoll中，读事件对应EPOLLIN，写事件对应EPOLLOUT
 ```
 
-### 套接字关联的选项
-```
-#include <sys/socket.h>
 
-int setsockopt(int socket, int level, int option_name,const void *option_value, socklen_t option_len);
-int getsockopt(int socket, int level, int option_name, void *option_value, socklen_t *option_len);
-
-// socket		套接字
-// level		所在的协议层，一般设置SOL_SOCKET
-// option_name	设置的选项，选项如下
-				SO_DEBUG 		打开或关闭排错模式
-				SO_REUSEADDR 	允许在bind()过程中本地地址可重复使用
-				SO_TYPE 		返回socket形态
-				SO_ERROR 		返回socket已发生的错误原因
-				SO_DONTROUTE 	送出的数据包不要利用路由设备来传输
-				SO_BROADCAST 	使用广播方式传送
-				SO_SNDBUF 		设置送出的暂存区大小
-				SO_RCVBUF 		设置接收的暂存区大小
-				SO_KEEPALIVE 	定期确定连线是否已终止
-				SO_OOBINLINE	当接收到OOB数据时会马上送至标准输入设备
-				SO_LINGER		确保数据安全且可靠的传送出去
-// option_value	代表欲设置的值
-// option_len	则为option_value的长度
-// 返回值		成功则返回0, 错误返回-1, 错误原因存于errno
-
-
-```
-
-### SO_REUSEADDR和SO_REUSEPORT
-```
-https://zhuanlan.zhihu.com/p/35367402
-
-(1) SO_REUSEADDR
-    1) 设置套接字属性
-        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,(const void *)&reuse , sizeof(int));
-    2) 目的
-        当服务端出现timewait状态的链接时，确保server能够重启成功
-
-(2) SO_REUSEPORT
-    1) 使用场景
-        linux kernel 3.9 引入了最新的SO_REUSEPORT选项，使得多进程或者多线程创建多个绑定同一个ip:port的监听socket，提高服务器的接收链接的并发能力,程序的扩展性更好；此时需要设置SO_REUSEPORT（注意所有进程都要设置才生效）
-        setsockopt(listenfd, SOL_SOCKET, SO_REUSEPORT,(const void *)&reuse , sizeof(int));
-    2) 目的
-        每一个进程有一个独立的监听socket，并且bind相同的ip:port，独立的listen()和accept()；提高接收连接的能力。
-        nginx新版本是多进程同时监听同一个ip:port（每个进程bind同一个ip:port，但是只有一个进程会得到响应
-    3) 解决的问题
-        > 避免了应用层多线程或者进程监听同一ip:port的“惊群效应”。
-        > 内核层面实现负载均衡，保证每个进程或者线程接收均衡的连接数。
-        > 只有effective-user-id相同的服务器进程才能监听同一ip:port （安全性考虑）
-
-(3) 示例
-    #include <stdlib.h>
-    #include <string.h>
-    #include <netinet/in.h>
-    #include <sys/socket.h>
-    #include <arpa/inet.h>
-    #include <sys/types.h>
-    #include <errno.h>
-    #include <time.h>
-    #include <unistd.h>
-    #include <sys/wait.h>
-    void work () {
-        int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (listenfd < 0) {
-            perror("listen socket");
-            _exit(-1);
-        }
-        int ret = 0;
-        int reuse = 1;
-        ret = setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,(const void *)&reuse , sizeof(int));
-        if (ret < 0) {
-            perror("setsockopt");
-            _exit(-1);
-        }
-        ret = setsockopt(listenfd, SOL_SOCKET, SO_REUSEPORT,(const void *)&reuse , sizeof(int));
-        if (ret < 0) {
-            perror("setsockopt");
-            _exit(-1);
-        }
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        //addr.sin_addr.s_addr = inet_addr("10.95.118.221");
-        addr.sin_addr.s_addr = inet_addr("0.0.0.0");                                                                             
-        addr.sin_port = htons(9980);
-        ret = bind(listenfd, (struct sockaddr *)&addr, sizeof(addr));
-        if (ret < 0) {
-            perror("bind addr");
-            _exit(-1);
-        }
-        printf("bind success\n");
-        ret = listen(listenfd,10);
-        if (ret < 0) {
-            perror("listen");
-            _exit(-1);
-        }
-        printf("listen success\n");
-        struct sockaddr clientaddr;
-        int len = 0;
-        while(1) {
-            printf("process:%d accept...\n", getpid());
-            int clientfd = accept(listenfd, (struct sockaddr*)&clientaddr, &len);
-            if (clientfd < 0) {
-                printf("accept:%d %s", getpid(),strerror(errno));
-                _exit(-1);
-            }
-            close(clientfd);
-            printf("process:%d close socket\n", getpid());
-        }
-    }
-    int main(){
-        printf("uid:%d euid:%d\n", getuid(),geteuid());
-        int i = 0;
-        for (i = 0; i< 6; i++) {
-            pid_t pid = fork();
-            if (pid == 0) {
-                work();
-            }
-            if(pid < 0) {
-                perror("fork");
-                continue;
-            }
-        }
-        int status,id;
-        while((id=waitpid(-1, &status, 0)) > 0) {
-            printf("%d exit\n", id);
-        }
-        if(errno == ECHILD) {
-            printf("all child exit\n");
-        }
-        return 0;
-    } 
-
-```
 
 ## IO多路复用
 ### epoll
@@ -373,34 +125,37 @@ https://blog.csdn.net/ljx0305/article/details/4065058
 
 
 (2) int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
-    epoll的事件注册函数，它不同与select()是在监听事件时告诉内核要监听什么类型的事件，而是在这里先注册要监听的事件类型。第一个参数是epoll_create()的返回值，第二个参数表示动作，用三个宏来表示：
-    EPOLL_CTL_ADD：注册新的fd到epfd中；
-    EPOLL_CTL_MOD：修改已经注册的fd的监听事件；
-    EPOLL_CTL_DEL：从epfd中删除一个fd；
-    第三个参数是需要监听的fd，第四个参数是告诉内核需要监听什么事，struct epoll_event结构如下：
+    epoll的事件注册函数，它不同与select()是在监听事件时告诉内核要监听什么类型的事件，而是在这里先注册要监听的事件类型
+    第一个参数是epoll_create()的返回值
+    第二个参数表示动作，用三个宏来表示：
+        EPOLL_CTL_ADD：注册新的fd到epfd中
+        EPOLL_CTL_MOD：修改已经注册的fd的监听事件
+        EPOLL_CTL_DEL：从epfd中删除一个fd
+    第三个参数是需要监听的fd，第四个参数是告诉内核需要监听什么事
+    第四个参数struct epoll_event结构如下：
+        struct epoll_event {
+            __uint32_t events;  // Epoll events
+            epoll_data_t data;  // User data variable
+        };
 
-    typedef union epoll_data {
-        void *ptr;
-        int fd;
-        __uint32_t u32;
-        __uint64_t u64;
-    } epoll_data_t;
+        typedef union epoll_data {
+            void *ptr;
+            int fd;
+            __uint32_t u32;
+            __uint64_t u64;
+        } epoll_data_t;
 
-    struct epoll_event {
-        __uint32_t events; /* Epoll events */
-        epoll_data_t data; /* User data variable */
-    };
-
-    events可以是以下几个宏的集合：
-    EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
-    EPOLLOUT：表示对应的文件描述符可以写；
-    EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；
-    EPOLLERR：表示对应的文件描述符发生错误；
-    EPOLLHUP：表示对应的文件描述符被挂断；
-    EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
-    EPOLLONESHOT：
-        作用：对于注册了EPOLLONESHOT事件的文件描述符，操作系统最多出发其上注册的一个可读，可写或异常事件，且只能触发一次
-        使用：注册了EPOLLONESHOT事件的socket一旦被某个线程处理完毕，该线程就应该立即重置这个socket上的EPOLLONESHOT事件，以确保这个socket下一次可读时，其EPOLLIN事件能被触发，进而让其他工作线程有机会继续处理这个sockt。
+        
+    events可以是以下几个宏的集合
+        EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
+        EPOLLOUT：表示对应的文件描述符可以写；
+        EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；
+        EPOLLERR：表示对应的文件描述符发生错误；
+        EPOLLHUP：表示对应的文件描述符被挂断；
+        EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
+        EPOLLONESHOT：
+            作用：对于注册了EPOLLONESHOT事件的文件描述符，操作系统最多出发其上注册的一个可读，可写或异常事件，且只能触发一次
+            使用：注册了EPOLLONESHOT事件的socket一旦被某个线程处理完毕，该线程就应该立即重置这个socket上的EPOLLONESHOT事件，以确保这个socket下一次可读时，其EPOLLIN事件能被触发，进而让其他工作线程有机会继续处理这个sockt。
 
 (3) int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout);
     等待事件的产生，类似于select()调用。参数events用来从内核得到事件的集合，maxevents告之内核这个events有多大，这个 maxevents的值不能大于创建epoll_create()时的size，参数timeout是超时时间（毫秒，0会立即返回，-1将不确定，也有说法说是永久阻塞）。该函数返回需要处理的事件数目，如返回0表示已超时。
