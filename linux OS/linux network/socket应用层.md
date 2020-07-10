@@ -40,8 +40,6 @@
 在epoll中，读事件对应EPOLLIN，写事件对应EPOLLOUT
 ```
 
-
-
 ## IO多路复用
 ### epoll
 1、原理
