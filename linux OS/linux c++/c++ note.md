@@ -2330,6 +2330,20 @@ pid_t wait(int *statloc)
 
 ### map 键值排序
 ```
+// map的定义
+template < class Key, class T, class Compare = less<Key>,
+           class Allocator = allocator<pair<const Key,T> > > class map;
+
+// less的结构
+
+template <class T>
+struct less : binary_function <T,T,bool> {
+    bool operator() (const T& x, const T& y) const {
+        return x < y;
+    }
+}
+
+// 键值排序
 struct cmpkeylen{
     bool operator()(const string & a, const string & b){
         return(a.length() > b.length()); // 按字符串长度排序
