@@ -2335,7 +2335,6 @@ template < class Key, class T, class Compare = less<Key>,
            class Allocator = allocator<pair<const Key,T> > > class map;
 
 // less的结构
-
 template <class T>
 struct less : binary_function <T,T,bool> {
     bool operator() (const T& x, const T& y) const {
