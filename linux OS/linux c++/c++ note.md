@@ -545,30 +545,6 @@ stub.myfunction(NULL,st,stm,NULL);
 //---索引对齐---------------------------
 #pragma pack(1)   // 1 字节对齐
 
-//---class 大小-------------------------
-class A
-{
-};
-sizeof(A)=1;
-
-class A
-{
-public:
-int print1(){ cout<<"This is A"<<endl;}
-};
-sizeof(A)=1; //函数不占内存
-
-class A
-{
-public:
-virtual int print1(){ cout<<"This is A"<<endl;}
-};
-sizeof(A)=8;//多了虚函数指针
-
-struct A
-{
-	A();//c++中 struct就是类，A()是构造函数
-}
 //----------------------------------------
 只有构造函数使用成员初始化程序
 //----------------------------------------
@@ -2509,35 +2485,44 @@ std::pair<int, string>::first_type x = 1 //正确
 
 ### operator new
 ```
-//三种形式
-(1) void* operator new(size_t) throw(std::bad_alloc);
-    > 用法
-        A *a = new A;
-    > 做了三件事
-        调用operator new (sizeof(A))
-        调用A:A()
-        返回指针
-    > 失败时抛出bad_alloc
+1、原型
+    void *operator new(size_t);         //allocate an object
+    void *operator new(size_t, void*);  //placement
+    void *operator delete(void *);      //free an object
 
-(2) void* operator new(size_t, nothrow_value) throw();
-    > 用法
-        A* a = new(std::nothrow) A;
-    > 同上，但是失败时返回null
-        调用operator new (sizeof(A), nothrow_value)
-        调用A:A()
-        返回指针
-(3) void* operator new(size_t, void* ptr) throw();
-    > 用法
-        //在ptr所指地址上构建一个对象(通过调用其构造函数)
-        char ptr[1024];
-        A* a = new(ptr) A();
-    > 本身返回ptr
-    > 可以被重载
+    void *operator new[](size_t);       //allocate an array
+    void *operator new[](size_t, void*);//placement
+    void *operator delete[](void *);    //free an array
+
+2、operator三种形式
+    (1) void* operator new(size_t) throw(std::bad_alloc);
+        > 用法
+            A *a = new A;
+        > 做了三件事
+            调用operator new (sizeof(A))
+            调用A:A()
+            返回指针
+        > 失败时抛出bad_alloc
+
+    (2) void* operator new(size_t, nothrow_value) throw();
+        > 用法
+            A* a = new(std::nothrow) A;
+        > 同上，但是失败时返回null
+            调用operator new (sizeof(A), nothrow_value)
+            调用A:A()
+            返回指针
+    (3) void* operator new(size_t, void* ptr) throw();
+        > 用法
+            //在ptr所指地址上构建一个对象(通过调用其构造函数)
+            char ptr[1024];
+            A* a = new(ptr) A();
+        > 本身返回ptr
+        > 可以被重载
     
-(4) 示例
-    class a{
+3、operator示例
+    class a {
     public:
-        T n;
+        int n;
         a(T _n):n(_n){
             cout << "T" << endl;
         }
@@ -2560,9 +2545,49 @@ std::pair<int, string>::first_type x = 1 //正确
         a<int> * x = new a<int>(3);
         cout << x->n << endl;
         a<int> * y = new(buf) a<int>(4);
-        cout << x->n << endl;
+        cout << y->n << endl;
         return 0;
     }
+```
+
+### new和delete的调用过程
+```
+> new过程
+    (1) 调用operator new标准库函数申请内存
+    (2) 在这一块内存上对类对象进行初始化，调用的是相应的构造函数
+    (3) 返回新分配并构造好的对象的指针
+
+> delete过程
+    (1) 调用对象的析构函数
+    (2) 调用标准库函数 operator delete 来释放该对象的内存
+```
+
+### 对象数组与对象指针
+```c++
+对象数组除了分配对应大小的空间外，还分配了一段空间(double)用来储存数组的个数
+[8 bytes] + [数组空间]
+
+所以new[]分配的空间要用delete[]来释放，其逻辑是先根据数组的个数调用n遍析构函数，然后将指针地址减去8再释放整个空间
+
+// 实例
+class A {
+    void* operator new(size_t size) {
+        cout << size << endl;
+        //...
+    }
+    void* operator new[](size_t size) {
+        cout << size << endl;
+        //...
+    }
+};
+
+A* a = new A;       // 1
+A* a1 = new A [1];  // 9 8+1
+
+char buf[100];
+A* a = new A(buf) [1];
+cout << (void*)buf << endl; // 0x7ffecc65f850
+cout << (void*)&a[0] << endl; // 0x7ffecc65f858
 ```
 
 ### allocator
@@ -2573,12 +2598,14 @@ https://zhuanlan.zhihu.com/p/34725232
 
 (1) 概念
     allocator是STL的重要组成,allocator除了负责内存的分配和释放，还负责对象的构造和析构
-    例如vector的class如下
+    
+    // 例如vector的class如下
     template<typename T, typename Alloc = allocator<T>>
     class vector{
         //每个vector内部实例一个allocator
         Alloc data_allocator;
     };
+    
     template<typename T>
     class allocator{ 
 
@@ -2587,23 +2614,29 @@ https://zhuanlan.zhihu.com/p/34725232
     等价于
     std::vector<int, allocator<int>> v;
 
-(2) 重要用法
-    // 以下几种自定义类型是一种type_traits技巧
-        allocator::value_type
-        allocator::pointer
-        allocator::const_pointer
-        allocator::reference
-        allocator::const_reference
-        allocator::size_type
-        allocator::difference
-    // 配置空间，足以存储n个T对象。第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
+(2) allocator结构
+    template <class T>
+    class allocator {
+    public:
+        typedef T value_type;
+        typedef T* pointer;
+        typedef const T* const_pointer;
+        typedef T& reference;
+        typedef const T& const_reference;
+        typedef size_t size_type;
+        typedef ptrdiff_t difference_type;
+
+        // 配置空间，足以存储n个T对象。第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
         pointer allocator::allocate(size_type n, const void* = 0)
-    // 释放先前配置的空间
+        
+        // 释放先前配置的空间
         void allocator::deallocate(pointer p, size_type n)
-    // 调用对象的构造函数，等同于 new((void*)p) value_type(x)
+        
+        // 调用对象的构造函数，等同于 new((void*)p) value_type(x)
         void allocator::construct(pointer p, const T& x)
-    // 调用对象的析构函数，等同于 p->~T()
+        // 调用对象的析构函数，等同于 p->~T()
         void allocator::destroy(pointer p)
+    };    
 
 (3) 示例
     allocator<string> alloc;
@@ -2790,9 +2823,9 @@ https://cloud.tencent.com/developer/article/1008625
 ### 异常
 ```
 // 异常处理机制
-    其基本思想是：函数 A 在执行过程中发现异常时可以不加处理，而只是"拋出一个异常"给 A 的调用者，假定为函数 B
-    拋出异常而不加处理会导致函数 A 立即中止，在这种情况下，函数 B 可以选择捕获 A 拋出的异常进行处理，也可以选择置之不理。如果置之不理，这个异常就会被拋给 B 的调用者，以此类推
-    如果一层层的函数都不处理异常，异常最终会被拋给最外层的 main 函数。main 函数应该处理异常。如果main函数也不处理异常，那么程序就会立即异常地中止
+    其基本思想是：函数A在执行过程中发现异常时可以不加处理，而只是"拋出一个异常"给A的调用者，假定为函数B
+    拋出异常而不加处理会导致函数A立即中止，在这种情况下，函数B可以选择捕获A拋出的异常进行处理，也可以选择置之不理。如果置之不理，这个异常就会被拋给B的调用者，以此类推
+    如果一层层的函数都不处理异常，异常最终会被拋给最外层的main函数。main函数应该处理异常。如果main函数也不处理异常，那么程序就会立即异常地中止
 
 // try {} catch {}
     try {
@@ -2811,9 +2844,11 @@ https://cloud.tencent.com/developer/article/1008625
 
 // 函数的异常声明
     void func() throw(); // 声明不会抛出异常
-    void func() noexcept; // c++11 声明不会抛出异常
     void func() throw(int, double); // 声明抛出(int, double)类型的异常
-
+    > 注意
+        c++11之后不建议函数后面定义错误throw
+        void func();            // 可抛出任何异常
+        void func() noexcept;   // 不会抛出异常
 
 
 // <exception>
@@ -2843,7 +2878,7 @@ https://cloud.tencent.com/developer/article/1008625
         try {
             int a[10] {0};
             a[10] = 100;  //拋出 out_of_range 异常
-        } catch (out_of_range & e) {
+        } catch (std::out_of_range & e) {
             cerr << e.what() << endl;
         }
 
@@ -3509,8 +3544,31 @@ a->func(12.12);
 // 结果
 A: int 12
 A: int 12
+```
 
+### class 大小
+```
+class A {};
+A a;
+sizeof(a);   // 1
 
+class A {
+    int a;
+};
+A a;
+sizeof(a);  // 4
 
+class A {
+public:
+    void func(){}
+};
+A a;
+sizeof(a)   // 1 函数不占内存
 
+class A {
+public:
+    virtual void func(){}
+};
+A a
+sizeof(a)   // 8 多了虚函数指针
 ```
