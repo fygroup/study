@@ -62,7 +62,8 @@ std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Cons
         }
 
         thread2 {
-            while (c.load(memory_order_consume) != 3);
+            // 仅保证与c相关的读写，后面不能向前乱序
+            while (c.load(memory_order_consume) != 3);  
             assert(a == 1); // assert 可能失败也可能不失败
         }
 
@@ -93,7 +94,7 @@ std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Cons
             void lock() {
                 for (;;) {
                     while(lock_.load(std::memory_order_relaxed));
-                    if (!lock_.exchange(std::memory_order_acquire)) break;
+                    if (!lock_.exchange(true, std::memory_order_acquire)) break;
                 }
             }
 
@@ -122,7 +123,7 @@ std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Cons
 
             void wlock() {
                 while (wlock_.exchange(true));
-                while (rlock_.exchange(0) > 0);
+                while (rlock_.load(0) > 0);
             }
 
             void unwlock() {

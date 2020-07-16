@@ -3235,7 +3235,7 @@ https://www.cnblogs.com/haippy/p/3284540.html
 
     void do_print_id(int id) {
         std::unique_lock<std::mutex> lck(mtx);
-        while (!ready)
+        while (!ready)      // 重要！！！ 因为会存在虚假唤醒
             cv.wait(lck);
     }
 
