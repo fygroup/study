@@ -12,7 +12,7 @@ linux -> window
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build main.go
 ```
 
-#### 数组与slice
+### 数组与slice
 ```
 //数组是初始化就定长
 var a [5] int
@@ -43,10 +43,7 @@ var b [] int = a[:]
 //slice、map、interface、channel都是按引用传递
 ```
 
-//一些功能
-
-
-#### map
+### map
 ```
 //声明
 var my map[string] int;       //此处只是声明，没有分配内存
@@ -75,29 +72,29 @@ myMap["a"] = &x
 
 ```
 
-#### make、new
-make用于内建类型（map、slice 和channel）的内存分配。new用于各种类型的内存分配。
+### make、new
 ```
+make用于内建类型(map、slice 和channel等)的内存分配
+new用于各种类型的内存分配
+
 list:= make([]int,5,10) //初始化5个int的数组，可扩展性为10个
 len(list)  //5
 cap(list)  //10
-```
 
-#### 指针
-```
 type A struct{x int}
 a:=new(A)
+a->x = 1    //错误，不支持箭头操作
 a.x = 1     //正确
 (*a).x = 1  //正确
+a++         //错误，不支持指针算术
 ```
 
-
-
-#### init
+### init
+```
 初始化导入的包（递归导入）
 对包块中声明的变量进行计算和分配初始值
 执行包中的init函数
-```
+
 package main
 
 import "fmt"
@@ -122,7 +119,7 @@ init function --->
 main --->
 ```
 
-#### import
+### import
 ```
 import(
     . "fmt"
@@ -137,7 +134,7 @@ import (
 
 ```
 
-#### struct
+### struct
 ```
 type person struct{
     name string
@@ -160,10 +157,9 @@ type Student struct {
 p:=Student{Human{"malx",25},"dada"}
 p:=Student{Human:Human{"malx",25},speciality:"dada"}
 
-
 ```
 
-#### 复杂结构
+### 复杂结构
 ```
 type Values map[string][]string
 func (v Values) Get(s string)string{
@@ -190,36 +186,7 @@ m.Add("item", "3") // panic: assignment to entry in nil map
 
 ```
 
-#### 函数变量
-```
-type A struct{
-    x int
-}
-//第一种
-func (a A) test(){
-    fmt.Println(a.x)
-}
-
-var f func(a A)
-var a A
-a.x = 2
-f(a)
-
-//第二种
-func (a *A) test(){
-    fmt.Println(a.x)
-}
-
-var f func(a *A)
-var a A
-a.x = 2
-f(&a)
-
-
-```
-
-
-#### 指针对象
+### 链表
 ```
 type IntList struct{
     value int
@@ -227,7 +194,7 @@ type IntList struct{
 }
 ```
 
-#### OOP
+### OOP
 ```
 type Rectangle struct {
     width, height float64
@@ -247,6 +214,7 @@ func (c *Circle) setWidth(a float64){
 }
 
 ```
+
 ### 继承
 ```
 type Human struct {
@@ -274,10 +242,10 @@ func main() {
 }
 ```
 
-#### 私有变量
+### 私有变量
 大小写来实现(大写开头的为共有，小写开头的为私有)
 
-#### 接口
+### 接口
 ```
 type Human interface{
     setName(name string)
@@ -313,30 +281,36 @@ printHuman(a)
 
 ```
 
-#### interface{} 类型转换
+### 类型转换
 ```
-interface{}类型的变量也被当作go语言中的void\*指针来使用interface{}类型的变量也被当作go语言中的void\*指针来使用
+// interface{}类型转换
+var a interface{}
+a.(int)
+
+// 其他类型转换
+var a string
+int(a)
+```
+
+### interface{} 类型转换
+```
+interface{}类型的变量也被当作go语言中的void*指针来使用interface{}类型的变量
+
 其实 interface就是个协议，无论你输入指针，还是非指针，都一样
 
-type __s struct{
+type Test struct{
     x int
 }
 
 element := make([]interface{},4)
-a := __s{2}
-element[0] = &a   // interface{} 赋值为 * __s
-element[1] = a    // interface{} 赋值为 __s(复制)
-b,ok := element[0].(*__s)
-if ok{
-    fmt.Println((*b).x)
-}
-c,ok := element[1].(__s)
-if ok{
-    fmt.Println(c.x)
-}
-
+a := Test{2}
+element[0] = &a   // interface{} 赋值为 *Test
+element[1] = a    // interface{} 赋值为 Test(复制)
+b,ok := element[0].(*Test)
+c,ok := element[1].(Test)
 ```
-#### 泛型
+
+### 泛型
 ```
 func main() {
     list := make([]interface{}, 3)
@@ -379,81 +353,142 @@ func Myfunc(res, *req){
 }
 
 func main(){
-    Handle("/dsad/dsada",HandlerFunc(Myfunc))
+    Handle("/dsad/dsada", HandlerFunc(Myfunc))
+    f := HandlerFunc(Myfunc)
+    Handle("/dsad/dsada", f)
+
+    a := make(map[string]Handler)
+    a["/a/a"] = HandlerFunc(func)
+}
+```
+
+### reflect
+```
+// reflect
+> Kind
+    type Kind Uint
+    func (k Kind) String() string
+
+> StructField
+    type StructField struct {
+        Name    string      // 字段的名字
+        PkgPath string
+        Type      Type      // 字段的类型
+        Tag       StructTag // 字段的标签
+        ...
+    }
+
+> StructTag
+    type StructTag string
+
+> Type
+    func TypeOf(i interface{}) Type
+    type Type interface {
+        Kind() Kind                                     //
+        Name() string                                   //
+        String() string                                 //
+        Len() int
+        Elem() Type
+        Key() Type
+        NumField() int                                  //
+        Field(i int) StructField                        //
+        FieldByIndex(index []int) StructField
+        FieldByName(name string) (StructField, bool)
+        Method(int) Method                              //
+        MethodByName(string) (Method, bool)
+    }
+
+> Value
+    func ValueOf(i interface{}) Value
+
+    func (v Value) Kind() Kind
+    func (v Value) Type() Type
+    func (v Value) Elem() Value
+
+var myValue interface{}
+
+v:= reflect.ValueOf(myValue)
+if v.Kind() == reflect.Ptr {
+    v = v.Elem()
+}
+t := v.Type()
 
 
+```
+
+### value pointer reflect之间的转换
+```
+// 指针转换要先转换成unsafe.Pointer，类似void*
+// *type1 -> Unsafe.Pointer -> *type2
+var a int = 1
+b := unsafe.Pointer(&a)
+fmt.Println(*(*int)(b))
+
+// reflect中的'指针'与'value'
+var a int = 1
+b := reflect.ValueOf(&a)        // 指针类型的reflect
+c := b.Elem()                   // 值类型的reflect
+fmt.Println(b.Pointer())        // 可以直接得到pointer    
+fmt.Println(c.Addr().Pointer()) // 需要转换成指针类型的reflect,才能得到pointer
+
+// reflect中的'value'与'type'
+rValue := reflect.ValueOf(a)
+rType  := rValue.Type()
+rValue.Interface().(int)        // 必须先转换成interface{}，才能转换成int
+
+// 遍历struct成员变量
+for i := 0; i < Type.NumField(); i++{
+    fieldType := rType.Field(i)
+    fieldValue := rValue.Field(i)
+    fieldType.Name          // 变量名
+    fieldType.Type          // 变量类型
+    fieldType.Type.String() // 变量类型
+    
 }
 
-//实例
-
-type i_bin interface{
-	funcx(int)
-}
-
-type funcxx func(int)
-
-func (f funcxx) funcx(a int){
-	f(a)
-}
-
-func ff(i i_bin, x int){
-	i.funcx(x)
-}
-
-func myf(a int){
-	fmt.Println(">>> ",a+1)
-}
-
-func myf1(a int){
-	fmt.Println(">>> ",a+2)
-}
-
-func main(){
-	mymap := make(map[string]i_bin)
-	mymap["a"] = funcxx(myf)
-	mymap["b"] = funcxx(myf1)
-
-	mymap["a"].funcx(1)
-	mymap["b"].funcx(1)
-}
 
 ```
 
 #### 反射
 ```
 1、从relfect.Value中获取接口interface的信息
-（1）已知原有类型【进行“强制转换”】
-var a int32 = 2
-pointer := reflect.ValueOf(&a)
-value := reflect.ValueOf(a)
-convertPointer := pointer.Interface().(*int32)
-convertValue := value.Interface().(int32)
+    (1) 已知原有类型进行"强制转换"
+        var a int32 = 2
+        pointer := reflect.ValueOf(&a)
+        value := reflect.ValueOf(a)
+        convertPointer := pointer.Interface().(*int32)
+        convertValue := value.Interface().(int32)
 
 
-（2）未知原有类型【遍历探测其Filed】
-type __s struct{
-	Name string
-	Age int
-	Sex bool
-}
+    (2) 未知原有类型遍历探测其Field
+        type Test struct{
+            Name string             // 成员变量
+            Age int
+            Sex bool
+        }
+        
+        func(t Test) MyFunc(){}     // 成员函数
 
-func TestRef(in interface{}){
+        TestRef(Test{Name: "aa", Age: 12, Sex: true})
 
-	Type := reflect.TypeOf(in)
-	Value := reflect.ValueOf(in)
+        func TestRef(in interface{}){
+            Type := reflect.TypeOf(in)
+            Value := reflect.ValueOf(in)
 
-	for i:=0;i<Type.NumField();i++{
-		fieldType := Type.Field(i)
-		fieldValue := Value.Field(i).Interface()  //只有转换成interface才能转换别的类型
-		fmt.Printf("%s %v = %v\n",fieldType.Name,fieldType.Type,fieldValue)
-	}
+            // 成员变量
+            for i := 0; i < Type.NumField(); i++{
+                fieldType := Type.Field(i)
+                fieldValue := Value.Field(i).Interface()  //只有转换成interface才能转换别的类型
+                fmt.Printf("%s %v = %v\n",fieldType.Name,fieldType.Type,fieldValue)
+            }
 
-	for i:=0;i<Type.NumMethod();i++{
-		m := Type.Method(i)
-		fmt.Printf("%s: %v\n",m.Name,m.Type)
-	}
+            // 成员函数
+            for i := 0;i<Type.NumMethod();i++{
+                m := Type.Method(i)
+                fmt.Printf("%s: %v\n",m.Name,m.Type)
+            }
 
-}
+        }
 
 2、通过reflect.Value设置实际变量的值
 
