@@ -12,6 +12,8 @@ Golang Runtime是go语言运行所需要的基础设施
 
 ### 内存分配
 ```
+https://zhuanlan.zhihu.com/p/29216091
+
 span: 由多个地址连续的页（page）组成的⼤块内存
 object: 将 span 按特定⼤⼩切分成多个⼩块，每个⼩块可存储⼀个对象
 
