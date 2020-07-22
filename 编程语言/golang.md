@@ -12,29 +12,72 @@ linux -> window
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build main.go
 ```
 
+### make、new
+```
+make用于内建类型(map、slice 和channel等)的内存分配
+new用于各种类型的内存分配
+// 注意
+    当用new分配内建类型(map、slice 和channel等)时，仅对分配空间清零，未做初始化
+
+list:= make([]int,5,10) //初始化5个int的数组，可扩展性为10个
+len(list)  //5
+cap(list)  //10
+
+type A struct{x int}
+a:=new(A)
+a->x = 1    //错误，不支持箭头操作
+a.x = 1     //正确
+(*a).x = 1  //正确
+a++         //错误，不支持指针算术
+
+// make vs new
+make 只能用来分配及初始化类型为 slice、map、chan 的数据。new 可以分配任意类型的数据；
+new 分配返回的是指针，即类型 *Type。make 返回引用，即 Type；
+new 分配的空间被清零。make 分配空间后，会进行初始化
+
+```
+
+### slice
+```
+// 结构
+    type slice struct {
+        array unsafe.Pointer
+        len   int
+        cap   int
+    }
+    slice是一种值类型，里面有3个元素
+    array是数组指针，它指向底层分配的数组
+    len是底层数组的元素个数
+    cap是底层数组的容量，超过容量会扩容
+
+// 初始化
+    1、make
+        a := make([]int32, 0, 5)
+    
+    2、[]int32{}
+        b := []int32{1, 2, 3}
+
+    3、new([]int32) // 不推荐
+        c := *new([]int32)
+```
+
 ### 数组与slice
 ```
-//数组是初始化就定长
+//数组是初始化定长的slice
 var a [5] int
 a:=[5]int{1,2}
 a:=[...]int{2:3,3:4}
 
-func test(a [] int)  //值传递
-func test(a *[] int)
-
+func test(a [] int)  // 数组做参数按'值传递'
 test(a)
-test(&a)
 
 //slice切片又称为变长数组
 var a [] int
 a:=[]int{1,2,3}
 a:=make([]int,4)
 
-func test(a [] int) //slice按引用传递
-
+func test(a [] int) // slice做参数按'引用传递'
 test(a)
-
-append(a,1)
 
 //数组与slice转换
 var a [6] int
@@ -46,8 +89,8 @@ var b [] int = a[:]
 ### map
 ```
 //声明
-var my map[string] int;       //此处只是声明，没有分配内存
-my := make(map[string] int)
+var my map[string]int;       //此处只是声明，没有分配内存
+my := make(map[string]int)
 //赋值
 my['dada'] = 1
 
@@ -70,23 +113,6 @@ x.b = "abc"
 myMap["a"] = &x
 (*myMap["a"]).a = 10
 
-```
-
-### make、new
-```
-make用于内建类型(map、slice 和channel等)的内存分配
-new用于各种类型的内存分配
-
-list:= make([]int,5,10) //初始化5个int的数组，可扩展性为10个
-len(list)  //5
-cap(list)  //10
-
-type A struct{x int}
-a:=new(A)
-a->x = 1    //错误，不支持箭头操作
-a.x = 1     //正确
-(*a).x = 1  //正确
-a++         //错误，不支持指针算术
 ```
 
 ### init
@@ -427,7 +453,8 @@ fmt.Println(*(*int)(b))
 // reflect中的'指针'与'value'
 var a int = 1
 b := reflect.ValueOf(&a)        // 指针类型的reflect
-c := b.Elem()                   // 值类型的reflect
+if b.Kind() == reflect.Ptr      // 判断是否为指针
+    c := b.Elem()               // 如果是指针需转换成值类型
 fmt.Println(b.Pointer())        // 可以直接得到pointer    
 fmt.Println(c.Addr().Pointer()) // 需要转换成指针类型的reflect,才能得到pointer
 
@@ -440,12 +467,32 @@ rValue.Interface().(int)        // 必须先转换成interface{}，才能转换�
 for i := 0; i < Type.NumField(); i++{
     fieldType := rType.Field(i)
     fieldValue := rValue.Field(i)
-    fieldType.Name          // 变量名
-    fieldType.Type          // 变量类型
-    fieldType.Type.String() // 变量类型
-    
+    fieldType.Name                  // 变量名
+    fieldType.Type                  // 变量类型
+    fieldType.Type.String()         // 变量类型
+    fieldValue.Interface().(MyType) // 变量
 }
 
+```
+
+### reflect类型判断
+```
+x := []map[string]int{}
+fmt.Println(reflect.TypeOf(x).Kind())   // slice
+a := reflect.ValueOf(&x)
+b := reflect.TypeOf(&x)
+fmt.Println(a.Type().Kind())            // ptr
+fmt.Println(b.Kind())                   // ptr
+
+```
+
+### reflect指针
+```
+x := []int{1, 2, 3, 4}
+a := reflect.ValueOf(&x)
+p := *(*[]int)(unsafe.Pointer(a.Elem().Addr().Pointer()))
+p[0] = 111
+fmt.Println(x)
 
 ```
 
@@ -579,8 +626,7 @@ for i:=0;i<aT.NumField();i++{
 }
 ```
 
-
-#### 文件上传
+### 文件上传
 ```
 func UpLoadFile(w http.ResponseWriter, r *http.Request){
     r.ParseMultipartForm(32 << 20);
@@ -599,9 +645,11 @@ func UpLoadFile(w http.ResponseWriter, r *http.Request){
 }
 ```
 
-#### unsafe.Pointer
-相当于void*, 指针间的转换要先转换成unsafe.Pointer,再转换成其他指针
+### unsafe.Pointer
 ```
+指针间的转换要先转换成unsafe.Pointer,再转换成其他指针
+*type1 -> unsafe.Pointer -> *type2
+
 import (
     "unsafe"
 )
@@ -611,120 +659,91 @@ z := *(*[]int)(y)
 z[0] = 111
 ```
 
-#### reflect类型判断
+### io
 ```
-x := []map[string]int{}
-fmt.Println(reflect.TypeOf(x).Kind())
-a := reflect.ValueOf(&x)
-b := reflect.TypeOf(&x)
-fmt.Println(a.Type().Kind())
-fmt.Println(b.Kind())
+1、read
+    import(
+        "bufio"
+        "os"
+        "ioutil"
+    )
 
-slice
-ptr
-ptr
+    //一次性读取
+    f,err = os.Open("file")
+    s := ioutil.ReadAll(f)
 
-```
+    //分块读取
+    f,err = os.Open("file")
+    buf := make([]byte,10)
+    rd := bufio.NewReader(f)
+    n,err := rd.Read(buf)
 
-#### reflect指针
-```
-x := []int{1, 2, 3, 4}
-a := reflect.ValueOf(&x)
-p := *(*[]int)(unsafe.Pointer(a.Elem().Addr().Pointer()))
-p[0] = 111
-fmt.Println(x)
+    //按行读取
+    rd := bufio.NewReaderSize(f,4096) // 带缓冲的读
+    rd: = bufio.NewReader(f)
+    line,err := rd.ReadString('\n')
+    line,err := rd.ReadLine()
 
-```
+2、write
+    //带缓冲区读写
+    fd,_ := os.OpenFile("bbb.txt")
+    w := bufio.NewWriterSize(fd,4096) // 带缓冲的写
+    w.WriteString("dadadadad")
+    w.Write([]byte("dsadadada\n"))
+    w.flush()
 
-#### io
-(1)read
-```
-import(
-    "bufio"
-    "os"
-    "ioutil"
-)
+    //输出屏幕
+    w := bufio.NewWriterSize(os.Stdout,111)
+    w1 := bufio.NewReader(f,111)
+    w1.WriteTo(w)
 
-//一次性读取
-f,err = os.Open("file")
-s := ioutil.ReadAll(f)
+3、其他函数
+    rd.Buffered()   //表示已经缓冲的数据的大小
+    w.Available()   //表示可使用的缓冲区的大小
 
-//分块读取
-f,err = os.Open("file")
-buf := make([]byte,10)
-rd := bufio.NewReader(f)
-n,err := rd.Read(buf)
+    //输出文件
+    ioutil.WriteFile("11.gv", []byte(graph.String()), 0666)
 
-//按行读取
-rd := bufio.NewReaderSize(f,4096)
-rd: = bufio.NewReader(f)
-line,err := rd.ReadString('\n')
-line,err := rd.ReadLine()
+    //实例
+    package main
 
-```
-(2)write
-```
-//带缓冲区读写
-fd,_ := os.OpenFile("bbb.txt")
-w := bufio.NewWriterSize(fd,4096) //带缓冲的写
-w.WriteString("dadadadad")
-w.Write([]byte("dsadadada\n"))
-w.flush()
+    import (
+        "bufio"
+        "fmt"
+        "os"
+        "unsafe"
 
-//输出屏幕
-w := bufio.NewWriterSize(os.Stdout,111)
-w1 := bufio.NewReader(f,111)
-w1.WriteTo(w)
-```
-(3)其他函数
-```
-rd.Buffered()   //表示已经缓冲的数据的大小
-w.Available()   //表示可使用的缓冲区的大小
+        "github.com/awalterschulze/gographviz"
+    )
 
-//输出文件
-ioutil.WriteFile("11.gv", []byte(graph.String()), 0666)
+    func main() {
 
+        graphAst, _ := gographviz.Parse([]byte(`digraph G{}`))
+        graph := gographviz.NewGraph()
+        gographviz.Analyse(graphAst, graph)
+        graph.AddNode("G", "a", nil)
+        graph.AddNode("G", "b", nil)
+        graph.AddEdge("a", "b", true, nil)
+        fmt.Println(graph.String())
 
-//实例
-package main
+        f, _ := os.Open("sjm.txt")
+        f1, _ := os.OpenFile("sjm.txt1", os.O_WRONLY|os.O_CREATE, 0664)
+        rd := bufio.NewReader(f)
+        rd1 := bufio.NewWriter(f1)
+        for line, err := []byte{0}, error(nil); len(line) > 0 && err == nil; {
+            line, _, err = rd.ReadLine()
+            x := (*string)(unsafe.Pointer(&line))
+            if *x == "" {
+                continue
+            }
+            line = append(line, '\n')
+            rd1.Write(line)
+            //fmt.Printf("%v %v\n", *x, p)
+        }
 
-import (
-	"bufio"
-	"fmt"
-	"os"
-	"unsafe"
-
-	"github.com/awalterschulze/gographviz"
-)
-
-func main() {
-
-	graphAst, _ := gographviz.Parse([]byte(`digraph G{}`))
-	graph := gographviz.NewGraph()
-	gographviz.Analyse(graphAst, graph)
-	graph.AddNode("G", "a", nil)
-	graph.AddNode("G", "b", nil)
-	graph.AddEdge("a", "b", true, nil)
-	fmt.Println(graph.String())
-
-	f, _ := os.Open("sjm.txt")
-	f1, _ := os.OpenFile("sjm.txt1", os.O_WRONLY|os.O_CREATE, 0664)
-	rd := bufio.NewReader(f)
-	rd1 := bufio.NewWriter(f1)
-	for line, err := []byte{0}, error(nil); len(line) > 0 && err == nil; {
-		line, _, err = rd.ReadLine()
-		x := (*string)(unsafe.Pointer(&line))
-		if *x == "" {
-			continue
-		}
-		line = append(line, '\n')
-		rd1.Write(line)
-		//fmt.Printf("%v %v\n", *x, p)
-	}
-
-	f.Close()
-	f1.Close()
-}
+        f.Close()
+        f1.Close()
+    }
 ```
 
 #### defer panic recover
@@ -858,25 +877,69 @@ func main() {
 
 ### 查看GC
 ```
-GODEBUG=gctrace=1 go run cmd/agent_bin.go
+GODEBUG=gctrace=1 go run test.go
 ```
 
 ### pprof
 ```
-//pprof是golang程序一个性能分析的工具，可以查看堆栈、cpu信息等。
-_ "net/http/pprof"
-go tool pprof http://localhost:8080/debug/pprof/heap
+go的pprof工具可以用来监测进程的运行数据，用于监控程序的性能，对内存使用和CPU使用的情况统信息进行分析
+
+官方提供了两个包：runtime/pprof和net/http/pprof，前者用于普通代码的性能分析，后者用于web服务器的性能分析
+
+1、net/http/pprof
+    (1) 作用
+        cpu(CPU Profiling)
+            $HOST/debug/pprof/profile，默认进行 30s 的 CPU Profiling，得到一个分析用的 profile 文件
+        block(Block Profiling)
+            $HOST/debug/pprof/block，查看导致阻塞同步的堆栈跟踪
+        goroutine
+            $HOST/debug/pprof/goroutine，查看当前所有运行的 goroutines 堆栈跟踪
+        heap(Memory Profiling)
+            $HOST/debug/pprof/heap，查看活动对象的内存分配情况
+        mutex(Mutex Profiling)
+            $HOST/debug/pprof/mutex，查看导致互斥锁的竞争持有者的堆栈跟踪
+        threadcreate
+            $HOST/debug/pprof/threadcreate，查看创建新OS线程的堆栈跟踪
+
+    (2) 使用方式
+        // 在调用程序处引入包
+            import _ "net/http/pprof"
+
+        // 然后调用上述不同profiles查看
+
+        1) 通过web页面查看服务状态
+            http://localhost:port/debug/pprof/<profiles>
+
+        2) 交互式终端使用
+            go tool pprof http://localhost:8080/debug/pprof/<profile>
+            // 每60s刷新
+            go tool pprof http://localhost:8080/debug/pprof/<profile>?seconds=60
+
+2、runtime/pprof
+    (1) 生成xxx.prof文件
+        f, _ := os.Create("./cpu.prof")
+        pprof.StartCPUProfile(f)
+        defer pprof.StopCPUProfile()
+
+    (2) 查看prof界面
+        1) 生成Prof的可视化界面
+            go tool pprof -http=:8080 ./cpu.prof
+            // -http    输出port
+
+        2) 生成火山图
+            go get -u github.com/google/pprof
+            pprof -http=:8080 ./cpu.prof
 
 ```
 
 ### GC调优
 ```
-1、减少对象分配
-2、函数尽量不要返回map， slice对象, 这种频繁调用的函数会给gc 带来压力。
-小对象要合并。
-3、函数频繁创建的简单的对象，直接返回对象，效果比返回指针效果要好。
-4、避不开，能用sync.Pool 就用，虽然有人说1.10 后不推荐使用sync.Pool，但是压测来看，确实还是用效果，堆累计分配大小能减少一半以上。
-5、类型转换要注意，官方用法消耗特别大，推荐使用雨痕的方式。
+> 减少对象分配
+> 函数尽量不要返回map、slice对象，这种频繁调用的函数会给gc带来压力
+> 小对象要合并
+> 函数频繁创建的简单的对象，直接返回对象，效果比返回指针效果要好
+> 可以用对象池sync.Pool(虽然有人说1.10 后不推荐使用sync.Pool，但是压测来看，确实还是用效果，堆累计分配大小能减少一半以上)
+> 类型转换要注意，官方用法消耗特别大，推荐使用雨痕的方式
 6、避免反复创建slice。
 7、建议多用unsafe.pointer
 8、对于一些短小的对象，复制成本远小于在堆上分配和回收操作。
