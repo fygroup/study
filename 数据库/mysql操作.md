@@ -1,6 +1,8 @@
+### 连接与启动
+
 ## MySQL学习笔记(知乎)
 ```
-/* 启动MySQL */
+// 启动MySQL
 net start mysql
 
 /* 连接与断开服务器 */

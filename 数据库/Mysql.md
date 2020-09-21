@@ -1,29 +1,29 @@
-mysqld is the server executable (one of them)   #服务执行工具    
-mysql is the command line client  # 客户端工具   查询用
-mysqladmin is a maintainance or administrative utility  # 运维和管理工具
-//初始化-----（以下都是在root权限下）
+### 初始化
+```
+mysqld      服务执行工具    
+mysql       客户端
+mysqladmin  运维和管理工具
+
 https://blog.csdn.net/github_39533414/article/details/80144890 新版本
 
-# 初始化
-```
-groupadd mysql    //创建mysql组
-useradd -g mysql mysql //创建mysql用户，并加入mysql组
+// 创建mysql组和用户
+groupadd mysql
+useradd -g mysql mysql
+
+// 创建目录
 cd /usr/local/mysql
 mkdir ./data
 chown -R mysql:mysql ./
-vi /etc/my.cnf     https://www.cnblogs.com/langdashu/p/5889352.html 配置mysql
-bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data //初始化数据库
+
+// 配置my.cnf
+https://www.cnblogs.com/langdashu/p/5889352.html
+vi /etc/my.cnf
+
+// 启动服务
+mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data
 ```
 
-# 建立服务
-```
-cp mysql.server /etc/init.d/mysqld
-chmod +x /etc/init.d/mysqld 
-chkconfig --add mysqld      添加到系统服务
-chkconfig  --list mysqld   检查服务是否生效  
-```
-
-# 配置全局环境变量
+### 配置全局环境变量
 ```
 vi /etc/profile
 在 profile 文件底部添加如下两行配置，保存后退出
@@ -31,63 +31,85 @@ export PATH=$PATH:/usr/local/mysql/bin:/usr/local/mysql/lib
 source /etc/profile
 ```
 
-# 启动服务
+### mysqld和mysqld_safe
 ```
-service mysqld start   会启动mysqld_safe（root）和mysqld(mysql)
+mysqld_safe 作为mysqld 启动脚本，开启了守护mysqld进程的任务
+
+mysqld_safe相当于mysqld的守护进程，当mysqld死了，mysqld_safe会把它拉起
+
+mysqld_safe启动能够为mysqld分配系统资源
 ```
 
-# 权限相关操作
+### 建立和启动service服务
 ```
-//远程连接----------
-mysql -h 192.168.5.116 -P 3306 -u root -p123456
-//启动-------
-./bin/mysqld --defaults-file=./my.cnf -u mysql -p    //注意这是启动用户
-或者 ./bin/mysql -S .sock -u root -p
-//停止------
-./bin/mysqladmin -uroot -S /data_dir/malx/sqldata/mysql.sock shutdown
-//登陆数据库,会提示你输入密码
-mysql -u root -p   //这里默认的是/usr/local/mysql/my.cnf
+// 建立service服务
+cp mysql.server /etc/init.d/mysqld
+chmod +x /etc/init.d/mysqld 
+chkconfig --add mysqld      添加到系统服务
+chkconfig  --list mysqld   检查服务是否生效  
+
+// 启动service服务
+service mysqld start   
+
+会启动mysqld_safe（root）和mysqld(mysql)
+```
+
+### 连接数据库
+```
+// 连接
+mysql -u root -p    //这里默认的是/usr/local/mysql/my.cnf
 mysql --defaults-file=my.cnf -u malx -p
-//打开数据库
-/usr/local/mysql/bin/mysql --defaults-file=/usr/local/mysql/my.cnf -u root -p  //root 超级权限用户
-//无需登录，打开服务-------
- ./bin/mysqld_safe --defaults-file=my.cnf --user=mysql --skip-grant-tables
-//给与用户权限--------------------
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '123456';   #只允许本地root登陆
-flush privileges;
-//删除用户------------------------
-use mysql;
-drop user root@'%';           %表示所有地址，但是不包括localhost
-drop user root@localhost;
-//新建用户--------------------
-create user 'malx'@'%' IDENTIFIED by '111';  //注意%代表可以从外网连接
-添加完用户后，别忘了赋予权限。
-//--flush privileges 
- The MySQL server is running with the --skip-grant-tables option so it cannot execute this statement
-//修改密码
+mysql --defaults-file=my.cnf -u root -p  //root 超级权限用户
+mysql -h 192.168.5.116 -P 3306 -u root -p123456
+mysql -S .sock -u root -p
+
+// 无需登录，打开服务
+mysqld_safe --defaults-file=my.cnf --user=mysql --skip-grant-tables
+```
+
+### 权限设置
+```
+// 新建用户
+create user 'malx'@'%' IDENTIFIED by '111'  // %代表可以从外网连接
+添加完用户后，别忘了赋予权限
+
+// 删除用户
+use mysql
+drop user root@'%'          // %表示所有地址，但是不包括localhost
+drop user root@localhost
+
+// 给与用户权限
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '123456'  // 只允许本地root登陆
+flush privileges
+
+// flush privileges 
+The MySQL server is running with the --skip-grant-tables option so it cannot execute this statement
+
+// 修改密码
 set password for root@localhost = password('123456')
 或者
-格式：mysqladmin -u用户名 -p旧密码 password 新密码。 
+格式：mysqladmin -u用户名 -p旧密码 password 新密码
 ```
 
-### 数据库操作
+### 数据库基本操作
 ```
 //创建数据库
 
 //创建数据表
 
-//查询
+// 查询
 select * from cnv_reportresult t where enable=-1 and sampleid in ("CL170407","CL170411");
-//严格模式
+
+// 严格模式
 [mysqld]
 sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
 这是就会限制你的长度
 
-//删除，添加或修改表字段
+// 删除，添加或修改表字段
 ALTER TABLE testalter_tbl DROP i        //删除"i"字段
 ALTER TABLE testalter_tbl ADD i INT     //i 字段会自动添加到数据表字段的末尾
 
-//查看执行sql的信息
+// 查看执行sql的信息
 explain select * from table where key=value
     id: 1
     select_type: SIMPLE
@@ -101,21 +123,12 @@ explain select * from table where key=value
     Extra: Using where
     1 row in set (0.00 sec)
 
-//INSERT .... SELECT ....
+// INSERT .... SELECT ....
 复制"table2"中的数据插入到"table1"中
 INSERT INTO table1 (key1, key2) SELECT key1, key2 FROM table2
 
-//CREATE TABLE ... SELECT ...
+// CREATE TABLE ... SELECT ...
 
-```
-
-### mysqld和mysqld_safe
-```
-mysqld_safe 作为mysqld 启动脚本，开启了守护mysqld进程的任务
-
-mysqld_safe相当于mysqld的守护进程，当mysqld死了，mysqld_safe会把它拉起
-
-mysqld_safe启动能够为mysqld分配系统资源
 ```
 
 ### 用户管理和权限设置
@@ -148,17 +161,11 @@ GRANT ALL ON *.* TO `wangwei`@`127.0.0.1` WITH GRANT OPTION
 
 ```
 
-### for update
-```
-select … for update
-排他锁的申请前提：没有线程对该结果集中的任何行数据使用排他锁或共享锁，否则申请会阻塞。
-for update仅适用于InnoDB，且必须在事务块(BEGIN/COMMIT)中才能生效。在进行事务操作时，通过“for update”语句，MySQL会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞。排他锁包含行锁、表锁。
-
-```
-
 ### MyISAM表锁
 ```
-MyISAM存储引擎只支持表锁,开销小，加锁快；不会出现死锁；锁定粒度大，发生锁冲突的概率最高,并发度最低。
+MyISAM存储引擎只支持表锁,开销小，加锁快
+不会出现死锁
+锁定粒度大，发生锁冲突的概率最高,并发度最低
 
 (1) 查询表级锁争用情况
     show status like 'table%';
@@ -212,10 +219,7 @@ MyISAM存储引擎只支持表锁,开销小，加锁快；不会出现死锁；�
 
 ### InnoDB锁
 ```
-
-InnoDB与MyISAM的最大不同有两点：一是支持事务（TRANSACTION）；二是采用了行级锁
-
-
+InnoDB与MyISAM的最大不同有两点：一是支持事务，二是采用了行级锁
 
 (1) 行锁
     1) 操作
@@ -241,12 +245,12 @@ InnoDB与MyISAM的最大不同有两点：一是支持事务（TRANSACTION）；
         暂停查看
         DROP TABLE innodb_monitor
     2) 行锁模式
-        共享锁（S）：读锁，允许一个事务去读一行，阻止其他事务获得相同数据集的排他锁。
-        排他锁（X）：写锁，允许获得排他锁的事务更新数据，阻止其他事务取得相同数据集的共享读锁和排他写锁。
-        //允许行锁和表锁共存，实现多粒度锁机制
-        意向共享锁（IS）：事务打算给数据行加行共享锁，事务在给一个数据行加共享锁前必须先取得该表的 IS 锁。
-        意向排他锁（IX）：事务打算给数据行加行排他锁，事务在给一个数据行加排他锁前必须先取得该表的 IX 锁。
-        //如果一个事务请求的锁模式与当前的锁兼容， InnoDB 就将请求的锁授予该事务； 反之， 如果两者不兼容，该事务就要等待锁释放
+        共享锁(S): 读锁，允许一个事务去读一行，阻止其他事务获得相同数据集的排他锁
+        排他锁(X): 写锁，允许获得排他锁的事务更新数据，阻止其他事务取得相同数据集的共享读锁和排他写锁
+        // 允许行锁和表锁共存，实现多粒度锁机制
+        意向共享锁(IS): 事务打算给数据行加行共享锁，事务在给一个数据行加共享锁前必须先取得该表的 IS 锁。
+        意向排他锁(IX): 事务打算给数据行加行排他锁，事务在给一个数据行加排他锁前必须先取得该表的 IX 锁。
+        // 如果一个事务请求的锁模式与当前的锁兼容， InnoDB 就将请求的锁授予该事务；反之，如果两者不兼容，该事务就要等待锁释放
         兼容性  IS	IX	 S	  X
         IS	   兼容	兼容 兼容 互斥
         IX	   兼容	兼容 互斥 互斥
@@ -254,19 +258,46 @@ InnoDB与MyISAM的最大不同有两点：一是支持事务（TRANSACTION）；
         X	   互斥	互斥 互斥 互斥
     3) 加锁方式
         意向锁是 InnoDB 自动加的，不需用户干预
-        对于 UPDATE、DELETE 和 INSERT 语句，InnoDB会自动给涉及数据集加排他锁（X)
-        对于普通 SELECT 语句，InnoDB 不会加任何锁, 需要自己加 SELECT * FROM table_name WHERE ... LOCK IN SHARE MODE。
-    4) 注意的事项 
-        > 开销大，加锁慢；会出现死锁；锁定粒度最小，发生锁冲突的概率最低,并发度也最高。使用行级锁定的主要是InnoDB存储引擎。
-        > InnoDB行锁是通过给索引上的索引项加锁来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB这种行锁实现特点意味着：只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用表锁！
-        > 即便使用了索引字段，如果MySQL认为全表扫描效率更高，比如对一些很小的表，它就不会使用索引，这种情况下InnoDB将使用表锁，而不是行锁。
-        > 即便使用了索引字段（varchar），如果where条件中不是和varchar类型进行比较（int），则会对name进行类型转换，而执行的全表扫描。
+        对于 UPDATE、DELETE 和 INSERT 语句，InnoDB会自动给涉及数据集加排他锁X
+        对于普通 SELECT 语句，InnoDB 不会加任何锁, 手动加锁如下
+        > 共享锁
+            SELECT ... FROM table_name WHERE ... LOCK IN SHARE MODE
+        > 排它锁
+            select ... for update
+            排他锁的申请前提：没有线程对该结果集中的任何行数据使用排他锁或共享锁，否则申请会阻塞
+            for update仅适用于InnoDB，且必须在事务(BEGIN/COMMIT)中才能生效
+            在进行事务操作时，通过for update语句，MySQL会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞
 
-(2) 间隙锁（Next-Key锁）
-    1) 加锁方式
+    4) 行锁的特点 
+        > 开销
+            开销大，加锁慢
+            会出现死锁
+            锁定粒度最小，发生锁冲突的概率最低，并发度也最高
+            使用行级锁定的主要是InnoDB存储引擎
+
+        > 索引加锁
+            InnoDB行锁是通过给索引项加锁来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的
+            InnoDB这种行锁实现特点意味着只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用表锁！
+            
+            有时即便使用了索引字段，如果MySQL认为全表扫描效率更高，比如对一些很小的表，它就不会使用索引，这种情况下InnoDB将使用表锁，而不是行锁
+        
+        > 不同类型比较
+            索引字段类型(varchar)，如果where条件中不是和varchar类型进行比较(比如int)，则会对name进行类型转换，而执行的全表扫描
+
+
+(2) gap lock(间隙锁)与next-key lock
+    间隙锁，锁定一个范围，不包括记录本身
+    next-key lock，锁定一个范围，包含记录本身
+    1) 特点
+        > innodb对于行的查询使用next-key lock
+        > next-key lock为了解决Phantom Problem幻读问题
+        > 当查询的索引含有唯一属性时，将next-key lock降级为行锁
+        > Gap lock设计的目的是为了阻止多个事务将记录插入到同一范围内，而这会导致幻读问题的产生
+        > 有两种方式显式关闭gap锁: 将事务隔离级别设置为RC; 将参数innodb_locks_unsafe_for_binlog设置为1
+    2) 加锁方式
         > 进行范围条件而不是相等条件检索数据，并请求共享或排他锁时，会给符合条件的已有数据记录的索引项加锁；对于键值在条件范围内但并不存在的记录（这样做可以防止幻读）
         > 这种加锁机制会阻塞符合条件范围内键值的并发插入，影响性能
-        > 如果使用相等条件请求给一个不存在的记录加锁，InnoDB也会使用间隙锁（注意！！！）
+        > 如果使用相等条件请求给一个不存在的记录加锁，InnoDB也会使用间隙锁！！！
         例如：
             session1                                                        session2
             //对不存在的值加间隙锁                                           //这时插入新的value会阻塞
@@ -277,25 +308,6 @@ InnoDB与MyISAM的最大不同有两点：一是支持事务（TRANSACTION）；
 
 ```
 
-
-### 隔离级别操作
-```
-1、查看当前会话隔离级别
-select @@tx_isolation;
-
-2、查看系统当前隔离级别
-select @@global.tx_isolation;
-
-3、设置当前会话隔离级别
-set session transaction isolatin level repeatable read;
-
-4、设置系统当前隔离级别
-set global transaction isolation level repeatable read;
-
-5、开始事务
-set autocommit=off 
-start transaction
-```
 
 ### mysql事务
 ```
@@ -341,9 +353,31 @@ mysql示例
 
 ```
 
+### 隔离级别操作
+```
+1、查看当前会话隔离级别
+select @@tx_isolation;
+
+2、查看系统当前隔离级别
+select @@global.tx_isolation;
+
+3、设置当前会话隔离级别
+set session transaction isolatin level repeatable read;
+
+4、设置系统当前隔离级别
+set global transaction isolation level repeatable read;
+
+5、开始事务
+set autocommit=off 
+start transaction
+```
+
+
 ### 最大连接数
 ```
-一个事件表示一个链接，不用事件一条sql表示一个链接
+一个事件表示一个链接
+
+不用事件的一条sql表示一个链接
 ```
 
 ### limit
@@ -426,3 +460,11 @@ https://yq.aliyun.com/articles/592937
     实际上InnoDB将Undo Log看作数据，因此记录Undo Log的操作也会记录到Redo Log中。这样undo log就可以象数据一样缓存起来，而不用在redo log之前写入磁盘了
 ```
 
+### 存储引擎选择
+```
+如果没有特别的需求，使用默认的Innodb即可
+
+MyISAM：以读写插入为主的应用程序，比如博客系统、新闻门户网站
+
+Innodb：更新（删除）操作频率也高，或者要保证数据的完整性；并发量高，支持事务和外键。比如OA自动化办公系统
+```
