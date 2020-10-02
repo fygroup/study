@@ -9,7 +9,9 @@ c++ atomic提供了原子操作和不同强度的Memory Model来对共享变量�
 std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Consume, Sequentially-consistent
 
 1、memory_order_seq_cst
-    默认的选项，这个选项不允许reorder，那么也会带来一些性能损失
+    默认的选项
+    如果是读取就是 acquire 语义，如果是写入就是 release 语义，如果是读取+写入就是 acquire-release 语义同时会对所有使用此 memory order 的原子操作进行同步，所有线程看到的内存操作的顺序都是一样的，就像单个线程在执行所有线程的指令一样
+    
     相当于WO
 
 2、memory_order_acq_rel
@@ -17,18 +19,29 @@ std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Cons
 
 2、memory_order_release/consume/acquire
     (1) memory_order_release
+        对"写入"施加 release 语义(store)，在代码中这条语句前面的所有读写操作都无法被重排到这个操作之后
+        store 之前的读写操作无法被重排至 store 之后。即 load-store, store-store 不能被重排
+        
+        当前线程内的所有写操作，对于其他对这个原子变量进行 memory_order_acquire 的线程可见
+        
+        当前线程内的与这块内存有关的所有写操作，对于其他对这个原子变量进行 memory_order_consume 的线程可见
         之前的读写不能往后乱序
-        对使用memory_order_acquire/memory_order_consume同步的线程可见
+        
         类似于unlock
 
     (2) memory_order_consume
-        依赖于该读操作的后续读写，不能往前乱序
-        另一个线程上memory_order_release之前的相关写序列，在memory_order_consume同步之后对当前线程可见
+        对当前要读取的内存施加 release 语义(store)，在代码中这条语句后面所有与这块内存有关的读写操作都无法被重排到这个操作之前
+        
+        在这个原子变量上施加 release 语义的操作发生之后，consume 可以保证读到所有在 release 前发生的并且与这块内存有关的写入
+
         类似于lock
 
     (3) memory_order_acquire
-        之后的读写不能往前乱序
-        另一个线程上memory_order_release之前的写序列，在memory_order_acquire同步之后对当前线程可见
+        对读取施加 acquire 语义(load)，在代码中这条语句后面所有读写操作都无法重排到这个操作之前
+        load 之后的读写操作无法被重排至 load 之前。即 load-load, load-store 不能被重排
+        
+        在这个原子变量上施加 release 语义的操作发生之后，acquire 可以保证读到所有在 release 前发生的写入
+
         类似于lock
 
         std::memory_order_acquire + std::memory_order_release：相当于RCpc

@@ -1103,7 +1103,7 @@ stdout是行缓冲的，他的输出会放在一个buffer里面，只有到换�
 
 /var/log/btmp ：记录Linux登陆失败的用户、时间以及远程IP地址
 
-/var/log/syslog：只记录警告信息，常常是系统出问题的信息，使用lastlog查看
+/var/log/syslog：只记录警告信息，常常是系统出问题的信息
 
 /var/log/wtmp：该日志文件永久记录每个用户登录、注销及系统的启动、停机的事件，使用last命令查看
 

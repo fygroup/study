@@ -127,6 +127,8 @@ spinlock
     std::atomic<>::exchange()
     std::atomic<>::compare_exchange_strong()
     std::atomic<>::compare_exchange_weak()
+    当前值与期望值相等时，修改当前值为设定值，返回true
+    当前值与期望值不等时，将期望值修改为当前值，返回false
 
     // CAS
     bool CAS(T *p, T old, T new) {
@@ -157,7 +159,8 @@ spinlock
     void push(stack_t *stack, node_t *node) {
         node_t *head = stack->head.load(std::memory_order_relaxed);
         node->next.store(head, std::memory_order_relaxed);
-        while(!stack->head.compare_exchange_weak(head, node, std::memory_order_release));
+        while(!stack->head.compare_exchange_weak(node->next, node, std::memory_order_release));
+        // atomic_compare_exchange_weak如果失败，证明有其他线程更新了栈顶，而这个时候被其他线程更新的新栈顶值会被更新到new_node->next中，因此循环可以直接再次尝试压栈而无需由程序员更新new_node->next
     }
 
     node_t* pop(stack_t *stack) {

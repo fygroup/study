@@ -3302,6 +3302,14 @@ https://www.cnblogs.com/haippy/p/3284540.html
                 在线程被阻塞时，该函数会自动调用unlock()释放锁，使得其他被阻塞在锁竞争上的线程得以继续执行
                 
                 一旦当前线程获得通知(notified)，wait()函数也是自动调用lck.lock()加锁，以防止其他线程的竞争
+
+            > 两个版本
+                void wait (unique_lock<mutex>& lck);
+                template <class Predicate>
+                void wait (unique_lock<mutex>& lck, Predicate pred);
+                只有当 pred 条件为 false 时调用 wait() 才会阻塞当前线程，并且在收到其他线程的通知后只有当 pred 为 true 时才会被解除阻塞
+                第二种情况类似：while (!pred()) wait(lck);
+
             > 一般用法
                 std::mutex  mut;
                 std::condition_variable cv;
@@ -3310,7 +3318,7 @@ https://www.cnblogs.com/haippy/p/3284540.html
                     unique_lock<mutex> lck(mut);
                     // 这块一定要判断条件
                     while (判断条件) {
-                        cv.wait(mux);
+                        cv.wait(lck);
                     }
                 }
 
