@@ -1,5 +1,51 @@
 ### std::atomic
 ```
+https://www.cnblogs.com/haippy/p/3301408.html
+https://www.jianshu.com/p/8c1bb012d5f8
+
+以下c++ 11
+
+1、类模板
+    template< class T > struct atomic;
+    template<>  struct atomic<Integral>;
+    template<>  struct atomic<bool>;
+    template< class T >  struct atomic<T*>;
+
+2、构造函数
+    atomic() = default;
+    constexpr atomic(T);
+    atomic(const atomic &) = delete;    // 禁止拷贝构造
+
+3、operator=
+    atomic & operator=(const atomic &) = delete; // 禁止复制赋值
+    T operator=(T); // 类似于store()
+
+4、is_lock_free
+    bool is_lock_free() const noexcept;
+    判断该 std::atomic 对象是否具备 lock-free 的特性
+    如果某个对象满足 lock-free 特性，在多个线程访问该对象时不会导致线程阻塞
+
+5、store
+    void store(T val, memory_order sync = memory_order_seq_cst) noexcept;
+
+6、load
+    T load(memory_order sync = memory_order_seq_cst) const noexcept;
+
+7、exchange
+    T exchange (T val, memory_order sync = memory_order_seq_cst) noexcept;
+    用val替换所包含的值，并返回它之前的值。整个操作是原子性的(一个原子的读-修改-写操作)
+
+8、compare_exchange_weak、compare_exchange_strong
+    bool compare_exchange_weak (T& expected, T val, memory_order sync = memory_order_seq_cst) noexcept;  
+    bool compare_exchange_strong (T& expected, T val, memory_order sync = memory_order_seq_cst) noexcept;
+    比较原子对象的包含值与预期的内容
+    如果是真的，它会用val替换包含的值(比如存储)。
+    如果是假的，它会用所包含的值替换预期,因此调用该函数之后，如果被该原子对象封装的值与参数 expected 所指定的值不相等，expected 中的内容就是原子对象的旧值
+
+```
+
+### std::atomic 内存模型
+```
 https://zhuanlan.zhihu.com/p/45566448
 
 多线程之间的同步 = 原子操作 + 内存屏障

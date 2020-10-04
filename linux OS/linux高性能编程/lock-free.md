@@ -113,8 +113,8 @@ spinlock
 ```
 
 ### lock-free的简单实现
+#### RMW原子操作
 ```
-1、RMW原子操作
     一般情况下，实现一个lock-free算法需要系统提供一个 atomic RMW (read-modify-write) 操作
     常用RMW操作包括test-and-set，fetch-and-add，compare-and-swap(CAS)以及更进一步的LL/SC
 
@@ -146,7 +146,10 @@ spinlock
     
     很多时候也被称为乐观锁，因为在访问资源时'乐观地'假设没有并发问题，不加锁就直接拿来用，在最后真正更新的时候再判断冲突
 
-2、lock-free stack的简单实现
+```
+
+#### lock-free stack的简单实现
+```c++
     struct node_t {
         std::atomic<node_t*> next;
         T data;
@@ -173,8 +176,10 @@ spinlock
         }
         return head;
     }
+```
 
-3、ABA问题
+#### ABA问题
+```
     上述的lock-free stack中，很有可能在(1)和(2)之间其它线程插入执行，会引发ABA问题
     (1) 情景再现
         > 例如当前栈为 A->B->C->D

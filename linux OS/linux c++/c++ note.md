@@ -3118,26 +3118,7 @@ https://www.cnblogs.com/haippy/p/3284540.html
 
     C++11标准库std::atomic提供了针对"整形"和"指针类型"的特化实现
 
-    (1) 构造
-        atomic() noexcept = default;
-        constexpr atomic (T val) noexcept;
-        
-        // 实例
-        std::atomic<bool> ready(false);
-        std::atomic<int> foo = 0;
-
-    (2) is_lock_free
-        bool is_lock_free() const noexcept;
-        // 判断该 std::atomic 对象是否具备 lock-free 的特性
-        // 如果某个对象满足 lock-free 特性，在多个线程访问该对象时不会导致线程阻塞
-
-    (3) store
-        void store(T val, memory_order sync = memory_order_seq_cst) noexcept;
-        // 具体见memory order
-
-    (4) load
-        T load(memory_order sync = memory_order_seq_cst) const noexcept;
-        // 具体见memory order
+    具体见<c++同步>
 
 2、<thread>
     (1) std::this_thread
@@ -3211,8 +3192,7 @@ https://www.cnblogs.com/haippy/p/3284540.html
                 > lock()
                     调用线程将锁住该互斥量
                     线程调用该函数会发生下面3种情况
-                    1> 如果该互斥量当前没有被锁住，则调用线程将该互斥量锁住，直到调用 unlock之前，该线程一直拥有该锁
-                    2> 如果当前互斥量被"其他线程锁住"，则当前的调用线程被阻塞住
+                    1> 如果该互斥量当前没有被锁住，则调用线程将该互斥量锁住，直到调用 unlock之前，该线程一直拥有该锁顶
                     3> 如果当前互斥量被"当前调用线程锁住"，则会产生死锁(deadlock)
                 
                 > unlock()
