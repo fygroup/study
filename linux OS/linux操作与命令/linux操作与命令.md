@@ -639,8 +639,42 @@ pmao $$
 Mem:           3.7G        879M        453M         46M        2.4G        2.6G
 Swap:          2.0G         57M        1.9G
 
-Swap:
-    Linux内核为了提高读写效率与速度，会将文件在内存中进行缓存，这部分内存就是Cache Memory(缓存内存)。即使你的程序运行结束后，Cache Memory也不会自动释放。这就会导致你在Linux系统中程序频繁读写文件后，你会发现可用物理内存变少。当系统的物理内存不够用的时候，就需要将物理内存中的一部分空间释放出来，以供当前运行的程序使用。那些被释放的空间可能来自一些很长时间没有什么操作的程序，这些被释放的空间被临时保存到Swap空间中，等到那些程序要运行时，再从Swap分区中恢复保存的数据到内存中。这样，系统总是在物理内存不够时，才进行Swap交换。
+// Swap
+Linux内核为了提高读写效率与速度，会将文件在内存中进行缓存，这部分内存就是Cache Memory(缓存内存)。即使你的程序运行结束后，Cache Memory也不会自动释放。这就会导致你在Linux系统中程序频繁读写文件后，你会发现可用物理内存变少
+当系统的物理内存不够用的时候，就需要将物理内存中的一部分空间释放出来，以供当前运行的程序使用
+那些被释放的空间可能来自一些很长时间没有什么操作的程序，这些被释放的空间被临时保存到Swap空间中，等到那些程序要运行时，再从Swap分区中恢复保存的数据到内存中。这样，系统总是在物理内存不够时，才进行Swap交换
+
+// buffer/cache
+    buffer cache 和 page cache(相见资源管理)
+```
+
+### 回收cache
+```
+https://yq.aliyun.com/articles/87126
+
+// 为何要回收cache
+Linux 内核会在内存将要耗尽的时候，触发内存回收的工作，以便释放出内存给急需内存的进程使用。一般情况下，这个操作中主要的内存释放都来自于对 buffer/cache 的释放
+
+// 成本
+伴随着 cache 清除的行为的，一般都是系统 IO 飙高，涉及cache数据的写回
+
+// 人工清除
+> 清除 page cache
+    echo 1 > /proc/sys/vm/drop_caches
+> 清除回收 slab 分配器中的对象
+    echo 2 > /proc/sys/vm/drop_caches
+> 清除 page cache 和 slab 分配器中的缓存对象
+    echo 3 > /proc/sys/vm/drop_caches
+    
+// cache都能被回收么
+Linux 系统内存中的 cache 并不是在所有情况下都能被释放当做空闲空间用的
+> tmpfs
+    tmpfs 中存储的文件会占用 cache 空间，除非文件删除否则这个 cache 不会被自动释放
+> 共享内存
+    shmget 方式申请的共享内存会占用 cache 空间，除非主动释放，否则相关的 cache 空间都不会被自动释放
+> mmap
+    mmap 方法申请的 MAP_SHARED 标志的内存会占用 cache 空间，除非进程将这段内存 munmap，否则相关的 cache 空间都不会被自动释放
+实际上 shmget、mmap 的共享内存，在内核层都是通过 tmpfs 实现的，tmpfs 实现的存储用的都是 cache
 ```
 
 ### pstree
