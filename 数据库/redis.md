@@ -15,11 +15,32 @@ redis集群搭建
 redis分片
 分布式锁 Redlock
 redis + mysql 方案
+    > 方案一
+        读取：读取缓存，没有命中，则读取数据库
+        更新：先更新数据库，在更新缓存
+    > 方案二
+        类似Page Cache，直接操作缓存，但是会带来一致性问题
+        主要是何时同步数据是难点
 
 
 // 内存淘汰和内存回收是一回事吗？
+不是
 
 // 内存淘汰的数据会持久化吗？
+不同的淘汰策略，不一样
+```
+
+### redis连接
+```
+// 连接
+redis-cli -h host -p port -a password
+
+// 连接命令
+AUTH password   // 验证密码是否正确
+ECHO message    // 打印字符串
+PING            // 查看服务是否运行
+QUIT            // 关闭当前连接
+SELECT index    // 切换到指定的数据库，index是索引，一个数字
 
 ```
 
@@ -70,7 +91,7 @@ redis + mysql 方案
     // 命令
     lpush key node1 [node2.].....  	把节点 node1 加入到链表最左边。结果顺序node2,node1,...
     rpush key node1[node2]...... 	把节点 node1 加入到链表的最右边。结果顺序...,node1,node2
-    lindex key index 	读取下标为 index 的节点，返回节点字符串
+    lindex key index 	读取下标为 index   的节点，返回节点字符串
     llen key 	求链表的长度
     lpop key 	删除左边第一个节点，并将其返回
     rpop key 	删除右边第一个节点，并将其返回 	
@@ -98,6 +119,16 @@ redis + mysql 方案
     sunionstore des key1 key2 	先执行 sunion 命令求出并集，然后保存到键为 des 的集合中
 
 6、有序set
+```
+
+### 消息队列
+```
+Redis Stream 主要用于消息队列(MQ)
+
+Redis 本身是有一个 Redis 发布订阅 (pub/sub) 来实现消息队列的功能，但它有个缺点就是消息无法持久化，如果出现网络断开、Redis 宕机等，消息就会被丢弃
+
+Redis Stream 提供了消息的持久化和主备复制功能
+
 ```
 
 ### 事务
@@ -213,10 +244,85 @@ WATCH key [key ...] 监视一个(或多个) key ，如果在事务执行之前�
 Redis是内存数据库，数据都是存储在内存中，为了避免进程退出导致数据的永久丢失，需要定期将Redis中的数据以某种形式(数据或命令)从内存保存到硬盘；当下次Redis重启时，利用持久化文件实现数据恢复。除此之外，为了进行灾难备份，可以将持久化文件拷贝到一个远程位置
 
 // RDB持久化
-将数据生成快照保存到硬盘(也称作快照持久化)，保存的文件后缀是rdb；当Redis重新启动时，可以读取快照文件恢复数据
+RDB持久化方式能够在指定的时间间隔能对你的数据进行快照存储
+(1) 配置
+    redis.conf
+    save <seconds> <changes>
+    可以配置多个save，只要有一个满足都会触发bgsave，例如
+    save 900 1      // 900秒之内至少一次写操作
+    save 300 10     // 300秒之内至少发生10次写操作
+    save 60 10000   // 60秒之内发生至少10000次写操作
+(2) 触发
+    1) 手动出发
+        save：阻塞当前进程直到RDB结束
+        bgsave：fork子进程完成RDB，Redis主进程阻塞时间只有fork阶段的那一下
+    2) 自动触发
+        > save自动触发
+        > shutdown命令关闭服务器
+            如果没有开启AOF持久化功能，那么会自动执行一次bgsave
+        > 主从同步
+            1> slave连接master
+            2> master执行bgsave
+            3> master向slave发送RDB
+            4> slave删除旧数据，装载新数据
+            5> 
+(3) 优点
+    > 适合备份
+        RDB是一个非常紧凑的文件，它保存了某个时间点得数据集，非常适用于数据集的备份
+        RDB是一个紧凑的单一文件，方便远端加密传送，非常适用于灾难恢复
+    > 恢复速度更快
+        与AOF相比在恢复大的数据集的时候，RDB方式会更快一些
+    > fork
+        fork子进程，可以充分利用系统的cow(写时复制)，主进程可以接受读写操作，而不用很大的开销
+    
+(4) 缺点
+    > 无法实时持久化
+        RDB根据save时间点(例如每隔5分钟并且对数据集有100个写的操作)来备份数据，两次save间宕机，则会丢失区间(分钟级)的增量数据，不适用于实时性要求较高的场景
+    > fork
+        fork子进程属于重量级操作，并且会阻塞redis主进程
 
 
+// AOF持久化
+AOF持久化方式记录每次对服务器'写的操作'，当服务器重启的时候会重新执行这些命令来恢复原始的数据
+(1) 配置
+    AOF默认是关闭的，通过redis.conf配置文件进行开启
+    appendonly yes                  // 只有在yes下，aof才会生效  
+    appendfilename appendonly.aof   // 指定aof文件名称
+    appendfsync everysec            // 指定aof同步策略，always everysec no，默认为everysec
+                                    // always：每一条AOF记录都立即同步到文件，性能很低，但较为安全
+                                    // everysec：每秒同步一次，性能和安全都比较中庸的方式，也是redis推荐的方式
+                                    // no：Redis永不直接调用文件同步，而是让操作系统来决定何时同步磁盘
+    no-appendfsync-on-rewrite no    // aof-rewrite期间，appendfsync是否暂缓文件同步，no表示不暂缓，yes表示暂缓
+    auto-aof-rewrite-min-size 64mb  // aof文件rewrite触发的最小文件尺寸
+    auto-aof-rewrite-percentage 100 // 本次rewrite触发时aof文件应该增长的百分比
+(2) 触发
+    > 手动触发
+        bgrewriteaof
+    > 自动触发
+        根据auto-aof-rewrite-min-size和auto-aof-rewrite-percentage参数确定自动触发时机
+(3) AOF重写
+    AOF日志会在持续运行中持续增大，需要定期进行AOF重写(对当前log的压缩和老旧log的删除)，对AOF日志进行瘦身
+    > 机制
+        > Redis执行fork()，现在同时拥有父进程和子进程
+        > 子进程开始将新 AOF 文件的内容写入到临时文件
+        > 对于所有新执行的写入命令，父进程一边将它们累积到一个内存缓存中，一边将这些改动追加到现有 AOF 文件的末尾，这样样即使在重写的中途发生停机，现有的 AOF 文件也还是安全的
+        >当子进程完成重写工作时，它给父进程发送一个信号，父进程在接收到信号之后，将内存缓存中的所有数据追加到新 AOF 文件的末尾。
+        > 新文件替换旧文件，之后所有命令都会直接追加到新 AOF 文件的末尾
+(4) 优点
+    > 更高的实时性
+    > AOF只是追加写日志文件，对服务器性能影响较小，速度比RDB要快，消耗的内存较少
+(5) 缺点
+    > 日志文件太大需要文件瘦身
+    > 恢复数据(重演命令式)比RDB要慢
 
+
+// 如何选择持久化
+Master：AOF 或 不持久化
+Slave：RDB 或 RDB+AOF
+
+
+// 提高重启效率
+在 Redis 重启的时候，可以先加载 rdb 的内容，然后再重放增量 AOF 日志就可以完全替代之前的 AOF 全量文件重放，重启效率因此大幅得到提升
 ```
 
 ### 内存回收
@@ -261,10 +367,211 @@ Redis中同时使用了惰性过期和定期过期两种过期策略
 
 ```
 
+### redis主从同步
+```
+// 基本概念
+> 主服务器只负责写入数据，不负责让外部程序读取数据
+> 存在多台从服务器，从服务器不写入数据，只负责同步主服务器的数据，并让外部程序读取数据
+> 主服务器在写入数据后，即刻将写入数据的命令发送给从服务器，从而使得主从数据同步
+> 应用程序可以随机读取某一台从服务器的数据，这样就分摊了读数据的压力
+> 当从服务器不能工作的时候，整个系统将不受影响；当主服务器不能工作的时候，可以方便地从从服务器中选举一台来当主服务器
+
+// 配置
+> master
+    bind 的配置，默认为 127.0.0.1，只允许本机访问，修改为 bind 0.0.0.0，允许其他服务器访问
+> slave
+    slaveof server port // server 代表主机，port 代表端口
+    当从机 Redis 服务重启时，就会同步对应主机的数据了
+    当不想让从机继续复制主机的数据时，可以在从机的 Redis 命令客户端发送 slaveof no one 命令
+
+// 主从同步过程
+slave: 向master发送sync连接命令
+master: 执行bgsave生成RDB文件，并使用缓冲区记录当前的写命令
+        向slave发送RDB文件         
+slave: 丢弃所有当前数据，载入快照文件
+        解析完后，开始正常接收命令
+master: 向slave发送缓冲区写命令
+slave: 执行master发过来的缓冲区命令
+master: 缓冲区命令发送完后，主服务每执行完一次写命令，都会向slaves发送相同的写命令
+
+```
+
+### redis哨兵(保证高可用)
+```
+Redis Sentinel 是一个分布式系统，你可以在一个架构中运行多个 Sentinel 进程
+
+这些进程使用gossip协议接收关于主服务器是否下线的信息，并使用投票协议(agreement protocols)来决定是否执行自动故障迁移，以及选择哪个从服务器作为新的主服务器
+
+> 监控
+    Sentinel 会不断地检查你的主服务器和从服务器是否运作正常
+> 提醒
+    当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API 向管理员或者其他应用程序发送通知
+> 自动故障迁移
+    master服务器失效时，Sentinel 会开始一次自动故障迁移操作，它会将失效主服务器的其中一个从服务器升级为新的主服务器，并让失效主服务器的其他从服务器改为复制新的主服务器
+    当客户端试图连接失效的主服务器时，集群也会向客户端返回新主服务器的地址，使得集群可以使用新主服务器代替失效服务器
+
+// 启动sentinel
+redis-server /path/to/sentinel.conf --sentinel
+
+// 配置sentinel
+sentinel <选项的名字> <主服务器的名字> <选项的值>
+
+> sentinel monitor mymaster 127.0.0.1 6379 2
+    监视名为mymaster的主服务器，IP为127.0.0.1，端口为6379，而将这个主服务器判断为失效至少需要2个Sentinel同意(实际上要大多数)
+> sentinel down-after-milliseconds mymaster 60000
+    如果服务器在给定的毫秒数之内，没有返回Sentinel发送的PING命令的回复，或者返回一个错误
+> sentinel failover-timeout mymaster 180000
+> sentinel parallel-syncs mymaster 1
+    选项指定了在执行故障转移时，最多可以有多少个从服务器同时对新的主服务器进行同步，这个数字越小，完成故障转移所需的时间就越长
+
+// 自动发现
+一个 Sentinel 可以与其他多个 Sentinel 进行连接， 各个 Sentinel 之间可以互相检查对方的可用性， 并进行信息交换
+> 无须为每个Sentinel分别设置其他Sentinel的地址
+    因为 Sentinel 可以通过发布与订阅功能来自动发现正在监视相同主服务器的其他Sentinel
+> 无需列出主服务器下的所有slave
+    因为 Sentinel 可以通过询问主服务器来获得所有从服务器的信息
+
+// API
+(1) 向Sentinel发送命令
+    SENTINEL masters: 列出所有被监视的主服务器，以及这些主服务器的当前状态
+    SENTINEL slaves: 列出给定主服务器的所有从服务器，以及这些从服务器的当前状态
+    SENTINEL get-master-addr-by-name: 返回给定名字的主服务器的 IP 地址和端口号
+    SENTINEL reset: 重置所有名字和给定模式 pattern 相匹配的主服务器
+    SENTINEL failover: 当主服务器失效时，在不询问其他 Sentinel 意见的情况下，强制开始一次自动故障迁移 
+(2) 发布订阅
+
+```
+
+### 分布式锁的注意点
+```
+https://zhuanlan.zhihu.com/p/87498360
+https://juejin.im/post/6844903830442737671
+https://juejin.im/post/6854573212831842311
+
+1、锁超时
+    (1) 问题描述
+        客户端1获取锁成功
+        客户端1在某个操作上阻塞了太长时间，设置的key过期了，锁自动释放了
+        客户端2获取到了对应同一个资源的锁
+        客户端1从阻塞中恢复过来，因为value值一样，所以执行释放锁操作时就会释放掉客户端2持有的锁，这样就会造成问题
+    (2) 解决方式
+        1) 方法1
+            加锁时设置唯一性value，在释放锁时需要对value进行验证
+        2) 方法2
+            线程在首次加锁成功后，设置count变量和value变量，count变量的意义就是重入次数，value是UUID，表示锁的唯一标识
+            线程加锁成功后，自增count变量，释放锁只需自减count变量，直到为0时才真正释放锁
+            注意为了避免释放不属于自己的锁，需要先对value进行比对，在进行count的加减
+
+2、分布式中master失效导致的锁丢失
+    (1) 问题描述
+        客户端A从master获取到锁
+        在master将锁同步到slave之前，master宕掉了
+        slave节点被晋级为master节点
+        客户端B取得了同一个资源被客户端A已经获取到的另外一个锁。安全失效！
+    (2) Redlock方法
+        
+    (3) token fetch
+
+```
+
+### redis分布式锁
+```
+// 单例锁
+(1) 获得锁
+    SET resource_name my_random_value NX PX 30000
+    NX: 不存在key的时候才能被执行成功
+    PX: 这个key有一个30秒的自动失效时间
+    my_random_value: 所有的客户端必须是唯一的(类似UUID)，所有同一key的获取者(竞争者)这个值都不能一样
+(2) 释放锁(一定要比较value，防止误解锁)
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+    else 
+        return 0
+    end
+
+// 分布式锁(redlock)
+    分布式中存在master节点失效导致的主从切换，那么就会出现锁丢失的情况(见上述)
+    假设有5个Redis master节点，同时我们需要在5台服务器上面运行这些Redis实例，这样保证他们不会同时都宕掉
+    (1) 关键字
+        开始上锁的UNIX时间
+        锁有效时间: 设置(10s)
+        连接超时时间: 设置(5-50ms)
+        获得锁用的时间: 客户端当前时间 - 开始上锁的UNIX时间
+        锁的真正有效时间: 锁有效时间 - 获得锁用的时间
+    (2) 过程
+        > 获取当前Unix时间，以毫秒为单位
+        > 依次尝试从5个实例，使用相同的key和具有唯一性的value(UUID)获取锁
+            保证 锁有效时间 > 客户端连接服务端超时时间
+            避免服务器端Redis已经挂掉的情况下，客户端还在死死地等待响应结果
+            如果服务器端没有在规定时间内响应，客户端应该尽快尝试去另外一个Redis实例请求获取锁
+        > 当且仅当从大多数(N/2+1，3个节点)的Redis节点都取到锁，并且 获得锁用的时间 < 锁有效时间时，锁才算获取成功
+        > 获得锁后，得到 锁的真正有效时间
+            如果获取锁失败，客户端应该在所有的Redis实例上进行解锁
+            即便某些Redis实例根本就没有加锁成功，防止某些节点获取到锁但是客户端没有得到响应而导致接下来的一段时间不能被重新获取锁
+
+```
 
 
+### redis分布式(集群)
+```
+(1) 数据分区
+    将数据根据哈希值分布到多个redis实例
+    散列分区方法: 例如 一致性哈希 等(详见)
 
-### 内存优化
+(2) 分区方案
+    1) 客户端分区
+        在客户端内就已经决定数据会被定位到哪个redis节点
+    2) 代理分区
+        客户端将请求发送给代理，然后代理决定去定位节点
+        redis的一种代理实现就是Twemproxy
+    3) 查询路由
+        客户端随机地请求任意一个redis实例，然后由Redis将请求转发给正确的Redis节点
+        Redis Cluster实现了一种混合形式的查询路由，但并不是直接将请求从一个redis节点转发到另一个redis节点，而是在客户端的帮助下直接redirected到正确的redis节点
+
+(3) 分区注意点
+    > 多个key的操作无法支持，例如不同redis实例不能对两个集合求交集
+    > 不能使用redis事务
+    > 不同实例需要主从备份
+    > 分区时动态扩容或缩容可能非常复杂
 
 
+```
 
+### redigo
+```
+1、连接池
+    用redigo自带的池来管理连接
+    不然的话，每当要操作redis时，建立连接，用完后再关闭，会导致大量的连接处于TIME_WAIT状态
+
+    var (
+        Pool *redis.Pool
+        REDIS_HOST  string
+        REDIS_INDEX int
+    )
+
+    // 建立连接池
+    Pool = &redis.Pool{
+        MaxIdle: 1,
+        MaxAxtive: 10,
+        IdleTimeout: 180 * time.Second,
+        Dial: func() (redis.Conn, error) {
+            c, err := redis.Dial("tcp", REDIS_HOST)
+            if err != nil {
+                return nil, err
+            }
+            c.Do("select", REDIS_INDEX)
+            return c, nil
+        }
+    }
+    // 获得连接池
+    conn := Pool.Get()
+    defer conn.Close()
+    test, _ := conn.Do("set", "aaa")
+
+
+    // MaxIdle      最大的空闲连接数，表示即使没有redis连接时依然可以保持N个空闲的连接，而不被清除，随时处于待命状态
+    // MaxActive    最大的激活连接数，表示同时最多有N个连接
+    // IdleTimeout  最大的空闲连接等待时间，超过此时间后，空闲连接将被关闭
+    // Dial         建立连接
+
+```
