@@ -636,5 +636,62 @@ S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
 
 ```
 
+### linux下的定时器
+```
+1、sleep()和usleep()
+    sleep精度是1秒，usleep精度是1微妙
+    使用这种方法缺点比较明显，在Linux系统中，sleep类函数不能保证精度，尤其在系统负载比较大时，sleep一般都会有超时现象
 
+2、信号量SIGALRM + alarm()
+    精度能达到1秒，其中利用了系统的信号量机制，首先注册信号量SIGALRM处理函数，调用alarm()，设置定时长度
+    signal(SIGALRM, func);  //注册func
+    alarm(1);   //  1s后向本进程发送SIGALRM，此函数非阻塞
+
+3、RTC
+    RTC机制利用系统硬件提供的Real Time Clock机制，通过读取RTC硬件/dev/rtc，通过ioctl()设置RTC频率
+    精度可调，而且非常高
+
+    int fd = open ("/dev/rtc", O_RDONLY);
+ 
+    // Set the freq as 4Hz
+    if(ioctl(fd, RTC_IRQP_SET, 1) < 0) {perror();}
+
+    // Enable periodic interrupts
+    if(ioctl(fd, RTC_PIE_ON, 0) < 0) {perror();}
+ 
+    for(i = 0; i < 100; i++) {
+        // 每4Hz时间，read返回
+        if(read(fd, &data, sizeof(unsigned long)) < 0) {perror();}
+        printf("timer\n");
+    }
+    // Disable periodic interrupts
+    ioctl(fd, RTC_PIE_OFF, 0);
+    close(fd);
+
+4、select()
+    通过使用select()，来设置定时器
+    原理利用select()方法的第5个参数，第一个参数设置为0，三个文件描述符集都设置为NULL，第5个参数为时间结构体
+    这种方法精度能够达到微妙级别，网上有很多基于select()的多线程定时器，说明select()稳定性还是非常好
+```
+
+### 文件大小、遍历目录
+```
+#include<sys/stat.h>  
+#include<unistd.h>
+#include <dirent.h>
+
+struct stat buf;
+if (stat("filename", &buf)) error;
+//文件大小
+buf.st_size；
+
+struct dirent* ptr;
+DIR* dir = opendir("/");
+// 遍历文件夹里的文件
+while((ptr = readdir(dir)) != NULL){
+    ptr->d_name;
+    ptr->d_type;     // 8表示file，10表示linkfile，4表示dir
+}
+
+```
 

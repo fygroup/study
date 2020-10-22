@@ -1311,3 +1311,15 @@ sysctl --write sys.fs.inotify.max_user_watches='81920'
 
 
 ```
+
+### readlink
+```
+readlink是linux系统中一个常用工具，主要用来找出符号链接所指向的位置
+
+// 查看系统中的awk命令到底是执行哪个可以执行文件
+readlink /usr/bin/awk
+/etc/alternatives/awk(其实这个还是一个符号连接)
+
+readlink /etc/alternatives/awk
+/usr/bin/gawk(这个才是真正的可执行文件)
+```
