@@ -1311,7 +1311,7 @@ F_OK      测试文件是否存在
 
 ### sort
 ```
-bool compare(int & a,int & b)
+bool compare(const int & a, const int & b)
 int a[20]={2,4,1,23,5,76,0,43,24,65};
 sort(a,a+20,compare);
 ```
@@ -1369,12 +1369,14 @@ for_each(mList.begin(), mList.end(), [](int & x){
 
 ```
 
-### std::sort
+### sort
 ```
+// std::sort
+#include <algorithm>
 vector<xxx> a;
 sort(a.begin(),a.end(),[](const xxx & x, const xxx & y){return(x>y);}); //注意const!!!
 
-//qsort
+// qsort
 int x[10];
 qsort(x,10,sizeof(int),func);
 int func(const void* a, const void* b){
@@ -1386,8 +1388,9 @@ list不能排序，因为list的iterator不是随机的，而vector可以，因�
 ```
 
 ### const char*(初始化)
-c++允许先初始化再赋值
 ```
+c++允许先初始化再赋值
+
 const char* a；
 a = "dafgsfaaafag";
 ```
@@ -1399,10 +1402,29 @@ numeric_limits<double>::max()
 numeric_limits<double>::min() 
 ```
 
+### const char* char const* char* const
+```
+// const char*  定义一个指向字符常量的指针
+const char* ptr;    // ptr指向的内容不能更改
+
+// char const*
+char const* ptr     // 和 const char * 等价
+
+// char* const   定义一个指向字符的指针常数
+char* const ptr     // const 指针，不能修改ptr值
+
+
+c++中不存在 const*，所以 char const* 等价于 const char*
+
+```
+
 ### execv
 ```
 const char* job[] = {"sh","-c","echo \'fafafafa\'",NULL};
-execv("/bin/sh",(char* const*)job); //注意(char* const*),而不是(const* char*)!!!
+execv("/bin/sh",(char* const *)job); 
+
+// 注意
+    (char* const *),而不是(const* char *)!!!
 ```
 
 ### random
@@ -1427,6 +1449,7 @@ const char* y = ss.str().c_str();
 ### 多参数
 ```
 void func(){} 
+
 template<typename T, typename... Args> //T 返回 argvs参数
 void func(T value, Args... args){
     cout << value << endl;
@@ -1494,47 +1517,45 @@ WIFEXITED(status)   //判断是否正常推出
 WIFSIGNALED(status) //判断是否被杀死
 ```
 
-### fd设置
+### 非阻塞fd
 ```
-(1) 设置fd非阻塞
-    int val;
-    if ((val = fcntl(fd, F_GETFL, 0)) < 0){
-        cout << "[error]: fcntl" << endl;
-        exit(-1);
-    }
-    val |= O_NONBLOCK;                          //先取出val,再设置
-    if (fcntl(fd, F_SETFL, val) < 0){
-        cout << "[error]: fcntl" << endl;
-        exit(-1);
-    }
+// 设置fd非阻塞
+int flag;
+if ((flag) = fcntl(fd, F_GETFL, 0)) < 0) error;
+
+flag |= O_NONBLOCK;
+
+if (fcntl(fd, F_SETFL, flag) < 0) error;
 ```
 
-### 拷贝构造函数
+### 拷贝构造函数和赋值函数
 ```
 class Test
 {
 public:
     Test(){}
     ~Test(){}
-    Test(const Test & t){}    // 拷贝构造函数声明
+    Test(const Test & t){}              // 拷贝构造函数
+    Test& operator=(const Test & t);    // 赋值函数
 };
 
-A a;    //构造
-A b(a); //调用拷贝构造函数
-A b = a; //调用拷贝构造函数
+A a;        // 构造函数
+A b(a);     // 调用拷贝构造函数
+A b = a;    // 调用拷贝构造函数
+A b;
+b = a;      // 赋值函数
 ```
 
 ### 右值引用
 ```
-(1) 值优化的重要性
-    //值传递实例
+(1) 编译器优化
     class A
     {
         A(){
             cout << "construct" << endl;
         }
 
-        A(const A& a){
+        A(const A & a){
             cout << "copy construct" << endl;
         }
         ~A(){
@@ -1550,9 +1571,11 @@ A b = a; //调用拷贝构造函数
         A a = GetA();
     }
 
-    //结果
-    // 编译选项-fno-elide-constructors用来关闭返回值优化效果
-    // 关闭值优化的结果
+    // 正常结果    
+    construct
+    deconstruct
+
+    // 关闭编译器优化 编译选项-fno-elide-constructors用来关闭优化
     construct
     copy construct
     deconstruct
@@ -1560,57 +1583,56 @@ A b = a; //调用拷贝构造函数
     deconstruct
     deconstruct
 
-    //当开启值优化时
-    construct
-    deconstruct
-
-    //由此可见值优化非常重要！！！
 
 (2) 指针悬挂与深拷贝
 
 (3) 左值引用与常量左值引用
-    //左值引用
-    int a;
-    int& b = a; //正确
-    int& b = 1; //错误 
-    //注意：所有的引用都是左值引用，即右边必须是左值！！！
+    1) 左值引用
+        左值引用的右边必须是左值
+        int a;      // a是左值
+        int& b = a; 
+        int& b = 1; // 错误，1是右值
 
-    //常量左值引用
-    const int& a = 1; //正确
-    int& b = a;       //错误 a还是右值,所以b不能引用右值
+    2) 常量左值引用
+        常量左值引用的右边可以是左值也可以是右值
+        const int & a = 1;
+        int& b = a;         //错误，a是右值，所以b不能引用右值
 
-    string func(){
-        return("dddada");
-    }
-    string& a = func(); //错误 func返回的值已被销毁 引用的必须是左值
-    const string& a = func(); //正确 常量左值引用是一个“万能”的引用类型，可以接受左值、右值、常量左值和常量右值
+        // 例子
+        string func(){
+            return "dddada";
+        }
+        string & a = func();       //错误 func返回的值已被销毁 引用的必须是左值
+        const string & a = func(); //正确 常量左值引用右边可以是右值
+        常量左值引用是一个'万能'的引用类型，可以接受左值、右值、常量左值和常量右值
 
-    void func (string & a) {}
-    func("dsdas");      // 错误，参数必须是左值
-    void func (const string & a) {}
-    func("dsdas");      // 正确，参数可以是右值
+        void func (string & a) {}
+        func("dsdas");      // 错误，参数必须是左值
+        void func (const string & a) {}
+        func("dsdas");      // 正确，参数可以是右值
 
-    //常量左值引用意义
-    > 传引用不会新创建一个变量
-    > 不会调用构造函数，构造拷贝函数，拷贝函数
-    > 直接传对象，速度快，同时保证了在函数内部无法对对象进行修改
+        //常量左值引用意义
+        > 传引用不会新创建一个变量
+        > 不会调用构造函数，构造拷贝函数，拷贝函数
+        > 直接传对象，速度快，同时保证了在函数内部无法对对象进行修改
 
 (4) 右值引用与类型推导判断
-    //右值引用
     int a;
-    int&& b = 1; 
-    int&& b = a; //错误 a是左值，必须引用右值
-    //自动判断（T&& t在发生自动类型推断的时候，它是未定的引用类型）
-    template<typename T>
-    void func(T&& t){}
+    int && b = 1; // 右值引用
+    int && b = a; //错误 a是左值，必须引用右值
 
-    func(10);  //t变成右值引用
+    // 类型推断
+    template<typename T>
+    void func(T && t){}
+    // T && t 做参数时，会发生自动类型推断
+
+    func(10);  // t变成右值引用
     int x = 10;
-    func(x);   //t变成左值引用
+    func(x);   // t变成左值引用
 
-    template<typename T>
-    class Test {
-        Test(Test&& rhs); //注意 构造函数 没有发生类型推导 rhs肯定是右值引用
+    // 注意 移动构造函数不会发生类型推断
+    class A {
+        A(A && a); // 移动构造函数，不会发生类型推导，a必须是右值
     };
 
 (5) 续命与减少拷贝
@@ -1619,33 +1641,32 @@ A b = a; //调用拷贝构造函数
     }
 
     int x = func();    //需要拷贝
-    int&& x = func();   //不需要拷贝 仅仅是move
+    int && x = func();   //不需要拷贝 仅仅是move
 
     stringstream ss("dadada");
-    string && ss1 = ss.str(); //str()返回的是拷贝，所以我们用右值避免拷贝
-    cout << ss1 << endl;
+    string && ss1 = ss.str(); // str()返回的是拷贝，我们用右值引用可以避免拷贝
     const char * ss2 = ss1.c_str();
     char *ss3 = const_cast<char*>(ss2);
     *ss3 = 'W';
     cout << ss1 << endl;
 
-(6) 移动语义（移动构造函数）
-    class A
-    {
-        int* i_ptr;
-        A():i_ptr(new int(0)){
-            cout << "construct" << endl;
+(6) 移动语义(移动构造函数、移动赋值运算符)
+    C++11之前，对象的拷贝控制由三个函数决定：拷贝构造函数(Copy Constructor)、拷贝赋值运算符(Copy operator)和析构函数
+    C++11之后，新增加了两个函数：移动构造函数(Move Constructor)和移动赋值运算符(Move operator)
+
+    class A {
+        int* ptr；
+        A(){}
+        ~A(){}
+        A(const A & a){
+            // 拷贝构造，需要对a里面的指针做深层拷贝
         }
-        ~A(){delete i_ptr;}
-        A(const A& a):i_ptr(new int(*a.i_ptr)){ //注意 a是左值引用
-            cout << "copy" << endl;
-        }
-        A(A&& a):i_ptr(a.i_ptr){   //移动构造函数 a是右值引用 没有做深拷贝，仅仅是将指针的所有者转移到了另外一个对象
-            a.i_ptr = nullptr;      //非常重要，因为a被析构，所以要让他的内存指向一个空！！！
-            cout << "move" << endl;
+        A(A && a){
+            // 移动构造，将a中的指针移动到新建的类中，并且a.ptr = nullptr, 防止两个实例的析构对一个指针的释放
         }
     };
-    //对于上面的右值引用（A(A&& a)），a是一个右值，那么里面的内容也是右值，所以i_ptr = a.i_ptr合法。
+
+    //对于上面的移动构造函数 A(A && a)，a是一个右值
 
     A GetA(){
         return A();
@@ -1669,7 +1690,7 @@ A b = a; //调用拷贝构造函数
 (8) std::move(移动转移所有权)
     #include<utility>
     vector<int>	a = {1,2,3,4,5};
-    vector<int> b = move(a);
+    vector<int> b = move(a);    // 将a里的内容移动到b中，此时a中的内容为空
     cout << "===" << endl;
     for_each(a.begin(),a.end(),[](int& x){cout << x << endl;});
     cout << "===" << endl;
@@ -1686,13 +1707,7 @@ A b = a; //调用拷贝构造函数
 
 ### RTTI
 ```
-RTTI(Run Time Type Identification)即通过运行时类型识别，程序能够使用基类的指针或引用来检查着这些指针或引用所指的对象的实际派生类型。
-
-RTTI提供了两个非常有用的操作符：typeid和dynamic_cast。
-typeid操作符，返回指针和引用所指的实际类型；
-dynamic_cast操作符，将基类类型的指针或引用安全地转换为其派生类类型的指针或引用。
-
-如果表达式的类型是类类型且至少包含有一个虚函数，则typeid操作符返回表达式的动态类型，需要在运行时计算；否则，typeid操作符返回表达式的静态类型，在编译时就可以计算。
+RTTI(Run Time Type Identification) 运行时类型识别，它提供了运行时确定对象类型的方法
 
 #include <typeinfo>
 #include <typeindex>
@@ -1700,83 +1715,85 @@ dynamic_cast操作符，将基类类型的指针或引用安全地转换为其�
 //typeid操作符
 //type_index类
 
-1、type_info 类
-    namespace std {
-        class type_info
-        {
-        public:
-            virtual ~type_info(); //type_info can serve as a base class
-            // enable comparison
-            bool operator==(const type_info& rhs ) const;
-            // return !( *this == rhs)
-            bool operator!=(const type_info& rhs ) const;
-            bool before(const type_info& rhs ) const; // ordering
-            //return a C-string containing the type's name
-            const char* name() const;
-        private:
-            //objects of this type cannot be copied
-            type_info(const type_info& rhs );
-            type_info& operator=(const type_info& rhs);
-        }; //type_info
-    }
 
-2、typeid 返回值
-    //The result of a typeid expression is an lvalue of static type const
-    // 返回值是常量对象的引用
+如果一个class包含至少一个虚函数，则typeid操作符返回表达式的动态类型
+否则，typeid操作符返回表达式的静态类型，在编译时就可以确定
+
+
+
+1、type_info 类
+    type_info类在头文件<typeinfo>中定义，代表了一个C++类型的相关信息
+    一般由typeid操作符返回，不能自己构造
+
+    const type_info & info = typeid(int);
+
+    // type_info方法
+    name()  返回类型的名字
+    hash_code() 返回这个类型的哈希值（具有唯一性）
+    before()，可以判断一个type_info对象的顺序是否在另一个之前
+    ==和!=操作符，判断两个type_info相等或不等
+    
+    
+2、typeid 操作符
+    typeid操作符在<typeinfo>中声明，用来在运行时获取类型、变量、表达式的类型信息
+    适用于C++基础类型、内置类、用户自定义类、模板类等
+
+    两种形式：typeid( 类型 ) typeid( 表达式 )
+
     string a;
-    const type_info & rhs = typeid(a);
+    const type_info & info = typeid(a);
+    const type_info & info = typeid(string);
+
 
     //注意：typeid既不是函数，也不是宏，它是个操作符
 
+3、type_index
+    type_index类在头文件<typeindex>中声明，它是type_info对象的一个封装类
+    可以用作关联容器(比如map)和无序关联容器(比如unordered_map)的索引
 
-// 实例
-int a;
-const std::type_info & rhs = typeid(a);
-typeid(a) == typeid(int); // true
-std::cout << "tiInt.name = " << rhs.name() << std::endl;
+    class A;
+    unordered_map<type_index, string> names;
+    names[std::type_index(typeid(A))] = "A";
+    names[std::type_index(typeid(int))] = "int";
+    names[std::type_index(typeid(std::string))] = "string";
+    names[std::type_index(typeid(char))] = "char";
+    names[std::type_index(typeid(const char*))] = "const char*";
 
-class A{};
-std::unordered_map<std::type_index, std::string> type_names;
-type_names[std::type_index(typeid(A))] = "A";
-type_names[std::type_index(typeid(std::string))] = "string";
-
-static struct TYPE_NAME {
-    std::map<std::type_index, std::string> type_names;
-    template<typename T>
-    string getType(T v) {
-        return type_names[std::type_index(typeid(v))];
-    }
-    TYPE_NAME (){
-        type_names[std::type_index(typeid(int))] = "int";
-        type_names[std::type_index(typeid(std::string))] = "string";
-        type_names[std::type_index(typeid(char))] = "char";
-        type_names[std::type_index(typeid(const char*))] = "const char*";
-    }
-} TYPE;
-
-TYPE.getType("dsadas");
+    string a;
+    cout << names[type_index(typeid(a))] << endl;
 
 ```
 
 ### decltype
 ```
-decltype和auto都可以用来推断类型，但是二者有几处明显的差异：
-1.auto忽略顶层const，decltype保留顶层const；
-2.对引用操作，auto推断出原有类型，decltype推断出引用；
-3.对解引用操作，auto推断出原有类型，decltype推断出引用；
-4.auto推断时会实际执行，decltype不会执行，只做分析
+decltype和auto都可以用来推断类型，但是二者有几处明显的差异
+> auto忽略顶层const，decltype保留顶层const
+> 对引用操作，auto推断出原有类型，decltype推断出引用
+> 对解引用操作，auto推断出原有类型，decltype推断出引用
+> auto推断时会实际执行，decltype不会执行，只做分析
 ```
 
 ### 类型转换
 ```
-const_cast 去掉类型的const或volatile属性
-static_cast 基本数据类型转换，不能进行无关类型（如非基类和子类）指针之间的转换
-把空指针转换成目标类型的空指针
-把任何类型的表达式转换成void类型
+上行转换: 把派生类的指针或引用转换成基类，安全
+下行转换: 把基类指针或引用转换成派生类表示，不安全(由于没有动态类型检查)
 
-static_cast不能去掉类型的const、volatile属性(用const_cast)
+// static_cast
+static_cast相当于传统的C语言里的强制转换，一般情况下类型之间的转化用static_cast
+> 用于基类和派生类之间指针或引用的转换，进行上行转换，不能进行下行转换
+> 用于基本数据类型之间的转换，如把int转换成char，把int转换成enum
+> 把空指针转换成目标类型的空指针
+> 把任何类型的表达式转换成void类型
+> static_cast不能去掉类型的const、volatile属性
 
-//实例 const char* ==> void*
+// const_cast
+可以在某些情况下用来去除const属性
+用于const与非const、volatile与非volatile 之间的转换(去掉类型的const或volatile属性)
+
+// dynamic_cast
+????????????????????????
+
+// const char* ==> void*
 const char* a = "dadada";
 char* x = const_cast<char*>(a);
 void* y = static_cast<void*>(x);
@@ -1784,13 +1801,13 @@ void* y = static_cast<void*>(x);
 
 ### enum
 ```
-// c++ 11
-enum class Color {red,yellow,blue};
-Color myColor = Color::red; 
-
 // c++ 98
 enum My{a=1,b,c};
 My a = a;
+
+// c++ 11
+enum class Color {red,yellow,blue};
+Color myColor = Color::red; 
 ```
 
 ### goto
@@ -1798,7 +1815,7 @@ My a = a;
 int main(){
     goto label;
 
-    int i = 0;   //会报错，因为上面的goto会忽略这里的变量！！！所以，将变量写在goto之外
+    int i = 0;   // 错误，上面的goto会忽略这里的变量。需要将变量写在goto之外
 
     label:
     {
@@ -1809,17 +1826,16 @@ int main(){
 
 ### 析构竞态
 ```
-由于C++对象的生命周期需要程序员自己管理，因此析构可能出现竞态尤其是在多线程下，一个对象可以被多个线程访问时，下列情形：
-1、即将析构一个对象时从何得知其它线程是否在操作该对象
-2、若某个线程正欲操作对象时，如何得知其它线程是否在析构该对象，且正析构一半....
+C++对象的生命周期需要程序员自己管理，因此析构可能出现竞态尤其是在多线程下，一个对象可以被多个线程访问时，下列情形：
+> 即将析构一个对象时从何得知其它线程是否在操作该对象
+> 若某个线程正欲操作对象时，如何得知其它线程是否在析构该对象
 ```
 
-### class -> static function-> static variable
+### 静态成员函数、静态变量
 ```
-class中的static函数中放置此函数自己使用的变量
-//例如
-class A
-{
+如果一个静态成员函数使用的变量没有被其他成员函数使用，那么完全可以把这个 '变量' -> 'static 变量' 放在此函数中
+
+class A {
 public:
     static StaticFunc (){
         static std::mutex mutex;    //此变量StaticFun独有，没必要写到外面
@@ -1831,14 +1847,15 @@ public:
 
 ```
 
-
-### 遍历对象
+### 遍历class成员
 ```
-
+目前c++无法做到，需要对class代码侵入式的改变
 ```
 
 ### 序列化
 ```
+protobuf
+Boost.Serialization
 ```
 
 ### 反射
@@ -1846,15 +1863,15 @@ public:
 // 反射是程序获取自身信息的能力
 
 // 作用
-    可以用于动态创建类型，跨语言跨平台数据交互，持久化，序列化等等。
-    包含以下功能：
-        枚举所有member
-        获取member的name和type
-        能够get/set　member
+可以用于动态创建类型，跨语言跨平台数据交互，持久化，序列化等等
+包含以下功能
+> 枚举所有member
+> 获取member的name和type
+> 能够get/set　member
 
 // c++实现方法
-    运行期支持
-    宏
+运行期支持
+宏
 
 //了解yuanzhibi的实现方式 https://github.com/yuanzhubi/reflect_struct/blob/master/test.cpp
 
@@ -1865,12 +1882,12 @@ public:
 https://www.zhihu.com/question/33594512?sort=created
 
 // 相关库 std::any std::variant
-    原理: 底层是union和void*实现，union存储基础类型，里面的void*存储自定义类型，再加一个type字段存储类型编号即可
-    type ---> typeid ---> copyConstruct[typeid] ---> new type()
+底层是union和void*实现，union存储基础类型，里面的void*存储自定义类型，再加一个type字段存储类型编号即可
+type ---> typeid ---> copyConstruct[typeid] ---> new type()
 
-    > 注册类型 copyConstruct[typeid] = TypeCopyConstruct
-    > 赋值 ptr = new copyConstruct[typeid](value)
-    > 取值switch typeid type return value
+> 注册类型 copyConstruct[typeid] = TypeCopyConstruct
+> 赋值 ptr = new copyConstruct[typeid](value)
+> 取值switch typeid type return value
 ```
 
 ### operator[]
@@ -1884,16 +1901,16 @@ https://zhuanlan.zhihu.com/p/45545035
 
 平凡特征的数据类型
 > 所有基本数据类型(基本类型和指针类型)
-> 一个class或者struct，它不包含虚函数，没有虚基类，每一个数据成员都是POD，且所有的父类（如果存在的话）都是POD  
+> 一个class或者struct，它不包含虚函数，没有虚基类，每一个数据成员都是POD，且所有的父类(如果存在的话)都是POD  
 > POD数组  
 > 由POD组成的union  
 ```
 
-### union也可以这么用
+### union
 ```
-//可以在union里面定义类型，也可以定义构造函数
+可以在union里面定义类型，也可以定义构造函数
 
-//注意：union cannot define non-POD as member data, 对于这种情况直接用指针得了
+注意 union cannot define non-POD as member data，对于non pod数据可以使用指针
 
 union PopupInfo
 {
@@ -1915,11 +1932,22 @@ union My {
     map<int,int>* b; // 指针是POD
     vector<int> c;  //错误！non-POD 类型
 }
+
+// union判断大小端
+union {
+    short a;
+    char b[sizeof(short)];
+} un;
+
+un.a = 0x0102;
+if (un.b[0] == 1 && un.b[1] == 2) // 大端
+if (un.b[0] == 2 && un.b[1] == 1) // 小端
 ```
 
 ### struct 的位域
 ```
-C语言又提供了一种数据结构，称为“位域”或“位段”。所谓“位域”是把一个字节中的二进位划分为几个不同的区域，并说明每个区域的位数
+C语言又提供了一种数据结构，称为'位域'或'位段'
+所谓位域是把一个字节中的二进位划分为几个不同的区域，并说明每个区域的位数
 
 struct bs { 
     int a:8; 
@@ -1947,6 +1975,7 @@ public:
     Object(Object && ob);                           //移动构造
 
     Object<T> & operator=(const Object<T> & ob)     //拷贝赋值
+
     template<typename T1>
     Object<T> & operator=(const Object<T1> & ob)    //泛化拷贝
 
@@ -1959,11 +1988,8 @@ public:
 };
 
 
-Object<int> a = Object<int>::Object();  // 移动构造函数
-Object<int> a;
-a = 
-
-
+Object<int> a = Object<int>::Object();  // 移动构造
+Object<int> b = a; // 拷贝构造
 ```
 
 ### 可变参数实例
@@ -2013,7 +2039,6 @@ void DetailAnno::Init<string, Argv...>(const string str_, Argv... argvs){
         a(){
             cout << "T" << endl;
         }
-        virtual ~a(){}
     };
 
     template<typename T>
@@ -2022,7 +2047,6 @@ void DetailAnno::Init<string, Argv...>(const string str_, Argv... argvs){
         a(){
             cout << "T*" << endl;
         }
-        virtual ~a(){}
     };
 
     a<char> x; 
@@ -2057,17 +2081,17 @@ My<T>::My(const My<T1> & m){
 
 ### Traits Classes 
 ```
-// 在 C++ 中，traits 习惯上总是被实现为 struct ，但它们往往被称为 traits classes。Traits classes 的作用主要是用来为使用者提供类型信息。
-
-//  STL 中，容器与算法是分开的，容器与算法之间通过迭代器联系在一起
-
 https://www.cnblogs.com/mangoyuan/p/6446046.html
 https://cloud.tencent.com/info/a180e28f80b999eb22700e2407fc0957.html
 https://blog.csdn.net/lihao21/article/details/55043881
 
-//函数的“template参数推导机制”推导的只是参数，无法推导函数的返回值类型
+在 C++ 中，traits 习惯上总是被实现为 struct ，但它们往往被称为 traits classes
+Traits classes 的作用主要是用来为使用者提供类型信息
 
-//示例
+STL中，容器与算法是分开的，容器与算法之间通过迭代器联系在一起
+
+函数的template参数推导机制推导的只是参数，无法推导函数的返回值类型
+
 template <typename T>
 struct iterator_traits {
     typedef typename T::value_type value_type;
@@ -2078,8 +2102,8 @@ struct iterator_traits<T*> {
     typedef T value_type;
 };
 
-template <typename T> typename iterator_traits<T>::value_type
-func(T a) {
+template <typename T> 
+typename iterator_traits<T>::value_type func(T a) {
     return *a;
 }
 
@@ -2107,7 +2131,7 @@ public:
 };
 ```
 
-### stateful ！！！
+### stateful
 ```
 //编译时确定count数
 
@@ -2198,7 +2222,7 @@ struct MyS a = {
 //有序
 struct TestS {
     int a;
-    std::string b;
+    string b;
     char c;
 };
 
@@ -2206,8 +2230,14 @@ struct TestS a = {1, "dasda", 'c'};
 struct TestS a {1, "dasda", 'c'};
 ```
 
-### {}一个用法
+### ({})
 ```
+// int a = 1
+int a = ({
+    ....;
+    1;
+});
+
 #define var(x) (*({     \
     &x;}))
 
@@ -2234,21 +2264,19 @@ const只保证了运行时不直接被修改（但这个东西仍然可能是个
 ### __attribute__
 ```
 (1) 概念
-    GNU C 的一大特色就是__attribute__ 机制。__attribute__ 可以设置函数属性（Function Attribute ）、变量属性（Variable Attribute ）和类型属性（Type Attribute ）
-    __attribute__ 书写特征是：__attribute__ 前后都有两个下划线，并切后面会紧跟一对原括弧，括弧里面是相应的__attribute__ 参数。
-    __attribute__ 语法格式为：__attribute__ ((attribute-list))
-
+    GNU C 的一大特色就是__attribute__ 机制
+    
+    __attribute__ 可以设置函数属性(Function Attribute)、变量属性(Variable Attribute)和类型属性(Type Attribute)
+    语法格式 __attribute__(参数)
 
 (2) 函数属性(Function Attribute)
-    __attribute__((noreturn))    表示没有返回值
-    __attribute__((unused))   表示该函数或变量可能不使用，这个属性可以避免编译器产生警告信息 
+    __attribute__((noreturn))   // 表示没有返回值
+    __attribute__((unused))     // 表示该函数或变量可能不使用，这个属性可以避免编译器产生警告信息 
     void __attribute__((noreturn)) handle_signal(int __attribute__((unused)) signal) {
         exit(0);
     }
 
-
 (3) 类型属性(Type Attributes)
-
 
 (4) 变量属性(Variable Attribute)
     __bitwise	__attribute__((bitwise))
@@ -2291,7 +2319,7 @@ extern "C++" {
     typedef basic_string<wchar_t> wstring;
 }
 
-// 类basic_string
+// class basic_string
 template <class charT, 
           class traits = char_traits<charT>,
           class Allocator = allocator<charT> >
@@ -2327,12 +2355,13 @@ fp = freopen("file.txt", "w+", stdout); // /输出重定向，输出数据将保
 
 pid_t wait(int *statloc);
 pid_t waitpid(pid_t pid,int *statloc, int options);
-//statloc指向终止进程的终止状态，如果不关心终止状态可指定为空指针
-//pid有四种情况：
-//1.pid==-1 等待任意子进程
-//2.pid>0 等待进程ID与pid相等的子进程
-//3.pid==0 等待组ID等于调用进程组ID的任意子进程
-//4.pid<-1 等待组ID等于pid绝对值的任意子进程
+// statloc  指向终止进程的终止状态，如果不关心终止状态可指定为空指针
+// pid      有四种情况
+            pid == -1 等待任意子进程
+            pid > 0   等待进程ID与pid相等的子进程
+            pid == 0  等待组ID等于调用进程组ID的任意子进程
+            pid < -1  等待组ID等于pid绝对值的任意子进程
+
 pid_t wait(int *statloc)
 {
     return waitpid(-1, statloc, 0);
@@ -2343,7 +2372,6 @@ pid_t wait(int *statloc)
 ```
 (1) insert
     std::map<int, string> myMap;
-    ...
     std::pair<std::map<int, string>::iterator, bool> findItem;  
     findItem = myMap.insert(std::pair<int, string>(1, "student_one"));  
     if(findItem.second == true) {
@@ -2383,7 +2411,7 @@ struct less : binary_function <T,T,bool> {
 // 键值排序
 struct cmpkeylen{
     bool operator()(const string & a, const string & b){
-        return(a.length() > b.length()); // 按字符串长度排序
+        return a.length() > b.length(); // 按字符串长度排序
     }
 };
 
@@ -2413,38 +2441,39 @@ void main()
 }  
 ```
 
-### iterator
+### iterator const_iterator
 ```
 vector<int> a;
-vector<int>::iterator i;
-for(i=a.begin();i!=a.end();i++){}
+vector<int>::iterator i = a.begin();
+i++;
+*i = 1;
+
 const vector<int> a;
 vector<int>::const_iterator i;  //对于const 必须用const_iterator !!!
-for(i=a.begin();i!=a.end();i++){}
 ```
 
-### const 对象只能访问 const 函数
+### const对象
 ```
-// C++中，const 修饰的参数引用的对象，只能访问该对象的const函数，因为调用其他函数有可能会修改该对象的成员，
-// 编译器为了避免该类事情发生，会认为调用非const函数是错误的。
-struct Base
-{
-    Base() { std::cout << "  Base::Base()\n"; }
-    virtual ~Base() { std::cout << "  Base::~Base()\n"; }
-    virtual void test() { std::cout<< " test in base\n"; } <-------加上 const
+const 对象只能访问 const 成员函数
+
+const 修饰的参数引用的对象，只能访问该对象的const成员函数，因为调用其他函数有可能会修改该对象的成员
+
+编译器为了避免该类事情发生，会认为调用非const函数是错误的。
+
+class A {
+    void test() {}
+    void test1() const {}   // const成员函数表示，不会修改任何成员内容
 };
 
-void MyTest(const Base& b)
-{
-    b.test();
+void accessFunc(const A & a){
+    b.test();   // 错误
+    b.test1();  // 正确
 }
 
-// Base中声明test时加上const，即void test() const
-
-// 注意当函数后面加了const时，返回引用和指针时要加const，但是返回非引用可以不加
-const mat & func()const{...}
-const mat * func()const{...}
-mat func()const{...}
+当函数后面加了const时，返回引用和指针时要加const，但是返回非引用可以不加
+const A & createA() const {}
+const A * createA() const {}
+A func() const {}
 ```
 
 ### initializer_list
@@ -2456,9 +2485,9 @@ g({ 1, 2, 3, 4 }); //会报错  编译器分不清 vector还是list
 //对于{}的固定数组initializer_list更合适
 void g(std::vector<int> const &items){}; 
 void g(std::list<int> const &items){}; 
-void g(std::initializer_list<int> const &items){}; //注意const
+void g(std::initializer_list<int> const &items){}; //注意const initializer_list不能修改，更符合参数的特点
 g({ 1, 2, 3, 4 });
-initializer_list不能修改，更符合参数的特点
+
 ```
 
 ### 函数对象
@@ -2476,7 +2505,7 @@ static void forkRun(function<T(Args...)> func, Args... args);
 int add(int a, int b){return a+b;} 
 
 // lambda表达式
-auto mod = [](int a, int b){ return a % b;}
+auto mod = [](int a, int b)->int{ return a % b;}
 
 // 函数对象类
 struct divide{
@@ -2494,25 +2523,23 @@ std::function<int(int ,int)>  c = divide(); //divide类构造
 ### std::bind
 ```
 // 绑定普通函数
-double my_divide (double x, double y) {return x/y;}
-std::function<double(double,double)> fn_half = std::bind (my_divide,std::placeholders::_1,2);  // placeholders::_1 占位符
+double my_divide(double x, double y) {return x/y;}
+
+function<double(double,double)> fn_half = std::bind(my_divide, std::placeholders::_1,2);  // placeholders::_1 占位符
 std::cout << fn_half(10) << '\n';     // 2
 
 // 绑定一个成员函数
 struct Foo {
-    void print_sum(int n1, int n2)
-    {
+    void print_sum(int n1, int n2) {
         std::cout << n1+n2 << '\n';
     }
     int data = 10;
 };
-int main() 
-{
-    Foo foo;
-    //bind绑定类成员函数时，第一个参数表示对象的成员函数的指针，第二个参数表示对象的地址
-    auto f = std::bind(&Foo::print_sum, &foo, 95, std::placeholders::_1);
-    f(5); // 100
-}
+
+Foo foo;
+// bind绑定类成员函数时，第一个参数表示对象的成员函数的指针，第二个参数表示对象的地址
+auto f = std::bind(&Foo::print_sum, &foo, 95, std::placeholders::_1);
+f(5); // 100
 
 ```
 
@@ -2624,14 +2651,12 @@ std::pair<int, string>::first_type x = 1 //正确
     (2) 调用标准库函数 operator delete 来释放该对象的内存
 ```
 
-### 对象数组与对象指针
-```c++
-对象数组除了分配对应大小的空间外，还分配了一段空间(double)用来储存数组的个数
-[8 bytes] + [数组空间]
+### 对象数组与对象指针 ???????????
+```
+对象数组除了分配对应大小的空间外，还分配了一段空间(double)用来储存数组的个数  [8 bytes] + [数组空间]
 
 所以new[]分配的空间要用delete[]来释放，其逻辑是先根据数组的个数调用n遍析构函数，然后将指针地址减去8再释放整个空间
 
-// 实例
 class A {
     void* operator new(size_t size) {
         cout << size << endl;
@@ -2643,8 +2668,8 @@ class A {
     }
 };
 
-A* a = new A;       // 1
-A* a1 = new A [1];  // 9 8+1
+A* a = new A;       // 打印 1
+A* a1 = new A [1];  // 还是打印 1
 
 char buf[100];
 A* a = new A(buf) [1];
@@ -2672,6 +2697,7 @@ https://zhuanlan.zhihu.com/p/34725232
     class allocator{ 
 
     };
+
     std::vector<int> v;
     等价于
     std::vector<int, allocator<int>> v;
@@ -2689,15 +2715,15 @@ https://zhuanlan.zhihu.com/p/34725232
         typedef ptrdiff_t difference_type;
 
         // 配置空间，足以存储n个T对象。第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
-        pointer allocator::allocate(size_type n, const void* = 0)
+        pointer allocate(size_type n, const void* = 0)
         
         // 释放先前配置的空间
-        void allocator::deallocate(pointer p, size_type n)
+        void deallocate(pointer p, size_type n)
         
         // 调用对象的构造函数，等同于 new((void*)p) value_type(x)
-        void allocator::construct(pointer p, const T& x)
+        void construct(pointer p, const T& x)
         // 调用对象的析构函数，等同于 p->~T()
-        void allocator::destroy(pointer p)
+        void destroy(pointer p)
     };    
 
 (3) 示例
@@ -2715,6 +2741,13 @@ https://zhuanlan.zhihu.com/p/34725232
     vector<string> list(10, "aaaa");
     uninitialized_copy_n(list.begin(), 5, s);  //构建填充
     uninitialized_fill_n(list.begin(), 5, s);  //拷贝填充
+
+(4) 实现自己的allocator
+    需要实现四个函数(上述)
+    pointer allocate(size_type n, const void* = 0)
+    void deallocate(pointer p, size_type n)
+    void construct(pointer p, const T& x)
+    void destroy(pointer p)
 ```
 
 ### 智能指针
@@ -2730,13 +2763,15 @@ https://zhuanlan.zhihu.com/p/34725232
 (2) 切片
     shared_ptr<int> a(new int [10] {1,2,3,4,5});
     int* pI = a.get();
-    cout << *a << endl;  //1
-    cout << *(a+1) << endl; //错误
-    cout << a[0] << endl;  //错误
+    cout << *a << endl;     // 1
+    cout << *(a+1) << endl; // 错误
+    cout << a[0] << endl;   // 错误
+
     shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
-    cout << *a << endl;  //错误
-    cout << a[0] << endl;  //1
+    cout << *a << endl;     // 错误
+    cout << a[0] << endl;   // 1
     shared_ptr<vector<int>> vc = make_shared<vector<int>>(10,3);
+    cout << (*vc)[1] << endl;
     cout << vc->operator[](1) << endl;
     cout << vc->size() << endl;
 
@@ -2861,7 +2896,7 @@ https://cloud.tencent.com/developer/article/1008625
     streambuf有两种用法，一是直接使用各个接口，二是继承并实现新的I/O channels
     streambuf有两个子类，stringbuf, filebuf
     1) 用法
-        //自定义缓冲区cout
+        //自定义cout缓冲区
         char buf[1024] = {0};
         stringbuf a;
         a.pubsetbuf(buf, 1024);
@@ -2869,7 +2904,8 @@ https://cloud.tencent.com/developer/article/1008625
         cout << "ddasdaasdas";
         printf("-- %s --\n", a.str().c_str());
         printf("-- %s --\n", buf);
-        //自定义缓冲区file
+
+        //自定义file缓冲区
         std::ifstream file;
         char buf[10241];
         file.rdbuf()->pubsetbuf(buf, sizeof buf);
@@ -2976,7 +3012,7 @@ pthread_mutex_lock()    锁定互斥锁，如果尝试锁定已经被上锁的�
 pthread_mutex_unlock() 	释放互斥锁
 pthread_mutex_destory() 互斥锁销毁函数
 
-// pthread_exit()和return类似就是推出的作用，不涉及资源释放
+pthread_exit()和return类似就是退出的作用，不涉及资源释放
 
 1、pthread_create
     // 注意函数定义: void* (*)(void*)
@@ -3016,10 +3052,10 @@ pthread_mutex_destory() 互斥锁销毁函数
         cout << "func once" << endl;
     }
     void *func1(void *arg){
-        func_once(&once, func_once);
+        pthread_once(&once, func_once);
     }
     void *func2(void *arg){
-        func_once(&once, func_once);
+        pthread_once(&once, func_once);
     }
     pthread_t td1, td2;
     pthread_create(&td1, NULL, func1, NULL);
@@ -3112,17 +3148,21 @@ pthread_mutex_destory() 互斥锁销毁函数
     (2) 条件等待
         pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
         pthread_mutex_lock(&mutex);
-        while(条件1成立)
+        while(条件1不成立)
             pthread_cond_wait(&cond,&mutex);
             ...
         pthread_mutex_unlock(&mutex);
-        当'条件1'成立的时候，执行pthread_cond_wait(&cond,&mutex)，获得互斥锁，然后线程被挂起
+        
+        pthread_cond_wait函数的返回并不意味着条件的值一定发生了变化，必须重新检查条件的值
+        因为存在虚假唤醒
 
     (3) 条件激发
         pthread_mutex_lock(&mutex);
-        if(条件1不成立)
+        if (条件1成立)
             pthread_cond_signal(&cond);
         pthread_mutex_unlock(&mutex);
+        
+        必须在互斥锁的保护下使用相应的条件变量，否则对条件变量的解锁有可能发生在锁定条件变量之前，从而造成死锁
         条件1不成立的时候,执行pthread_cond_signal(&cond)，激发条件变量cond，使得被挂起的线程被唤醒
 
         pthread_cond_broadcast(&cond1)
@@ -3226,11 +3266,14 @@ https://www.cnblogs.com/haippy/p/3284540.html
                 检测硬件并发特性
         
         3) 成员函数作为线程函数
-            一般的类成员函数是不能用作回调函数的，因为库函数在使用回调函数时，都会传递指定的符合回调函数声明的的参数给回调函数，而类成员函数隐式包含一个this指针参数，所以把类成员函数当作回调函数编译时因为参数不匹配会出错
+            一般的类成员函数是不能用作回调函数的，因为库函数在使用回调函数时，都会传递指定的符合回调函数声明的的参数
+
+            类成员函数隐式包含一个this指针参数，所以把类成员函数当作回调函数编译时因为参数不匹配会出错
 
             1> 方法一
                 把成员函数设成静态成员函数，不属于某个对象，属于整个类
             2> 方法二
+                传递this指针
                 class A{
                 public:
                     int a;
@@ -3249,7 +3292,8 @@ https://www.cnblogs.com/haippy/p/3284540.html
     (1) 系列类(四种)
         1) std::mutex，最基本的 Mutex 类
             1> 构造函数
-                std::mutex不允许拷贝构造，也不允许 move 拷贝，最初产生的 mutex 对象是处于 unlocked 状态的
+                std::mutex 不允许拷贝构造，不允许移动构造
+                最初产生的 mutex 对象是处于 unlocked 状态
             2> 成员函数
                 > lock()
                     调用线程将锁住该互斥量
@@ -3385,9 +3429,9 @@ https://www.cnblogs.com/haippy/p/3284540.html
 
 4、<semaphore.h>
     (1) 初始化
-        int sem_init(sem_t *sem,int pshared,unsigned int value); 
+        int sem_init(sem_t *sem, int pshared, unsigned int value); 
         > pshared
-            指明信号量是由进程内线程共享，还是由进程之间共享
+            指明信号量是由'进程内线程共享'还是'进程之间共享'
             pshare为0表明进程内的线程共享，非零表明进程间可共享
         > 返回
             成功时返回 0；错误时，返回 -1，并把 errno 设置为合适的值
@@ -3489,7 +3533,8 @@ void func<int*>(int *(&a)) {}
 ### 为什么需要size_t
 ```
 主要为了兼容不同系统，提高移植性
-例如：需要把指针转换成某个整数类型T来做些按位"与"的对齐操作(指针类型C语言不支持逻辑与等位操作)
+
+例如需要把指针转换成某个整数类型T来做些按位"与"的对齐操作(指针类型C语言不支持逻辑与等位操作)
 
 或者
 
@@ -3498,23 +3543,29 @@ void func<int*>(int *(&a)) {}
 
 ### 容器的emplace操作
 ```
-针对vector、deque、list引入了三个新成员，emplace_front、emplace和emplace_back，这些操作分别对应push_front、insert和push_back
+c++ 11 vector、deque、list引入了三个新成员
+emplace_front   push_front
+emplace         insert
+emplace_back    push_back
 
-目的：避免不必要的临时对象的产生
+这些函数可以代替旧的函数，它们的优点 避免不必要的临时对象的产生
 
-struct Foo {
-    Foo(int m, double n);
+class A {
+    int a;
+    A(int _a):a(_a){}
+    A(const A & a){ 拷贝构造 }
+    A(A && a){移动构造}
+    A & operator = (const A & a) {} 
 };
 
-std::vector<Foo> v;
-v.push_back(Foo(1, 3.14));   // 产生一个临时变量
-v.push_back({1, 3.14});          // 产生一个临时变量
-v.emplace_back(1, 3.14);    // 没有产生临时变量，直接构造
+std::vector<A> v;
+v.push_back(Foo(1));    // 调用构造函数，调用移动构造
+v.emplace_back(Foo(2)); // 调用构造函数
 
 
 ```
 
-### const与优化
+### const与volatile const
 ```
 // 例子
 const int a=1;
@@ -3532,8 +3583,8 @@ c++中有一块const内存，并且不同变量，一样的内容，他们的指
 
 ```
 
-### 模板类调用成员模板函数
-```c++
+### 模板类调用成员模板函数???????????
+```
 template <typename T>
 struct A{
     template<typename T1>
@@ -3555,21 +3606,25 @@ int main(){
     A<int> a;
     a.func<int>();                      // 正确
 }
-
 ```
 
-### 继承virtual注意的记录
+### 继承virtual
 ```
+virtual 不会记录 泛函数
+
 // 情景一
 class A {
 public:
-    virtual void func(int x) {
-        cout << "A: int " << x << endl;
-    }
-    virtual void func(float x) {
-        cout << "A: float " << x << endl;
-    }
+    virtual void func(int x) {}
 };
+
+class B {
+public:
+    virtual void func(float x) {}
+};
+
+A* a = new B();
+a->func(1); // 调用A
 
 // 情景二
 class A
