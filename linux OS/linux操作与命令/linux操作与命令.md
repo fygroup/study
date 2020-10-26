@@ -32,6 +32,9 @@ rpm -qpl xxx.rpm    //查看rpm软件将要安装的路径信息
 rpm -i --relocate /usr/bin=/home/easwy/bin --relocate /usr/share/doc=/home/easwy/doc ext3grep-0.10.0-1.el5.rf.i386.rpm
 更改目标路径
 
+rpm/yum适用于Redhat、CentOS、Suse等平台
+apt-get/dpkg适用于Debian、Ubuntu等平台
+
 //---vsftp-----------------------------------
 PORT（主动）模式
 PASV（被动）模式

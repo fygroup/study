@@ -1367,6 +1367,11 @@ for_each(mList.begin(), mList.end(), [](int & x){
     cout << x << endl;
 });
 
+
+for_each(m.begin(), m.end(), [](const pair<string, string> & i){
+        
+});
+
 ```
 
 ### sort
@@ -2415,7 +2420,7 @@ struct cmpkeylen{
     }
 };
 
-map<sting,int,cmpkeylen> mymap;
+map<string,int,cmpkeylen> mymap;
 //注意 第三个参数是个函数对象，c++ 11中很多库函数都是函数对象
 ```
 
@@ -2492,6 +2497,35 @@ g({ 1, 2, 3, 4 });
 
 ### 函数对象
 ```
+函数对象是实现 operator() 的任何类型
+C++ 标准库主要使用函数对象作为容器和算法内的排序条件
+
+// 优势
+相对于直接函数调用，函数对象有两个优势
+第一个是函数对象可包含状态
+第二个是函数对象是一个类型，因此可用作模板参数
+
+// 创建函数对象
+若要创建函数对象，请创建一个类型并实现 operator()，例如：
+class Functor
+{
+public:
+    int operator()(int a, int b)
+    {
+        return a < b;
+    }
+};
+
+
+// 函数对象和容器
+C + + 标准库在标头文件中包含若干函数对象 <functional>
+这些函数对象的一个用途是用作容器的排序条件
+template <class Key,
+    class Traits=less<Key>,
+    class Allocator=allocator<Key>>
+class set
+
+
 #include <functional>
 template<typename T, typename... Args> //T 返回 argvs参数
 static void forkRun(function<T(Args...)> func, Args... args);
@@ -3676,4 +3710,47 @@ public:
 };
 A a
 sizeof(a)   // 8 多了虚函数指针
+```
+
+### 模板函数参数可以用T
+```
+template<typename T>
+void printVec(const vector<T> & vec){
+    for_each(vec.begin(), vec.end(), [](const T & a){
+        cout << a << " ";
+    });
+    cout << endl;
+}
+
+printVec<int>({1,2,3,4}); // 必须要显式调用
+```
+
+### 迭代器失效
+```
+(1) push_back导致迭代器失效
+    vector在push_back的时候当容量不足时会触发扩容，导致整个vector重新申请内存，并且将原有的数据复制到新的内存中，并将原有内存释放，这自然是会导致迭代器失效的，因为迭代器所指的内存都已经被释放
+
+(2) insert和erase导致的迭代器失效
+    插入操作导致vector扩容，迭代器失效原因和push_back相同
+    插入操作引起vector内元素移动，导致被移动部分的迭代器失效
+
+```
+
+### 构造函数 析构函数 虚函数
+```
+// 构造函数不能是虚函数
+由于对象开始还未分配内存空间，所以根本就无法找到虚函数表，从而构造函数也无法被调用。所以构造函数是不能成为虚函数
+
+// 析构函数最好是虚函数
+class Base {};
+class Sub:public Base {};
+
+SubClass* pObj = new SubClass();
+delete pObj;
+不管析构函数是否是虚函数(即是否加virtual关键词)，delete时基类和子类都会被释放
+
+BaseClass* pObj = new SubClass();
+delete pObj;
+若析构函数是虚函数(即加上virtual关键词)，delete时基类和子类都会被释放
+若析构函数不是虚函数(即不加virtual关键词)，delete时只释放基类，不释放子类
 ```

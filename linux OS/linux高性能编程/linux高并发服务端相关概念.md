@@ -3,24 +3,26 @@
 ```
 1、讨论同步、异步、阻塞、非阻塞时，必须先明确是在哪个层次进行讨论
 2、讨论究竟是异步还是同步，一定要严格说明说的是哪一部分
-3、从Linux接口的角度说，阻塞和非阻塞都是同步。libaio那些才是异步。真正异步接口一般是你提供一个缓冲区给接口，然后接口立即返回，在一段时间之后通过另一种机制（回调，消息，信号等）通知你完成，在通知完成之前缓冲区你不能碰，系统在读写。
-4、在处理 IO 的时候，阻塞和非阻塞都是同步 IO，只有使用了特殊的 API 才是异步 IO。
-5、对unix来讲：阻塞式I/O(默认)，非阻塞式I/O(nonblock)，I/O复用(select/poll/epoll)都属于同步I/O，因为它们在数据由内核空间复制回进程缓冲区时都是阻塞的(不能干别的事)。只有异步I/O模型(linux的libaio)是符合异步I/O操作的含义的，即在1数据准备完成、2由内核空间拷贝回缓冲区后 通知进程，在等待通知的这段时间里可以干别的事。
-6、阻塞，非阻塞：进程/线程要访问的数据是否就绪，进程/线程是否需要等待；
-   同步，异步：访问数据的方式，同步需要主动读写数据，在读写数据的过程中还是会阻塞；异步只需要I/O操作完成的通知，并不主动读写数据，由操作系统内核完成数据的读写。
-7、《UNIX网络编程：卷一》对unix的io讲得明明白白。
-8、 说白了，同步需要从内核空间拷贝到用户空间，异步是内核帮你把数据拷贝到用户空间，所以异步需要底层api的支持。而阻塞和非阻塞是指进程访问的数据是否准备就绪，没有就绪则等待！！！
-9、异步有异步io和异步操作，异步io如第八步所说的，而异步操作就多了，多线程、协程。。。，所以要根据软件的涉及。
+3、从Linux接口的角度说，处理IO的阻塞和非阻塞都是同步。libaio那些才是异步。真正异步接口一般是你提供一个缓冲区给接口，然后接口立即返回，在一段时间之后通过另一种机制(回调，消息，信号等)通知你完成，在通知完成之前缓冲区你不能碰，系统在读写
+4、对unix来讲：阻塞式I/O(默认)，非阻塞式I/O(nonblock)，I/O复用(select/poll/epoll)都属于同步I/O，因为它们在数据由内核空间复制回进程缓冲区时都是阻塞的(不能干别的事)。只有异步I/O模型(linux的libaio)是符合异步I/O操作的含义的，即在1数据准备完成、2由内核空间拷贝回缓冲区后 通知进程，在等待通知的这段时间里可以干别的事。
+5、阻塞与非阻塞
+	进程/线程要访问的数据是否就绪，进程/线程是否需要等待
+   同步与异步
+   	访问数据的方式，同步需要主动读写数据，在读写数据的过程中还是会阻塞；异步只需要I/O操作完成的通知，并不主动读写数据，由操作系统内核完成数据的读写
+6、[UNIX网络编程：卷一] 对unix的io讲得明明白白
+7、说白了，同步需要从内核空间拷贝到用户空间，异步是内核帮你把数据拷贝到用户空间，所以异步需要底层api的支持。而阻塞和非阻塞是指进程访问的数据是否准备就绪，没有就绪则等待
+8、异步有异步io和异步操作，异步io如第7条所述，而异步操作就多了，多线程、协程。。。，所以要根据软件的设计
 
 ```
 
 ### 异步的进化
 ```
-1、远古时代（回调函数）
+1、远古时代
+	回调函数
 2、promise时代
 	promise().then().then()
 3、Generator生成器
-	实现代码生成器，实现switch（）类型的协程，异步。但不是真正异步
+	实现代码生成器，实现switch()类型的协程，异步(但不是真正异步)
     co(function *(){
         let db, collection, result; 
         let person = {name: "yika"};
@@ -68,36 +70,41 @@ https://zhuanlan.zhihu.com/p/25964339
 协程的意义就是阻塞异步，所以一些io函数必须设计为，非阻塞异步
 
 //switch语法糖的实现协程
-    注意：此种实现不能用于try catch、递归循环
+注意：此种实现不能用于try catch、递归循环
 
-    #define BEGIN_CORO void operator()() { switch(next_line) { case 0:
-    #define YIELD next_line=__LINE__; break; case __LINE__:
-    #define END_CORO }} int next_line=0
+#define BEGIN_CORO void operator()() { \
+	switch(next_line) { \
+		case 0:	
 
-    struct coroutine{
-        int n_;
-        coroutine(int n__):n_(n__){}
-        void operator()(){
-            case 0:
-                cout << n_++ << end;
-                next_line = __LINE__ + 2;
-                break;
-            case __LINE__:
-                cout << n_++ << end;
-                next_line = __LINE__ + 2;
-                break;
-            case __LINE__:
-                cout << n_++ << end;
-                next_line = __LINE__ + 2;
-                break;
-            case         
-                next_line = 0;
-        }
-        int next_line;
+#define YIELD next_line=__LINE__; break; case __LINE__:
+
+#define END_CORO }} int next_line=0
+
+struct coroutine{
+    int n_;
+    coroutine(int n__):n_(n__){}
+    void operator () (){
+        case 0:
+            cout << n_++ << end;
+            next_line = __LINE__ + 2;
+            break;
+        case __LINE__:
+            cout << n_++ << end;
+            next_line = __LINE__ + 2;
+            break;
+        case __LINE__:
+            cout << n_++ << end;
+            next_line = __LINE__ + 2;
+            break;
+        case         
+            next_line = 0;
     }
+    int next_line;
+}
     
 
-async/await的出现，实现了基于stackless coroutine的完整coroutine。在特性上已经非常接近stackful coroutine了，不但可以嵌套使用也可以支持try catch。所以是不是可以认为async/await是一个更好的方案？
+async/await的出现，实现了基于stackless coroutine的完整coroutine
+在特性上已经非常接近stackful coroutine了，不但可以嵌套使用也可以支持try catch。所以是不是可以认为async/await是一个更好的方案？
 
 ```
 

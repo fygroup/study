@@ -412,6 +412,8 @@ SIGHUP会在以下3种情况下被发送给相应的进程：
         .....;
     }
 
+    Linux下可通过 prctl进行对进程的各种控制，例如设置/获得进程名
+
 ```
 
 ### 字符编码
@@ -695,3 +697,12 @@ while((ptr = readdir(dir)) != NULL){
 
 ```
 
+### 程序暂停，代码可控
+```
+// windows
+system("pause")
+
+// linux
+cin.get()   // c++
+getchar()   // c
+```
