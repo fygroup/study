@@ -264,6 +264,16 @@ https://yeasy.gitbooks.io/docker_practice/content/
                    新镜像名称          指定dockerfile路径     dockerfile目录
 
     注意：一个镜像不能超过127层
+
+(5) 镜像优化(减小镜像尺寸)
+    1) 链式指令
+        减少构建层数，且每一层末尾执行clean操作(一些缓存文件等)
+    2) 分离编译镜像和部署镜像
+        编译过程中的依赖文件，一旦应用程序编译完毕，这些文件就不再有用
+        思路：获得内部程序需要的相关依赖库，然后将这些库ADD到镜像中
+        https://cloud.tencent.com/developer/article/1401008
+
+
 ```
 
 ### dockerfile实例
@@ -301,4 +311,14 @@ sudo systemctl restart docker
 
 ### 资源管理
 ```
+```
+
+### docker网络模式
+```
+https://www.cnblogs.com/zuxing/articles/8780661.html
+https://www.jianshu.com/p/d84cdfe2ea86
+
+Bridge(默认) Container host none
+
+但如果启动容器的时候使用host模式，那么这个容器将不会获得一个独立的Network Namespace，而是和宿主机共用一个Network Namespace。容器将不会虚拟出自己的网卡，配置自己的IP等，而是使用宿主机的IP和端口
 ```

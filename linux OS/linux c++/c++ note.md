@@ -3754,3 +3754,71 @@ delete pObj;
 若析构函数是虚函数(即加上virtual关键词)，delete时基类和子类都会被释放
 若析构函数不是虚函数(即不加virtual关键词)，delete时只释放基类，不释放子类
 ```
+
+### 柔性数组
+```
+// 例子
+struct A {
+	int a;
+	char b[];
+};
+
+A* a = (A*)malloc(sizeof(A) + sizeof(char) * 10);
+a->a = 12;
+const string s = "dasdadadd";
+strcpy(a->b, s.c_str());
+cout << a->b << endl;
+cout << sizeof(*a) << endl; // 4
+free(a);    
+
+```
+
+### c语言实现c++的3大特性
+```
+1、封装
+    typedef struct MyClass {
+        int a;  // 成员变量
+        int (*func1)(int, int);
+        void (*func2)(int);
+    } MyClass;
+
+    int funcItem1(int a, int b){
+        ...
+    }
+    void funcItem2(int a){
+        ...
+    }
+
+    // 构造函数
+    MyClass* constructor(int _a){
+        MyClass *item = new MyClass;
+        item->a = _a;
+        item->func1 = funcItem1;
+        item->func2 = funcItem2;
+        return item;
+    }
+
+2、继承
+    typedef struct Base {
+        int a;
+        void (*funcBase)();
+    } Base;
+
+    typedef struct Sub {
+        Base base;
+        int b;
+        void (*funcSub)();
+        ...
+    } Sub;
+
+3、多态
+    Sub b;
+    b.funcSub = func2;
+    b.base.funcBase = func1;
+    Base *a = &b;
+    a->funcBase();  // 调用func1
+    
+    // 可以用赋值的方式
+    b.base.funcBase = func2;
+    a->funcBase();  // 调用func2
+```
