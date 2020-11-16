@@ -344,6 +344,7 @@ dmidecode
 
 //查看总线上的所有设备
 lspci
+lspci -v    // 详细信息
 cat /proc/pci
 
 //查看网络设备的详细信息
@@ -430,6 +431,8 @@ ip route add default via 192.168.8.1 dev eth0
 //查看网络设备
 /etc/sysconfig/network-scripts/ifcfg-em2
 
+// 删除路由
+ip route delete ...
 
 ```
 
@@ -1308,7 +1311,7 @@ sysctl命令被用于在内核运行时动态地修改内核的运行参数，�
 用sysctl可以读取设置超过五百个系统变量
 
 
-sysctl --write sys.fs.inotify.max_user_watches='81920'
+sysctl --write fs.inotify.max_user_watches='81920'
 
 永久保留配置，修改/etc/sysctl.conf文件
 
@@ -1326,3 +1329,11 @@ readlink /usr/bin/awk
 readlink /etc/alternatives/awk
 /usr/bin/gawk(这个才是真正的可执行文件)
 ```
+
+### modinfo
+```
+查看驱动信息
+lspci -v        // 先获得目标驱动name
+modinfo ath9k   // 查看无线网卡驱动ath9k的详细信息
+```
+

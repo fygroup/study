@@ -236,10 +236,161 @@ var x A2 = new(B)
 
 ### context
 ```
+每个 Goroutine 在执行之前，都要先知道程序当前的执行状态，通常将这些执行状态封装在一个 Context 变量中，传递给要执行的 Goroutine 中
+
+(1) 接口
+	type Context interface {
+		// Deadline 方法需要返回当前 Context 被取消的时间，也就是完成工作的截止时间
+		Deadline() (deadline time.Time, ok bool)
+
+		// 返回一个 Channel，这个 Channel 会在当前工作完成或者上下文被取消之后关闭
+		Done() <-chan struct{}
+		
+		// 方法会返回当前 Context 结束的原因，它只会在 Done 返回的 Channel 被关闭时才会返回非空的值
+		Err() error
+
+		// 从 Context 中返回键对应的值，对于同一个上下文来说，多次调用 Value 并传入相同的 Key 会返回相同的结果，该方法仅用于传递跨 API 和进程间跟请求域的数据
+		Value(key interface{}) interface{}
+	}
+
+(2) Background和TODO
+	这两个函数分别返回一个实现了 Context 接口的 background 和 todo
+
+(3) withCancel
+	ctx, cancel := context.WithCancel(context.Background())
+	
+	// demo
+	ctx, cancel := context.WithCancel(context.Background())
+	dst := make(chan int)
+
+	go func(ctx context.Context){
+		i := 1
+		for {
+			select {
+				case <- ctx.Done():
+					return
+				case dst <- i:
+					i++
+			}
+		}
+	} (ctx)
+
+	for i := range dst {
+		fmt.Println(i)
+		if i == 5 {
+			cancel()
+		}
+	}
+
+(4) WithDeadline
+	d := time.Now().Add(50 * time.Millisecond)
+    ctx, cancel := context.WithDeadline(context.Background(), d)
+    // 尽管ctx会过期，但在任何情况下调用它的cancel函数都是很好的实践
+    // 如果不这样做，可能会使上下文及其父类存活的时间超过必要的时间
+    defer cancel()
+    select {
+		case <-time.After(1 * time.Second):
+			fmt.Println("overslept")
+		case <-ctx.Done():
+			fmt.Println(ctx.Err())
+    }
+
+(5) WithValue
+	type favContextKey string // 定义一个key类型
+    // f:一个从上下文中根据key取value的函数
+    f := func(ctx context.Context, k favContextKey) {
+        if v := ctx.Value(k); v != nil {
+            fmt.Println("found value:", v)
+            return
+        }
+        fmt.Println("key not found:", k)
+    }
+    k := favContextKey("language")
+    // 创建一个携带key为k，value为"Go"的上下文
+    ctx := context.WithValue(context.Background(), k, "Go")
+    f(ctx, k)
+    f(ctx, favContextKey("color"))
+}
+
+// 注意事项
+不要把 Context 放在结构体中，要以参数的方式显示传递
+以 Context 作为参数的函数方法，应该把 Context 作为第一个参数
+给一个函数方法传递 Context 的时候，不要传递 nil，如果不知道传递什么，就使用 context.TODO
+Context 的 Value 相关方法应该传递请求域的必要数据，不应该用于传递可选参数
+Context 是线程安全的，可以放心的在多个 Goroutine 中传递
+```
+
+### grpc
+```
+https://www.bookstack.cn/read/go-grpc/summary.md
+```
+
+### grpc metadata
+```
+metadata 其实就是一个 map
+metadata.MD map[string][]string
+
+// 发送metadata
+	创建ctx
+	创建并写入metadata
+	将metadata关联ctx
+	发送请求(rpc.SomeRpc(ctx, someRequest))
+
+// 接受metadata
+// Unary Call
+func (s *server) SomeRPC(ctx context.Context, in *pb.someRequest) (*pb.someResponse, error) {
+    md, ok := metadata.FromIncomingContext(ctx)
+    // do something with metadata
+}
+
+// Streaming Call
+func (s *server) SomeStreamingRPC(stream pb.Service_SomeStreamingRPCServer) error {
+    md, ok := metadata.FromIncomingContext(stream.Context()) // get context from stream
+    // do something with metadata
+}
+
+
+
 
 ```
 
-### 设计模式
+### grpc-gateway
+```
+通过protobuf的自定义option实现了一个网关，服务端同时开启gRPC和HTTP服务
+HTTP服务接收客户端请求后转换为grpc请求数据，获取响应后转为json数据返回给客户
+
+
+
 ```
 
+### LRU
+```
+github.com/golang/groupcache
+
+//创建一个 LRU Cache
+func New(maxEntries int) *Cache
+ 
+//向 Cache 中插入一个 KV
+func (c *Cache) Add(key Key, value interface{})
+
+//从 Cache 中获取一个 key 对应的 value
+func (c *Cache) Get(key Key) (value interface{}, ok bool)
+
+//从 Cache 中删除一个 key
+func (c *Cache) Remove(key Key)
+
+//从 Cache 中删除最久未被访问的数据
+func (c *Cache) RemoveOldest()
+
+//获取 Cache 中当前的元素个数
+func (c *Cache) Len()
+
+//清空 Cache
+func (c *Cache) Clear()
+
+// 注意
+groupcache 中实现的 LRU Cache 并不是并发安全的，如果用于多个 Go 程并发的场景，需要加锁
+
+
+除了上述库，还有github.com/hashicorp/golang-lru
 ```
