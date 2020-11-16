@@ -287,6 +287,7 @@ var x A2 = new(B)
     ctx, cancel := context.WithDeadline(context.Background(), d)
     // 尽管ctx会过期，但在任何情况下调用它的cancel函数都是很好的实践
     // 如果不这样做，可能会使上下文及其父类存活的时间超过必要的时间
+	// withDeadline 很好的解决了grpc调用阻塞时间过长的问题
     defer cancel()
     select {
 		case <-time.After(1 * time.Second):
@@ -320,9 +321,62 @@ Context 的 Value 相关方法应该传递请求域的必要数据，不应该�
 Context 是线程安全的，可以放心的在多个 Goroutine 中传递
 ```
 
-### grpc
+### grpc 相关资料
 ```
-https://www.bookstack.cn/read/go-grpc/summary.md
+[Go-gRPC 实践指南] https://www.bookstack.cn/read/go-grpc/summary.md
+[go-grpc 英文文档] https://pkg.go.dev/google.golang.org/grpc
+[烟花易冷人憔悴 vlog] https://www.cnblogs.com/FireworksEasyCool/
+[go-grpc 应用] https://eddycjy.com/go-categories/ ！！！
+```
+
+### grpc TLS + 自定义认证
+```
+```
+
+### grpc interceptor
+```
+普通方法：一元拦截器（grpc.UnaryInterceptor）
+流方法：流拦截器（grpc.StreamInterceptor）
+
+// 服务端
+srv := grpc.NewServer(
+    grpc.UnaryInterceptor(UnaryServerInterceptorDemo),
+    grpc.StreamInterceptor(StreamServerInterceptorDemo),
+)
+func UnaryServerInterceptorDemo(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+    log.Printf("before handling. Info: %+v", info)
+    resp, err := handler(ctx, req)
+    log.Printf("after handling. resp: %+v", resp)
+    return resp, err
+}
+func StreamServerInterceptorDemo(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+    log.Printf("before handling. Info: %+v", info)
+    err := handler(srv, ss)
+    log.Printf("after handling. err: %v", err)
+    return err
+}
+
+
+// 客户端
+grpc.DialContext(ctx, target, 
+    grpc.WithUnaryInterceptor(UnaryClientInterceptorDemo),
+    grpc.WithStreamInterceptor(StreamServerInterceptorDemo),
+    ...
+)
+func UnaryClientInterceptorDemo(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+    log.Printf("before invoker. method: %+v, request:%+v", method, req)
+    err := invoker(ctx, method, req, reply, cc, opts...)
+    log.Printf("after invoker. reply: %+v", reply)
+    return err
+}
+
+func StreamServerInterceptorDemo(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+    log.Printf("before handling. Info: %+v", info)
+    err := handler(srv, ss)
+    log.Printf("after handling. err: %v", err)
+    return err
+}
+
 ```
 
 ### grpc metadata
@@ -337,20 +391,17 @@ metadata.MD map[string][]string
 	发送请求(rpc.SomeRpc(ctx, someRequest))
 
 // 接受metadata
-// Unary Call
-func (s *server) SomeRPC(ctx context.Context, in *pb.someRequest) (*pb.someResponse, error) {
-    md, ok := metadata.FromIncomingContext(ctx)
-    // do something with metadata
-}
+	// Unary Call
+	func (s *server) SomeRPC(ctx context.Context, in *pb.someRequest) (*pb.someResponse, error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		// do something with metadata
+	}
 
-// Streaming Call
-func (s *server) SomeStreamingRPC(stream pb.Service_SomeStreamingRPCServer) error {
-    md, ok := metadata.FromIncomingContext(stream.Context()) // get context from stream
-    // do something with metadata
-}
-
-
-
+	// Streaming Call
+	func (s *server) SomeStreamingRPC(stream pb.Service_SomeStreamingRPCServer) error {
+		md, ok := metadata.FromIncomingContext(stream.Context()) // get context from stream
+		// do something with metadata
+	}
 
 ```
 
