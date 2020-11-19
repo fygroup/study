@@ -8,27 +8,21 @@ import (
 	"time"
 )
 
-var LOCK_USER_TIME time.Duration = 5 * time.Minute
-var RESET_TIME time.Duration = 4 * time.Hour
-var LOGIN_NUM int32 = 3
-var LOCK_NUM int32 = 5
-var LETTERS []byte = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var CODELEN int32 = 4
-
-type VSTATE int32
-
 const (
-	RESET  VSTATE = 0
-	ADD    VSTATE = 1
-	DELETE VSTATE = 2
+	UNLOCK_TIME time.Duration = 5 * time.Minute
+	EXPIRE_TIME time.Duration = 4 * time.Hour
+	LOCK_NUM    int32         = 3
+	VERIFY_NUM  int32         = 5
+	LETTERS     []byte        = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	CODE_LEN    int32         = 4
 )
 
-type VerifyInf interface {
+type VerifyInfoHandle interface {
 	// 判断是否锁定
-	UnAuth(userName string, token string) bool
+	UnAuth() error
 
 	// 判断验证码
-	Verify(verifyCode string) bool
+	Verify(code string) error
 
 	// 更新验证信息
 	Update()
@@ -38,38 +32,35 @@ type VerifyInf interface {
 }
 
 type VerifyInfo struct {
+	TokenId    string
 	Username   string    // 用户名
 	Token      string    // token
 	Code       string    // 验证码
 	Number     int32     // 登录次数
 	CreateTime time.Time // 创建起始时间
 	LockTime   time.Time // 锁定起始时间
+	vm         *VerifyManager
 	// mutex      sync.Mutex
 }
 
 type VerifyManager struct {
 	VerifyStore sync.Map
-	ExpireTime  time.Duration
-	UnlockTime  time.Duration
-	LockNum     int32
-	VerifyNum   int32
-	CodeLen     int32
 }
 
 func NewVerifyManager() *VerifyManager {
-	
-} 
+	return &VerifyManager{}
+}
 
 func (vm *VerifyManager) Run() {
 	rand.Seed(time.Now().Unix())
 	t := time.NewTicker(10 * time.Second)
 	f := func(k, v interface{}) bool {
 		interval := time.Now().Sub(v.(*VerifyInfo).LockTime).Seconds()
-		if interval > vm.UnlockTime.Seconds() {
+		if interval > UNLOCK_TIME.Seconds() {
 			vm.ResetInfo(v.(*VerifyInfo))
 		}
 		interval = time.Now().Sub(v.(*VerifyInfo).CreateTime).Seconds()
-		if interval > vm.ExpireTime.Seconds() {
+		if interval > EXPIRE_TIME.Seconds() {
 			vm.DelInfo(v.(*VerifyInfo))
 		}
 		return true
@@ -83,23 +74,24 @@ func (vm *VerifyManager) Run() {
 	}
 }
 
-func (vm *VerifyManager) GetId(str ...string) string {
-	allstr := ""
-	for _, v := range str {
-		allstr += v
+func (vm *VerifyManager) BuildVerifyCode() string {
+	code := make([]byte, CODE_LEN)
+	lettersLen := len(LETTERS)
+	for i := 0; i < int(CODE_LEN); i++ {
+		code[i] = LETTERS[rand.Intn(lettersLen)]
 	}
-	tokenId := md5.Sum([]byte(allstr))
-	return string(tokenId[:])
+	return string(code)
 }
 
 func (vm *VerifyManager) GetInfo(name string, token string) *VerifyInfo {
-	tokenId := vm.GetId([]string{name, token}...)
+	tokenId := getId([]string{name, token}...)
 	vInfo, ok := vm.VerifyStore.Load(tokenId)
 	if !ok {
 		vInfoP := &VerifyInfo{
+			TokenId:    tokenId,
 			Username:   name,
 			Token:      token,
-			Code:       vm.buildVerifyCode(),
+			Code:       vm.BuildVerifyCode(),
 			Number:     0,
 			CreateTime: time.Now(),
 		}
@@ -110,98 +102,55 @@ func (vm *VerifyManager) GetInfo(name string, token string) *VerifyInfo {
 }
 
 func (vm *VerifyManager) UpInfo(v *VerifyInfo) {
-	tokenId := vm.GetId([]string{v.Username, v.Token}...)
 	v.Number++
-	if v.Number >= vm.LockNum {
+	if v.Number >= LOCK_NUM {
 		v.LockTime = time.Now()
 	}
-	vm.VerifyStore.Store(tokenId, v)
+	vm.VerifyStore.Store(v.TokenId, v)
 }
 
 func (vm *VerifyManager) ResetInfo(v *VerifyInfo) {
-	tokenId := vm.GetId([]string{v.Username, v.Token}...)
 	v.Number = 0
-	vm.VerifyStore.Store(tokenId, v)
+	vm.VerifyStore.Store(v.TokenId, v)
 }
 
 func (vm *VerifyManager) DelInfo(v *VerifyInfo) {
-	tokenId := vm.GetId([]string{v.Username, v.Token}...)
-	vm.VerifyStore.Delete(tokenId)
-}
-func (vm *VerifyManager) buildVerifyCode() string {
-	code := make([]byte, vm.CodeLen)
-	lettersLen := len(LETTERS)
-	for i := 0; i < int(vm.CodeLen); i++ {
-		code[i] = LETTERS[rand.Intn(lettersLen)]
-	}
-	return string(code)
+	vm.VerifyStore.Delete(v.TokenId)
 }
 
-
-type VerifyInstance struct {
-	verifyInfo *VerifyInfo
-
-	// 判断验证码
-	Verify(verifyCode string) bool
-
-	// 更新验证信息
-	Update()
-
-	// 重置验证信息
-	Reset()
-}
-
-
-func (vi *VerifyInstance) UnAuth(userName string, token string) error {
-	vi.verifyInfo = GetInfo(userName, token)
-	vInfo = vInfo.(*VerifyInfo)
-	if vInfo.Number < int32(LOCK_NUM) {
-		return nil
+func (vi *VerifyInfo) UnAuth() error {
+	if vi.Number >= LOCK_NUM {
+		return errors.New("unauth")
 	}
-	interval := time.Now().Sub(codeInfo.CreateTime).Seconds()
-	if interval < LOCK_USER_TIME.Seconds() {
-		return errors.New("lock")
-	}
-	vInfo.Number = 0
-	v.StoreData.Store(name, vInfo)
 	return nil
 }
 
-func (v *VerifyManager) Verify(name string, code string) error {
-	vInfo, _ := v.StoreData.Load(name)
-	if vInfo.(*VerifyInfo).Number < LOGIN_NUM {
+func (vi *VerifyInfo) Verify(code string) error {
+	if vi.Number < VERIFY_NUM {
 		return nil
 	}
-
-	if vInfo.Code == "" {
-		vInfo.Code = GetCode(name)
-		v.StoreData.Store(name, vInfo)
+	if code != vi.Code {
+		return errors.New("Verify error")
 	}
 
-	if code == vInfo.Code {
-		return nil
-	}
-
-	return errors.New("verifyCode error")
-
+	return nil
 }
 
-func (v *VerifyManager) Update(name string) {
-	vInfo, _ := v.StoreData.Load(name)
-	vInfo.Number++
-	if vInfo.Number == LOCK_NUM {
-		vInfo.CreateTime = time.Now()
-	}
-	v.StoreData.Store(name)
-
+func (v *VerifyInfo) Update() {
+	verifyManagerServer.UpInfo(Update)
 }
 
-func (v *VerifyManager) Reset(name string) {
+func (v *VerifyInfo) Reset() {
 	vInfo, _ := v.StoreData.Load(name)
 	vInfo.Number = 0
 	v.StoreData.Store(name)
 }
 
-func CreateVfCode() {
-
+func getId(str ...string) string {
+	allstr := ""
+	for _, v := range str {
+		allstr += v
+	}
+	tokenId := md5.Sum([]byte(allstr))
+	return string(tokenId[:])
 }
