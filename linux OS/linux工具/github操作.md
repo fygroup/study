@@ -55,6 +55,9 @@ git 权限控制就是linux的权限控制
 	git clone https://github.com/BingGostar/study
 	...
 
+// git clone 用户 密码
+	git clone https://diaohaiyong:939791536a-@gitlab.sz.sensetime.com/senseNebula-m/nebula-mini.git
+	
 // pull request
 	https://www.zhihu.com/question/21682976
 	1) 先 fork 别人的仓库到自己的仓库
@@ -233,4 +236,25 @@ git pull origin current
 // 删除分支
 git push origin :current
 
+```
+
+### stash
+```
+// 情形
+我们往往会建一个自己的分支去修改和调试代码, 如果别人或者自己发现原有的分支上有个不得不修改的bug，我们往往会把完成一半的代码commit提交到本地仓库，然后切换分支去修改bug，改好之后再切换回来。这样的话往往log上会有大量不必要的记录
+
+// git stash
+会把所有未提交的修改（包括暂存的和非暂存的）都保存起来，用于后续恢复当前工作目录
+
+// git stash pop
+将缓存堆栈中的第一个stash删除，并将对应修改应用到当前的工作目录下
+
+// git stash apply
+不会删除堆栈中的第一个stash，并将对应修改应用到当前的工作目录下
+
+// git branch show
+查看stash
+
+// git stash drop
+移除stash
 ```

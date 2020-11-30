@@ -3488,8 +3488,8 @@ https://www.cnblogs.com/haippy/p/3284540.html
 ```
 
 ### future
-```
-https://www.jianshu.com/p/7945428c220e
+```c++
+// https://www.jianshu.com/p/7945428c220e
 
 1、promise
     void read(std::future<std::string> * future){
@@ -3509,14 +3509,12 @@ https://www.jianshu.com/p/7945428c220e
 ```
 
 ### RAII
-```
-C++语言的一种管理资源、避免泄漏的机制
+```c++
+// RAII是 C++语言的一种管理资源、避免泄漏的机制
+// C++标准保证任何情况下，已构造的对象最终会销毁，即它的析构函数最终会被调用
+// RAII 机制就是利用了C++的上述特性，构造一个临时对象(T)，在其构造T时获取资源，最后在T析构的时候释放资源。以达到安全管理资源对象，避免资源泄漏的目的
 
-C++标准保证任何情况下，已构造的对象最终会销毁，即它的析构函数最终会被调用
-
-RAII 机制就是利用了C++的上述特性，构造一个临时对象(T)，在其构造T时获取资源，最后在T析构的时候释放资源。以达到安全管理资源对象，避免资源泄漏的目的
-
-C++11中lock_guard对mutex互斥锁的管理就是典型的RAII机制
+// C++11中lock_guard对mutex互斥锁的管理就是典型的RAII机制
 
 template<typename _Mutex>
 class lock_guard {
@@ -3541,7 +3539,7 @@ private:
 ```
 
 ### 模板与数组参数
-```
+```c++
 // reference to array of unknown bound 'int []'
 
 
@@ -3565,24 +3563,21 @@ void func<int*>(int *(&a)) {}
 ```
 
 ### 为什么需要size_t
-```
-主要为了兼容不同系统，提高移植性
+```cpp
+// 主要为了兼容不同系统，提高移植性
+// 例如需要把指针转换成某个整数类型T来做些按位"与"的对齐操作(指针类型C语言不支持逻辑与等位操作)
 
-例如需要把指针转换成某个整数类型T来做些按位"与"的对齐操作(指针类型C语言不支持逻辑与等位操作)
-
-或者
-
+// 或者
 #define size_t typeof(sizeof(xxx))
 ```
 
 ### 容器的emplace操作
-```
-c++ 11 vector、deque、list引入了三个新成员
-emplace_front   push_front
-emplace         insert
-emplace_back    push_back
-
-这些函数可以代替旧的函数，它们的优点 避免不必要的临时对象的产生
+```c++
+// c++ 11 vector、deque、list引入了三个新成员
+// emplace_front   push_front
+// emplace         insert
+// emplace_back    push_back
+// 这些函数可以代替旧的函数，它们的优点 避免不必要的临时对象的产生
 
 class A {
     int a;
@@ -3596,24 +3591,23 @@ std::vector<A> v;
 v.push_back(Foo(1));    // 调用构造函数，调用移动构造
 v.emplace_back(Foo(2)); // 调用构造函数
 
-
 ```
 
 ### const与volatile const
-```
+```c++
 // 例子
 const int a=1;
 int* b=(int*)&a;
 *b=10;      // 此时内存a可能是1
 
-当开启优化是-O2,当编译器看到这里的a被const修饰，从语义上讲这里的a是不期望被改变的
-优化的时候就可以把a的值存放到寄存器中。可以用volatile解决此情况
+// 当开启优化是-O2,当编译器看到这里的a被const修饰，从语义上讲这里的a是不期望被改变的
+// 优化的时候就可以把a的值存放到寄存器中。可以用volatile解决此情况
 
 volatile const int a = 1;
 int* b = (int*)&a;
 *b=10;  // 此时内存a是10
 
-c++中有一块const内存，并且不同变量，一样的内容，他们的指针地址是一样的，凡是const的变量都在const内存中
+// c++中有一块const内存，并且不同变量，一样的内容，他们的指针地址是一样的，凡是const的变量都在const内存中
 
 ```
 
@@ -3643,7 +3637,7 @@ int main(){
 ```
 
 ### 继承virtual
-```
+```c++
 virtual 不会记录 泛函数
 
 // 情景一
@@ -3686,7 +3680,7 @@ A: int 12
 ```
 
 ### class 大小
-```
+```c++
 class A {};
 A a;
 sizeof(a);   // 1
@@ -3713,7 +3707,7 @@ sizeof(a)   // 8 多了虚函数指针
 ```
 
 ### 模板函数参数可以用T
-```
+```c++
 template<typename T>
 void printVec(const vector<T> & vec){
     for_each(vec.begin(), vec.end(), [](const T & a){
@@ -3737,22 +3731,23 @@ printVec<int>({1,2,3,4}); // 必须要显式调用
 ```
 
 ### 构造函数 析构函数 虚函数
-```
+```c++
 // 构造函数不能是虚函数
-由于对象开始还未分配内存空间，所以根本就无法找到虚函数表，从而构造函数也无法被调用。所以构造函数是不能成为虚函数
-
+// 由于对象开始还未分配内存空间，所以根本就无法找到虚函数表，从而构造函数也无法被调用。所以构造函数是不能成为虚函数
 // 析构函数最好是虚函数
+
+
 class Base {};
 class Sub:public Base {};
 
 SubClass* pObj = new SubClass();
 delete pObj;
-不管析构函数是否是虚函数(即是否加virtual关键词)，delete时基类和子类都会被释放
+// 不管析构函数是否是虚函数(即是否加virtual关键词)，delete时基类和子类都会被释放
 
 BaseClass* pObj = new SubClass();
 delete pObj;
-若析构函数是虚函数(即加上virtual关键词)，delete时基类和子类都会被释放
-若析构函数不是虚函数(即不加virtual关键词)，delete时只释放基类，不释放子类
+// 若析构函数是虚函数(即加上virtual关键词)，delete时基类和子类都会被释放
+// 若析构函数不是虚函数(即不加virtual关键词)，delete时只释放基类，不释放子类
 ```
 
 ### 柔性数组
@@ -3774,7 +3769,7 @@ free(a);
 ```
 
 ### c语言实现c++的3大特性
-```
+```cpp
 1、封装
     typedef struct MyClass {
         int a;  // 成员变量
@@ -3821,4 +3816,30 @@ free(a);
     // 可以用赋值的方式
     b.base.funcBase = func2;
     a->funcBase();  // 调用func2
+```
+
+### std::remove_const
+```c++
+// remove const
+template<class _Ty>
+struct remove_const {	// remove top level const qualifier
+	typedef _Ty type;
+};
+
+template<class _Ty>
+struct remove_const<const _Ty> {	// remove top level const qualifier
+	typedef _Ty type;
+};
+
+```
+
+### std::forward 和 std::move
+```c++
+// std::move和std::forward本质就是一个转换函数
+
+```
+
+### 尽量使用 std::make_shared、std::allocate_shared
+```
+
 ```

@@ -93,6 +93,14 @@ var y int = int(M) // 正确
 
 ```
 
+### time
+```
+a := 3
+b := time.Duration(a) * time.Second // 表示3s
+b.Minutes()
+b.Hours()
+```
+
 ### 类型转换
 ```
 Go语言不存在隐式类型转换，因此所有的类型转换都必须显式的声明
