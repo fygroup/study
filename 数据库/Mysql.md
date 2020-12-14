@@ -468,3 +468,10 @@ MyISAM：以读写插入为主的应用程序，比如博客系统、新闻门�
 
 Innodb：更新（删除）操作频率也高，或者要保证数据的完整性；并发量高，支持事务和外键。比如OA自动化办公系统
 ```
+
+### schema
+```
+// 统计nebulalib库中所有表的行数
+use information_schema;
+select table_name,table_rows from tables where TABLE_SCHEMA = 'nebulalib' order by table_rows desc;
+```
