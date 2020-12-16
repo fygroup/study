@@ -3871,6 +3871,30 @@ A a;
 
 ```
 
+### 常量表达式
+```c++
+// 最初class中只能用enum声明常量
+class {
+    enum { value = N * Fac<N - 1>::value };
+}
+
+// 后来允许class内部static常量表达式
+class {
+    static const int value = N * Fac<N - 1>::value;
+}
+
+// Modern C++中，还可以使用constexpr，且不再局限于int
+class {
+    static constexpr auto value = N * Fac<N - 1>::value;    
+}
+
+// 加入inline，防止编译器为static分配内存
+class {
+    static inline constexpr auto value = N * Fac<N - 1>::value;
+}
+
+```
+
 ### 反射
 ```
 1、c++ 反射方法
