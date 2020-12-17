@@ -1,4 +1,4 @@
-### redis的关键内容
+### redis
 ```
 Redis是k-v内存数据库，其特点
 > Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用
@@ -28,6 +28,9 @@ redis + mysql 方案
 
 // 内存淘汰的数据会持久化吗？
 不同的淘汰策略，不一样
+
+// redis自述
+https://zhuanlan.zhihu.com/p/302405361?utm_source=wechat_session&utm_medium=social&utm_oi=555400798499188736&utm_campaign=shareopn
 ```
 
 ### redis连接

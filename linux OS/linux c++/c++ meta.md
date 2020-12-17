@@ -19,3 +19,31 @@ C++ 模板是函数式编程（functional programming），函数调用不产生
 
 
 ```
+
+### 模板使用
+```c++
+// (1) 父类调用子类
+template<typename T>
+class A{
+public:
+    template<typename V>
+    void func(V a) {
+        (static_cast<T*>(this))->func(a);
+    }
+};
+
+template<typename T1, typename T2>
+class B : public A<B<T1, T2>> {
+public:
+    void func(T1 a) {
+        cout << "t1 a " << a << endl;
+    }
+    void func(T2 a) {
+        cout << "t2 a " << a << endl;
+    }
+};
+
+
+
+
+```

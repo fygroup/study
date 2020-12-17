@@ -2758,41 +2758,41 @@ https://zhuanlan.zhihu.com/p/34725232
 #include <memory>
 
 (1) 构造
-    shared_ptr<string> a(new string("dasdas"));
-    shared_ptr<string> a = make_shared<string>("dasdas")
-    shared_ptr<vector<int>> a(new vector<int>(10));
+    std::shared_ptr<string> a(new string("dasdas"));
+    std::shared_ptr<string> a = std::make_shared<string>("dasdas")
+    std::shared_ptr<vector<int>> a(new vector<int>(10));
     cout << a << endl;  //0x5633802bfe70
 
 (2) 切片
-    shared_ptr<int> a(new int [10] {1,2,3,4,5});
+    std::shared_ptr<int> a(new int [10] {1,2,3,4,5});
     int* pI = a.get();
     cout << *a << endl;     // 1
     cout << *(a+1) << endl; // 错误
     cout << a[0] << endl;   // 错误
 
-    shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
+    std::shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
     cout << *a << endl;     // 错误
     cout << a[0] << endl;   // 1
-    shared_ptr<vector<int>> vc = make_shared<vector<int>>(10,3);
+    std::shared_ptr<vector<int>> vc = std::make_shared<vector<int>>(10,3);
     cout << (*vc)[1] << endl;
     cout << vc->operator[](1) << endl;
     cout << vc->size() << endl;
 
 (3) 引用次数
-    shared_ptr<int> a = make_shared<int>(10);
+    std::shared_ptr<int> a = std::make_shared<int>(10);
     cout << a.use_count() << endl;	
     //shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
     //每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
     //shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
-    void func(shared_ptr<int> & a){       //引用 不会改变计数
+    void func(std::shared_ptr<int> & a){       //引用 不会改变计数
         cout << a.use_count() << endl;
     }
-    void func(shared_ptr<int> a){		//复制 会改变计数
+    void func(std::shared_ptr<int> a){		//复制 会改变计数
         cout << a.use_count() << endl;
     }
 
 (4) 自定义析构函数
-    shared_ptr<int[]> a(new int[1], [](int* a){
+    std::shared_ptr<int[]> a(new int[1], [](int* a){
         cout << "delete" << endl;
         delete a;
     });
