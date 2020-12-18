@@ -3836,6 +3836,31 @@ class A{
     A(Es... elems):elems{elems...}{}
 };
 
+
+// make_tuple
+auto tup1 = std::make_tuple("Hello World!", 'a', 3.14, 0);
+
+// tie
+auto tup1 = std::make_tuple(3.14, 1, 'a');  
+double a; int b;  char c;  
+std::tie(a, b, c) = tup1;  
+
+// tuple_cat 用于连接tuple
+std::tuple<float, string> tup1(3.14, "pi");  
+std::tuple<int, char> tup2(10, 'a');  
+auto tup3 = tuple_cat(tup1, tup2);  
+
+// get<i> 获取第 i 个元素的值
+std::tuple<float, string> tup1(3.14, "pi");  
+cout << get<0>(tup1);  
+
+// tuple_element 获取tuple中特定元素数据类型
+std::tuple_element<0, decltype(tup1)>::type i = 1.2;
+
+// size 获取tuple中元素个数
+std::tuple<float, string> tup1(3.14, "pi");  
+cout << tuple_size<decltype(tup1)>::value;  
+
 ```
 
 ### 类成员指针
@@ -3919,7 +3944,3 @@ class {
     [谈谈C++如何实现反射机制] https://zhuanlan.zhihu.com/p/70044481
 ```
 
-### c++ reflect
-```c++
-
-```
