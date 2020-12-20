@@ -3944,3 +3944,12 @@ class {
     [谈谈C++如何实现反射机制] https://zhuanlan.zhihu.com/p/70044481
 ```
 
+### 
+```
+SNINAE
+enable_if 
+Concept
+void_t
+
+
+```

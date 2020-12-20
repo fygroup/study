@@ -99,3 +99,102 @@ class A<T<T1, T2>> {
 };
 
 ```
+
+### declval
+```c++
+//  返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象
+// (可以用于抽象基类)
+#include <utility> 
+
+struct A {              // abstract class
+  virtual int value() = 0;
+};
+ 
+class B : public A {
+  int val_;
+public:
+  B(int i,int j):val_(i*j){}
+  int value() {return val_;}
+};
+ 
+int main() {
+  decltype(std::declval<A>().value()) a;  // int a
+  decltype(std::declval<B>().value()) b;  // int b
+  decltype(B(0,0).value()) c;   // same as above (known constructor)
+  a = b = B(10,2).value();
+  std::cout << a << '\n';
+  return 0;
+}
+
+```
+
+### SFINAE
+```c++
+// c++98
+template <typename T>
+struct has_type {
+private:
+    typedef char one;
+    typedef struct { char data[2]; } two;
+    // 存在的话返回类型为 one
+    template <typename U> static one test(typename U::type*);
+    // 不存在的话返回类型为 two
+    template <typename U> static two test(...);
+public:
+    enum { value = sizeof(test<T>(0)) == sizeof(one) };
+};
+// 如果 T::type 存在的话就会选择第一个重载，否则就会选择第二个重载，由此判断 T::type 是否存在
+
+// c++17 void_t<...> 其实就是 void，但它可以在 SFINAE 中帮助判断类型是否存在
+template <typename T, typename = void>
+struct has_type : std::false_type {};
+template <typename T>
+struct has_type<T, void_t<typename T::type>> : std::true_type {};
+
+// c++11
+// 实现 void_t
+template <typename... T> struct make_void { using type = void; };
+template <typename... T> using void_t = typename make_void<T...>::type;
+// 实现 SFINAE
+template <typename T, typename = void>
+struct has_get : std::false_type {};
+template <typename T>
+struct has_get<T, void_t<decltype(std::declval<T&>().get())>> : std::true_type {};
+```
+
+
+### 结构体元素数量
+```c++
+
+struct AnyType {
+    template <typename T>
+    operator T();
+};
+
+template <typename T, typename = void, typename ...Ts>
+struct CountMember {
+    constexpr static size_t value = sizeof...(Ts) - 1;
+};
+
+template <typename T, typename ...Ts>
+struct CountMember<T, std::void_t<decltype(T{Ts{}...})>, Ts...> {
+    constexpr static size_t value = CountMember<T, void, Ts..., AnyType>::value;
+};
+
+int main(int argc, char** argv) {
+    struct Test { int a; int b; int c; int d; };
+    printf("%zu\n", CountMember<Test>::value);
+}
+
+```
+
+### 类型检测
+```
+
+SFINAE
+enable_if 
+Concept
+void_t
+
+
+```
