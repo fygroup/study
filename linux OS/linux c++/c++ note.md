@@ -3930,6 +3930,7 @@ class {
 (2) 运行期支持
     解析pdb文件进行反射(windows) 
     [PDBs on Linux] https://arvid.io/2018/05/05/pdbs-on-linux/
+    动态反射，构建reflect类 （RTTR等）
 (3) 代码生成
     用第三方工具，生成特殊的C++代码，自带反射
 (4) MACRO(宏)
