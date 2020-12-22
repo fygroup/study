@@ -3808,7 +3808,7 @@ struct remove_const<const _Ty> {	// remove top level const qualifier
 
 ```
 
-### 尽量使用 std::make_shared、std::allocate_shared
+### 智能指针尽量使用 std::make_shared、std::allocate_shared
 ```
 
 ```
@@ -3891,11 +3891,6 @@ A a;
 (a.*ff2)(2);
 ```
 
-### c++ 全局构造函数
-```c++
-
-```
-
 ### 常量表达式
 ```c++
 // 最初class中只能用enum声明常量
@@ -3944,6 +3939,46 @@ class {
     [c++如何实现反射功能] https://www.zhihu.com/question/62012225
     [谈谈C++如何实现反射机制] https://zhuanlan.zhihu.com/p/70044481
 ```
+
+### type_traits
+```c++
+#include <type_traits>
+// cype_traits是C++11提供的模板元基础库
+// type_traits可实现在编译期计算、判断、转换、查询等等功能
+// type_traits提供了编译期的true和false
+
+// integral_constant 该对象包含具有指定值的该整型类型的常量
+std::integral_constant<int, 5>::value;       // 5
+std::integral_constant<bool, true>::value;   // true
+
+// true false
+std::true_type::value;
+std::false_type::value;
+
+// is_same
+
+// decay 获取它的原始类型
+template<typename T>
+typename std::decay<T>::type* Create(){
+    typedef typename std::decay<T>::type U;
+    return new U();
+}
+
+// conditonal
+std::conditional<true, int, double>::type   //= int
+
+// decltype和auto可以实现模板函数的返回类型
+template<typename F, typename Arg>
+auto Func(F f, Arg arg)->decltype(f(arg)){
+    return f(arg);
+}
+
+// result_of 在编译期获取一个可调用对象的返回类型
+
+
+// enable_if 利用SFINAE实现条件选择重载函数
+```
+
 
 ### 
 ```

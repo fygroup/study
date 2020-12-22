@@ -70,8 +70,6 @@ class D : public B<D> {
     typedef int T;
 };
 
-
-
 ```
 
 ### template两个示例
@@ -161,7 +159,6 @@ struct has_get : std::false_type {};
 template <typename T>
 struct has_get<T, void_t<decltype(std::declval<T&>().get())>> : std::true_type {};
 ```
-
 
 ### 结构体元素数量
 ```c++
