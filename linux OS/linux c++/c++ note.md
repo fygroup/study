@@ -3459,22 +3459,90 @@ https://www.cnblogs.com/haippy/p/3284540.html
 ### future
 ```c++
 // https://www.jianshu.com/p/7945428c220e
+// 库的内容
+// classes
+//     future
+//     future_error
+//     packaged_task
+//     promise
+//     shared_future
+// enum classes
+//     future_errc
+//     future_status
+//     launch
+// functions
+//     async
+//     future_category
 
-1、promise
-    void read(std::future<std::string> * future){
-        // future会一直阻塞，直到有值到来
-        std::cout << future->get() << std::endl;
+// (1) promise
+void func(std::future<int> & fut){
+    int x= fut.get();
+}
+std::promise<int> prom;                     // 生成一个 std::promise<int> 对象
+std::future<int> fut = prom.get_future();   // 和 future 关联
+std::thread t(func, std::ref(fut));    // 将 future 交给另外一个线程t
+prom.set_value(10);                         // 设置共享状态的值, 此处和线程t保持同步
+t.join();
+// 注意
+// std::promise 的 operator= 没有拷贝语义，operator= 只有 move 语义
+// 一个std::promise实例只能与一个std::future关联共享状态
+
+// (2) promise::set_exception
+void func(fucture<int> & fut){
+    try {
+        int x = fut.get();
+    }catch(std::exception & e){
+        cout << e.what() << endl;
     }
+}
+promise<int> prom;
+functure<int> fnt = prom.get_future();
+thread t(func, std::ref(fnt));
+int x;
+std::cin.exceptions(std::ios::failbit);   // throw on failbit
+try{
+    cin >> x;
+    prom.set_value(x);                  // sets failbit if input is not int
+}catch{
+    prom.set_exception(std::current_exception());
+}
 
-    std::promise<std::string> promise;
-    // future 相当于消费者, 右值构造
-    std::future<std::string> future = promise.get_future();
-    // 另一线程中通过future来读取promise的值
-    std::thread thread(read, &future);
+// (3) std::async
+// 这个函数是对上面的对象的一个整合，async先将可调用对象封装起来，然后将其运行结果返回到promise中，这个过程就是一个面向future的一个过程，最终通过future.get()来得到结果
+// 1) 原型
+template<typename Fn, typename ...Argvs>
+std::future<typename std::result_of<Fn(Argvs...)>::type>
+async(std::launch policy, Fn&& fn, Argvs&&... argvs);
+// 2) launch 三中策略
+// std::launch::async 保证异步行为，执行后，系统创建一个线程执行对应的函数
+// std::launch::deffered 当其他线程调用get()来访问共享状态时，将调用非异步行为
+// std::launch::async||std::launch::deffered 默认策略，由系统决定怎么调用
+// 3) future的返回结果
+// std::future_status::deferred 异步操作还没开始
+// std::futurn_status::ready    异步操作已经完成
+// std::futurn_status::timeout  异步操作超时
 
-    promise.set_value("hello future");
+int func(int a){
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    return a
+}
 
-    // 注意：一个std::promise实例只能与一个std::future关联共享状态
+auto fut = std::async(std::launch::async, &func, 12);   // 启动线程运行func
+std::future_status status;
+do {
+    status = fut.wait_for(std::chrono::seconds(1));
+    switch (status) {
+        case future_status::ready:
+            break;
+            cout << "ready ";
+        case future_status::deferred:
+            break;
+        case future_status::timeout:
+            cout << "timeout ";
+            break;
+    }
+}while(status != future_status::ready);
+// 输出 timeout timeout timeout timeout ... ready
 ```
 
 ### RAII
@@ -3580,34 +3648,9 @@ int* b = (int*)&a;
 
 ```
 
-### 模板类调用成员模板函数???????????
-```
-template <typename T>
-struct A{
-    template<typename T1>
-    void func(){}
-
-    template<typename T1>
-    void func1(T1*){}
-};
-
-template<typename T>
-void test() {
-    A<T> a;
-    a.func<T>();                        // 错误
-    a.template func<T>();               // 正确
-    a.func1(static_cast<T*>(NULL));     // 正确
-}
-
-int main(){
-    A<int> a;
-    a.func<int>();                      // 正确
-}
-```
-
-### 继承virtual
+### virtual 在多态中的使用
 ```c++
-virtual 不会记录 泛函数
+// 子类必须实现基类一模一样的接口(virtual)函数，否则不会进行多态调用
 
 // 情景一
 class A {
@@ -3704,7 +3747,6 @@ printVec<int>({1,2,3,4}); // 必须要显式调用
 // 构造函数不能是虚函数
 // 由于对象开始还未分配内存空间，所以根本就无法找到虚函数表，从而构造函数也无法被调用。所以构造函数是不能成为虚函数
 // 析构函数最好是虚函数
-
 
 class Base {};
 class Sub:public Base {};
@@ -3808,11 +3850,6 @@ struct remove_const<const _Ty> {	// remove top level const qualifier
 
 ```
 
-### 智能指针尽量使用 std::make_shared、std::allocate_shared
-```
-
-```
-
 ### tuple
 ```c++
 // tuple<> 模板是 pair 模板的泛化，但允许定义 tuple 模板的实例，可以封装不同类型的"任意数量"的对象，因此 tuple 实例可以有任意数量的模板类型参数
@@ -3835,7 +3872,6 @@ class A{
     std::tuple<Es...> elems;
     A(Es... elems):elems{elems...}{}
 };
-
 
 // make_tuple
 auto tup1 = std::make_tuple("Hello World!", 'a', 3.14, 0);
@@ -3973,19 +4009,8 @@ auto Func(F f, Arg arg)->decltype(f(arg)){
     return f(arg);
 }
 
-// result_of 在编译期获取一个可调用对象的返回类型
-
+// result_of 在编译期推导出一个函数表达式的返回值类型
 
 // enable_if 利用SFINAE实现条件选择重载函数
 ```
 
-
-### 
-```
-SNINAE
-enable_if 
-Concept
-void_t
-
-
-```
