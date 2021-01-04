@@ -150,14 +150,12 @@ template <typename T>
 struct has_type<T, void_t<typename T::type>> : std::true_type {};
 
 // c++11
-// 实现 void_t
-template <typename... T> struct make_void { using type = void; };
-template <typename... T> using void_t = typename make_void<T...>::type;
-// 实现 SFINAE
-template <typename T, typename = void>
-struct has_get : std::false_type {};
-template <typename T>
-struct has_get<T, void_t<decltype(std::declval<T&>().get())>> : std::true_type {};
+// 判断是否有get函数
+template<typename T, typename = void>
+struct has_get: public std::false_type{};
+template<typename T>
+struct has_get<T, decltype(std::declval<T>().get())> : public std::true_type{};
+std::cout << has_get<A>::value << std::endl;
 ```
 
 ### 结构体元素数量
@@ -187,7 +185,53 @@ int main(int argc, char** argv) {
 
 ### tuple 遍历
 ```c++
+// 用模板实现tuple的遍历
 
+template<typename T, size_t N>
+void printTuple(T & t){
+    printTuple<N-1>(t);
+    cout << std::get<N-1>(t);
+}
+
+template<typename T>
+void printTuple<1>(T & t){
+    cout << std::get<0>(t);
+}
+
+template<typename ...Argvs>
+void func(std::tuple<Argvs...> & t) {
+    printTuple<decltype(t) ,sizeof...(Argvs)>(t);
+}
+
+auto t = make_tuple("dadsa", 1);
+func(t);
+```
+
+### shared_from_this
+```c++
+// 如何在类的内部获得自己的shared_ptr
+
+// 写法一
+class A {
+public:
+    void func(){
+        auto p = shared_ptr<A>(this);
+    }
+};
+A a;
+a.func();
+// 上述写法错误，因为会导致析构两次this。shared_ptr<>(this)的写法很危险
+
+// 正确做法: 继承类enable_share_from_this<>，使用函数shared_from_this返回该智能指针
+#include <memory>
+class A : public std::enable_share_from_this<A> {
+public:
+    void func(){
+        auto p = shared_from_this();
+    }
+};
+auto a = make_ptr<A>(); // 要使用智能指针包裹
+a.func();               // 正确
 ```
 
 ### 类型检测

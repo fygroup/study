@@ -805,38 +805,31 @@ public:
 #define offsetof(type,member) ((size_t)&((type*)0)->member)
 ```
 
-### 模板的特化(具体化)和偏特化
+### 模板的特化和偏特化
 ```
 1、模板函数
     // 声明
     template<typename T, typename T1> void func(T, T1);
+    
     // 特化
     template<>
-    void func(int a, char b) {
-        ...
-    }
+    void func(int a, char b) {}
+
+    template<>
+    void func<int, char>(int a, char b){}
+
     // 偏特化
     template<typename T1>
-    void func(char a, T1 b) {
-        ...
-    }
+    void func(char a, T1 b) {}
 
 2、模板类
     // 声明
-    template<typename T, typename T1> class Test
-    {
-        ...
-    };
+    template<typename T, typename T1> class Test{};
     // 特化
-    template<> class Test<int, char>
-    {
-        ...
-    };
+    template<> class Test<int, char>{};
+
     //偏特化
-    template<typename T1> class Test<int, T1>
-    {
-        ...
-    };
+    template<typename T1> class Test<int, T1>{};
 
 // 特化 > 偏特化 > 模板类
 ```
@@ -1966,28 +1959,11 @@ Object<int> a = Object<int>::Object();  // 移动构造
 Object<int> b = a; // 拷贝构造
 ```
 
-### 可变参数实例
-```
-class DetailAnno {
-public:
-    static vector<string> spl;
-    template<typename T, typename... Argv>
-    static void Init(const T str_, Argv... argvs);
-    static void Init(){}
-
-public:
-    DetailAnno(){}
-    virtual ~DetailAnno(){}
-    DetailAnno(const DetailAnno & d) = default;
-    DetailAnno & operator=(const DetailAnno & d) = default;
-};
-
-vector<string> DetailAnno::spl;
-
-template<typename... Argv>
-void DetailAnno::Init<string, Argv...>(const string str_, Argv... argvs){
-    DetailAnno::spl.push_back(str_);
-    DetailAnno::Init(argvs...);
+### 可变参数
+```c++
+template<typename f, typename ...Argvs>
+void callback(function<void(Argvs...)> f, Argvs&&... argvs){
+    f(std::forward<Argvs>(argvs)...);
 }
 ```
 
@@ -2487,7 +2463,7 @@ public:
 
 
 // 函数对象和容器
-C + + 标准库在标头文件中包含若干函数对象 <functional>
+C++ 标准库在标头文件中包含若干函数对象 <functional>
 这些函数对象的一个用途是用作容器的排序条件
 template <class Key,
     class Traits=less<Key>,
@@ -2501,7 +2477,7 @@ static void forkRun(function<T(Args...)> func, Args... args);
 ```
 
 ### std::function
-```
+```c++
 #include <functional>
 
 // 普通函数
@@ -2516,29 +2492,34 @@ struct divide{
         return denominator/divisor;
     }
 };
-
 std::function<int(int ,int)>  a = add; 
 std::function<int(int ,int)>  b = mod ; 
 std::function<int(int ,int)>  c = divide(); //divide类构造
 
+// 类成员函数转换
+class A{
+    void func(int){}
+};
+function<void(A*,int)> f = &A::func;
+A a;
+f(&a, 2);
 ```
 
 ### std::bind
-```
+```c++
 // 绑定普通函数
 double my_divide(double x, double y) {return x/y;}
 
 function<double(double,double)> fn_half = std::bind(my_divide, std::placeholders::_1,2);  // placeholders::_1 占位符
-std::cout << fn_half(10) << '\n';     // 2
+fn_half(10);
 
-// 绑定一个成员函数
+// 绑定成员函数
 struct Foo {
     void print_sum(int n1, int n2) {
         std::cout << n1+n2 << '\n';
     }
     int data = 10;
 };
-
 Foo foo;
 // bind绑定类成员函数时，第一个参数表示对象的成员函数的指针，第二个参数表示对象的地址
 auto f = std::bind(&Foo::print_sum, &foo, 95, std::placeholders::_1);
@@ -2779,17 +2760,17 @@ https://zhuanlan.zhihu.com/p/34725232
     cout << vc->size() << endl;
 
 (3) 引用次数
+    // shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
+    // 每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
+    // shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
+
     std::shared_ptr<int> a = std::make_shared<int>(10);
-    cout << a.use_count() << endl;	
-    //shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
-    //每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
-    //shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
-    void func(std::shared_ptr<int> & a){       //引用 不会改变计数
-        cout << a.use_count() << endl;
-    }
-    void func(std::shared_ptr<int> a){		//复制 会改变计数
-        cout << a.use_count() << endl;
-    }
+    std::shared_ptr<int> & b = a; // 引用 不会改变计数
+    std::shared_ptr<int> & c = a; // 复制计数加一 不会改变计数
+    cout << a.use_count() << endl;
+    // 空指针的计数为0
+    shared_ptr<int> a;      // 计数0
+    shared_ptr<int> b = a;  // 计数0
 
 (4) 自定义析构函数
     std::shared_ptr<int[]> a(new int[1], [](int* a){
@@ -2807,7 +2788,22 @@ https://zhuanlan.zhihu.com/p/34725232
     a =  static_cast<void*>(x.get());
     cout << *static_cast<string*>(a) << endl;
 
-(6) 糟糕的auto_ptr
+(6) weak_ptr
+    // weak_ptr是一种不控制对象生命周期的智能指针, 它是指向一个shared_ptr的管理对象
+    shared_ptr<int> a;
+    shared_ptr<int> b = a;  // 计数2
+
+    shared_ptr<int> a;
+    weak_ptr<int> b = a;  // 计数1
+
+    // expire 判断智能指针是否已销毁
+    if (!b.expire()) {}
+
+    // lock 获得指向的智能指针
+    shared_ptr<int> c = b.lock(); // a的计数+1
+    if(c) {}
+
+(7) 糟糕的auto_ptr
     1) 智能指针所有权
         auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
         auto_ptr<string> b;
@@ -3454,6 +3450,13 @@ https://www.cnblogs.com/haippy/p/3284540.html
         // 调用sem_post，信号量加一
         
         int sem_getvalue(sem_t *sem); 
+```
+
+### 非类型模板
+```c++
+// 模板参数不限定于类型，普通值也可作为模板参数
+template<int> struct aa{};
+template<> struct aa<1>{};  // 特化
 ```
 
 ### future
