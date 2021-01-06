@@ -650,3 +650,19 @@ groupcache 中实现的 LRU Cache 并不是并发安全的，如果用于多个 
 
 除了上述库，还有github.com/hashicorp/golang-lru
 ```
+
+### 浮点数与16进制转换
+```go
+// 浮点数 转 16进制
+// float -> uint32 -> []byte -> hex 
+
+// 16进制 转 浮点
+// hex -> []byte -> uint32 -> float
+import (
+	"math"
+	"encoding/binary"
+	"encoding/hex"
+)
+
+
+```

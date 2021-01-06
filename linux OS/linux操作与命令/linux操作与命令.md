@@ -1160,6 +1160,15 @@ losetup -f
 losetup -a 
 ```
 
+### dd
+```
+// 向磁盘上写一个大文件, 来看写性能
+dd if=/dev/zero bs=1024 count=1000000 of=/root/1Gb.file
+ 
+// 从磁盘上读取一个大文件, 来看读性能
+dd if=/root/1Gb.file bs=64k | dd of=/dev/null
+```
+
 ### loop
 ```
 UNIX 系统里，loop 设备是一种伪设备(pseudo-device)，或者也可以说是仿真设备。它能使我们像块设备一样访问一个文件
@@ -1337,3 +1346,8 @@ lspci -v        // 先获得目标驱动name
 modinfo ath9k   // 查看无线网卡驱动ath9k的详细信息
 ```
 
+### Argument list too long
+```
+// 例如cp拷贝大量小文件会出现如题的错误，解决办法如下
+find resource/ -name "*.jpg" | xargs -i cp -rf {} ./
+```
