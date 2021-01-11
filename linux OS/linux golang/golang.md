@@ -654,15 +654,26 @@ groupcache 中实现的 LRU Cache 并不是并发安全的，如果用于多个 
 ### 浮点数与16进制转换
 ```go
 // 浮点数 转 16进制
-// float -> uint32 -> []byte -> hex 
+// float -> uint32 -> []byte -> hex (-> string)
 
 // 16进制 转 浮点
-// hex -> []byte -> uint32 -> float
+// (string ->) hex -> []byte -> uint32 -> float
 import (
 	"math"
 	"encoding/binary"
 	"encoding/hex"
 )
+
+var a float32
+var b uint32 = math.Float32bits(a)
+bytes := make([]byte, 4)
+binary.LittleEndian.PutUint32(bytes, b)
+result := hex.EncodeToString(bytes)
+
+bytes1, _ := hex.DecodeString(result)
+v := binary.LittleEndian.Uint32(bytes1)
+a1 := math.Float32frombits(v)
+
 
 
 ```

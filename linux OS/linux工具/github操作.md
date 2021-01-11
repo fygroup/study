@@ -252,7 +252,7 @@ git push origin :current
 // git stash apply
 不会删除堆栈中的第一个stash，并将对应修改应用到当前的工作目录下
 
-// git branch show
+// git stash show
 查看stash
 
 // git stash drop
