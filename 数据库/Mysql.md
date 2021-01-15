@@ -161,6 +161,51 @@ GRANT ALL ON *.* TO `wangwei`@`127.0.0.1` WITH GRANT OPTION
 
 ```
 
+### variables
+```
+// 查看最大连接数
+show variables like '%max_connection%'
+
+// 重新设置最大连接数
+set global max_connections=1000;
+
+// 查看当前连接数
+show status like  'Threads%';
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| Threads_cached    | 32    |
+| Threads_connected | 10    |   // 打开的连接数
+| Threads_created   | 50    |
+| Threads_rejected  | 0     |
+| Threads_running   | 1     |   // 激活的连接数，这个数值一般远低于connected数值
++-------------------+-------+
+
+// timeout
+show variables like '%timeout%'
++-----------------------------+----------+
+| Variable_name               | Value    |
++-----------------------------+----------+
+| connect_timeout             | 10       |
+| delayed_insert_timeout      | 300      |
+| have_statement_timeout      | YES      |
+| innodb_flush_log_at_timeout | 1        |
+| innodb_lock_wait_timeout    | 50       |
+| innodb_rollback_on_timeout  | OFF      |
+| interactive_timeout         | 20       |  
+| lock_wait_timeout           | 31536000 |
+| net_read_timeout            | 30       |
+| net_write_timeout           | 60       |
+| rpl_stop_slave_timeout      | 31536000 |
+| slave_net_timeout           | 60       |
+| wait_timeout                | 20       |
++-----------------------------+----------+
+wait_timeout和interactive_timeout都是指不活跃的连接超时时间
+连接线程启动的时候wait_timeout会根据是交互模式还是非交互模式被设置为这两个值中的一个
+
+
+```
+
 ### MyISAM表锁
 ```
 MyISAM存储引擎只支持表锁,开销小，加锁快
