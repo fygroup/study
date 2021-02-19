@@ -57,7 +57,8 @@ https://www.jianshu.com/p/f1788f596a57
 
 
 // 列出一个程序所需要得动态链接库
-    ldd [软件]
+    x86:    ldd xxx
+    arm:    readelf -d xxx
 
 
 // 用于显示二进制目标文件的符号表

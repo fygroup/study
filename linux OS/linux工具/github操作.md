@@ -75,6 +75,9 @@ git 权限控制就是linux的权限控制
 
 ### config
 ```
+git config --global user.name "John Doe"
+git config --global user.email johndoe@example.com
+
 // 对于账号登陆
 [core]
 	repositoryformatversion = 0

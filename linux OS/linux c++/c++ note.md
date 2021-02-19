@@ -4022,3 +4022,25 @@ auto Func(F f, Arg arg)->decltype(f(arg)){
 // enable_if 利用SFINAE实现条件选择重载函数
 ```
 
+### 基类调用继承类接口
+```c++
+class A {
+public:
+    virtual void init() {
+        cout << "A::init()" << endl;
+    }
+    void func() {
+        init();
+    }
+};
+
+class B {
+public:
+    void init() override {
+        cout << "B::init()" << endl;
+    }
+};
+
+B b;
+b.func();   // B::init()
+```

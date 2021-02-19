@@ -154,8 +154,42 @@ struct has_type<T, void_t<typename T::type>> : std::true_type {};
 template<typename T, typename = void>
 struct has_get: public std::false_type{};
 template<typename T>
-struct has_get<T, decltype(std::declval<T>().get())> : public std::true_type{};
+struct has_get<T, void_t<decltype(std::declval<T>().get())>> : public std::true_type{};
 std::cout << has_get<A>::value << std::endl;
+```
+
+### 判断存在成员变量、函数、类型
+```c++
+// 利用SFINAE
+
+// 构建void_t, c++17才有std::void_t
+template<typename... Ts> struct make_void{typedef void type;};
+template<typename... Ts> using void_t = typename make_void<Ts...>::type;
+
+template<typename T, typename = void>
+struct has_member : public std::false_type{};
+
+// 判断成员变量
+template<typename T>
+struct has_member<T, void_t<decltype(T::value)>> : public std::true_type{};
+
+// 判断成员函数
+template<typename T>
+struct has_member<T, void_t<decltype(std::declval<T>().func())>> : public std::true_type{};
+
+// 对于有参数的成员函数
+template<typename T>
+struct has_member<T, void_t<decltype(&T::func)>> : public std::true_type{}; // 这个也可以判断成员变量，但是反之不行
+
+// 判断成员类型
+template<typename T>
+struct has_member<T, void_t<typename T::type>> : public std::true_type{};
+
+// 通过变量判断成员
+template<typename T>
+bool has_member_func(T& t) {return has_member<T>::value;}
+
+
 ```
 
 ### 结构体元素数量

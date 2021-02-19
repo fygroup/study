@@ -1018,47 +1018,6 @@ socket.on('client_new',(data)=>{
 ```
 
 ---
-#### TLS/SSL
-数字证书的生成
-```
-CA机构
-openssl genrsa -out ca.key 1024  //生成私钥
-openssl req -new -key ca.key -out ca.csr  //此过程会提示输入信息
-openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt  //生成CA证书,然后将ca证书和私钥通过安全的方式发送给服务器端
-
-服务器端
-openssl genrsa -out server.key 1024 //生成密钥
-openssl req -new -key server.key -out server.csr //此过程会提示输入信息，注意common Name要匹配服务器域名，否则认证过程会出错
-openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt //利用CA证书和私钥颁发一个带有CA签名的证书。
-证书:
-证书的发布机构
-证书的有效期
-公钥
-证书所有者（Subject）
-签名所使用的算法
-指纹以及指纹算法
-```
-
----
-#### 加密与签名
-(1)公钥与私钥
-```
-公钥加密，私钥解密。私钥加密，公钥解密
-```
-
-(2)请求过程
-```
-step1:
-客户->服务器：发送请求
-step2:
-服务器->客户：发送数字证书（包含公钥）
-step3:
-客户验证数字证书是不是服务器，有否问题。
-
-```
-
-
----
 #### https
 服务端
 ```

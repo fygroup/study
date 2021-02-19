@@ -95,7 +95,7 @@ QoS 0：最多分发一次
     消息在这个等级下具有最高的传输效率，但可能送达一次也可能根本没送达
 
 QoS 1：至少分发一次
-    包含了简单的重发机制，Sender 发送消息之后等待接收者的 ACK，如果没收到 ACK 则重新发送消息
+    包含了简单的重发机制，发送消息之后等待接收者的 PUBACK，如果没收到 PUBACK 则重新发送消息
     这种模式能保证消息至少能到达一次，但无法保证消息重复
 
     发消息 -> 收到确认 -> 删除消息
@@ -136,4 +136,31 @@ QoS 2：消息仅传送一次(最高级别)
 mosquitto
 mosquitto-clients mosquitto客户端默认使用QoS 0
 
+```
+
+### mosquitto SSL
+```
+// ca.crt server.crt server.key client.crt client.key
+openssl genrsa -des3 -out ca.key 2048
+openssl req -new -x509 -days 1826 -key ca.key -out ca.crt
+
+openssl genrsa -out server.key 2048
+openssl req -new -out server.csr -key server.key
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 360
+
+openssl genrsa -out client.key 2048
+openssl req -new -out client.csr -key client.key
+openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 360
+
+
+// mosquitto.conf
+port 8883
+cafile /home/ubuntu/ca/ca.crt
+certfile /home/ubuntu/ca/server.crt
+keyfile /home/ubuntu/ca/server.key
+
+// 部署
+mosquitto -c /etc/mosquitto/mosquitto.conf -v
+mosquitto_sub -h 192.168.1.181 -p 8883 -i 111  -t 111 –cafile ca.crt –cert client.crt –key client.key –insecure
+mosquitto_pub -h 192.168.1.181 -p 8883 -t 111 -m "this is w show" –cafile ca.crt –cert client.crt –key client.key –insecure
 ```
