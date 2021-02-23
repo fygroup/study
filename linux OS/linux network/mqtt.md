@@ -164,3 +164,21 @@ mosquitto -c /etc/mosquitto/mosquitto.conf -v
 mosquitto_sub -h 192.168.1.181 -p 8883 -i 111  -t 111 –cafile ca.crt –cert client.crt –key client.key –insecure
 mosquitto_pub -h 192.168.1.181 -p 8883 -t 111 -m "this is w show" –cafile ca.crt –cert client.crt –key client.key –insecure
 ```
+
+### Packet Identifier(报文标识符字段)
+```
+很多控制报文的'可变报头'部分包含一个两字节的'报文标识符字段'
+
+这些报文包含 PUBLISH(QoS > 0)，PUBACK，PUBREC，PUBREL，PUBCOMP，SUBSCRIBE, SUBACK，UNSUBSCRIBE，UNSUBACK
+
+客户端每次发送一个新的这些类型的报文时都必须分配一个当前未使用的报文标识符
+
+如果一个客户端要重发这个特殊的控制报文，在随后重发那个报文时，它必须使用相同的标识符
+
+当客户端处理完这个报文对应的确认后，这个报文标识符就释放可重用
+```
+
+
+### mqtt 大文件传输
+```
+```

@@ -446,23 +446,23 @@ conn, err := grpc.Dial(*addr, grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp
 ```
 
 ### grpc interceptor
-```
-https://colobu.com/2017/04/17/dive-into-gRPC-interceptor/
+```golang
+// https://colobu.com/2017/04/17/dive-into-gRPC-interceptor/
 
-普通方法：一元拦截器（grpc.UnaryInterceptor）
-流方法：流拦截器（grpc.StreamInterceptor）
+// 普通方法：一元拦截器（grpc.UnaryInterceptor）
+// 流方法：流拦截器（grpc.StreamInterceptor）
 
 // 服务端
 type ServerOption
 func UnaryInterceptor(i UnaryServerInterceptor) ServerOption
 func StreamInterceptor(i StreamServerInterceptor) ServerOption
 // 需要实现的 *ServerInterceptor
-type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (resp interface{}, err error)
+type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (interface{},  error)
 type StreamServerInterceptor func(srv interface{}, ss ServerStream, info *StreamServerInfo, handler StreamHandler) error
 
 srv := grpc.NewServer(
     grpc.UnaryInterceptor(UnaryServerInterceptorDemo),
-    grpc.StreamInterceptor(StreamServerInterceptor),
+    grpc.StreamInterceptor(StreamServerInterceptorDemo),
 )
 
 func UnaryServerInterceptorDemo(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {

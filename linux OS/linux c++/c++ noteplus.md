@@ -158,7 +158,7 @@ struct has_get<T, void_t<decltype(std::declval<T>().get())>> : public std::true_
 std::cout << has_get<A>::value << std::endl;
 ```
 
-### 判断存在成员变量、函数、类型
+### 判断类是否存在成员变量、函数、类型
 ```c++
 // 利用SFINAE
 
