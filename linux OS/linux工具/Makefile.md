@@ -137,4 +137,13 @@ b a
 
 ```
 
-### demo
+### 递归获得目录
+```
+DIR := ./
+SRCDIR := $(shell find $(DIR) -maxdepth 5 -type d)
+```
+
+### 固定动态库路径
+```
+-L LINK_THIRD_LIBDIR -Wl,-rpath,$(LINK_THIRD_LIBDIR) -lwukong_link -lsqlite3 -lcurl -lpthread -lssl -lcrypto 
+```
