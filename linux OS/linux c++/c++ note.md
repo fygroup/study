@@ -2650,6 +2650,11 @@ double my_divide(double x, double y) {return x/y;}
 function<double(double,double)> fn_half = std::bind(my_divide, std::placeholders::_1,2);  // placeholders::_1 占位符
 fn_half(10);
 
+void func(int){}
+int n;
+std::function<void()> f = std::bind(func, n);
+f();
+
 // 绑定成员函数
 struct Foo {
     void print_sum(int n1, int n2) {
@@ -2950,6 +2955,8 @@ https://zhuanlan.zhihu.com/p/34725232
         std::auto_ptr 不能和容器混合使用。
         原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
         所以！！！auto_ptr几乎没用！！！
+
+(8) 智能指针做参数传值更好
 ```
 
 ### IO体系
@@ -3592,6 +3599,24 @@ https://www.cnblogs.com/haippy/p/3284540.html
 // 模板参数不限定于类型，普通值也可作为模板参数
 template<int> struct aa{};
 template<> struct aa<1>{};  // 特化
+```
+
+### std::ref std::cref
+```c++
+// std::bind std::thread 是对参数直接拷贝，而不是引用
+
+void func(int & n) {
+    n++;
+}
+int n = 1;
+std::function<void()> f = std::bind(func, n);
+f();    // 1， 因为bind只是拷贝n
+
+std::function<void()> f = std::bind(func, std::ref(n));
+f();    // 2
+
+std::thread(func, std::ref(n));
+
 ```
 
 ### future

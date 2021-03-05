@@ -1352,3 +1352,18 @@ modinfo ath9k   // 查看无线网卡驱动ath9k的详细信息
 // 例如cp拷贝大量小文件会出现如题的错误，解决办法如下
 find resource/ -name "*.jpg" | xargs -i cp -rf {} ./
 ```
+
+### 内存文件系统
+```
+与其他文件系统不同，tmpfs无需要建立或格式化，需要直接mount
+
+// 挂载内存文件系统(默认它是系统内存的一半)
+mount -t tmpfs tmpfs /mnt/tmp
+
+
+// 定义大小
+mount -t tmpfs -o size=1G tmpfs /mnt/mytmpfs 
+
+// 也可以在挂载后，重新挂载(remount) tmpfs 即可改变内存上限
+mount -o remount,size=512m/mnt/tmp
+```

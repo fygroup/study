@@ -616,7 +616,7 @@ mount -t sysfs sysfs ./mnt
 mount --bind /sys ./mnt
   mount: wrong fs type, bad option, bad superblock on /sys,
   
-//挂载tmpfs成功
+//挂载内存文件系统
 mount -t tmpfs tmpfs ./mnt
 mount|grep mnt|grep tmpfs
   tmpfs on /home/dev/mnt type tmpfs (rw,nodev,relatime,uid=1000,gid=1000)

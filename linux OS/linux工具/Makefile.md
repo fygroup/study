@@ -137,6 +137,21 @@ b a
 
 ```
 
+### demo
+```
+SRC_PATH = /home/malx/project/dev_aarch64_wukong_link_mqtt/wukong/
+DIRS = $(shell find $(SRC_PATH) -maxdepth 5 -type d)
+
+SRCS_CPP += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.cpp))
+SRCS_CC += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.cc))
+SRCS_C += $(foreach dir, $(DIRS), $(wildcard $(dir)/*.c))
+
+all:
+	@echo " ${DIRS} "
+	@echo " ${SRCS_CPP} "
+```
+
+
 ### 递归获得目录
 ```
 DIR := ./
