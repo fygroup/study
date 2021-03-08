@@ -72,23 +72,50 @@ class D : public B<D> {
 
 ```
 
-### template两个示例
+### template前缀
 ```c++
-// 示例一
+// 在通过“.”,“->”,“::”限定的依赖名访问成员模板之前, template关键字必不可少
 
-template<typename Obj>
-class Reflect {
-    template<typename T>
-    class Store {
-        static map<string, T> _map;
+// (1) 为什么要用template修饰
+    template<class T>
+    int f(T& x) {
+        return x.template convert<3>(pi);
+    }
+    // 如果没有template
+    x.convert<3>(pi)
+    // 可被理解成"小于"3 "大于"pi
+    (x.convert < 3) > (pi)
+
+
+// (2) 继承一个模板类的子模板类
+    template<typename T> class A {
+    public:
+        template<typename T1> class Base{};
     };
-};
 
-template<typename Obj> 
-template<typename T> 
-typename Reflect<Obj>::template Store<T>::map<string, T> Reflect<Obj>::Store<T>::_map;
+    template<typename T>
+    class B : A<T>::template Base<T>{};
 
-// 示例二
+
+// (3) 模板类的模板子类的静态成员初始化
+    template<typename Obj>
+    class Reflect {
+        template<typename T>
+        class Store {
+            static map<string, T> _map;
+        };
+    };
+
+    template<typename Obj> 
+    template<typename T> 
+    typename Reflect<Obj>::template Store<T>::map<string, T> Reflect<Obj>::Store<T>::_map;
+
+
+```
+
+### template1个示例
+```c++
+// 示例
 template<typename T> class A{};
 
 template<template<typename, typename> class T, typename T1, template T2>
