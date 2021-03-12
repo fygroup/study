@@ -706,3 +706,31 @@ system("pause")
 cin.get()   // c++
 getchar()   // c
 ```
+
+### time.h
+```c++
+// time_t 在有的编译器上是32，但大多是64
+
+std::string TimeToStr(int64_t timeParam) {
+    time_t tt = static_cast<time_t>(timeParam);
+    tm* tb = localtime(&tt);
+    char timebuf[30];
+    strftime(timebuf, 30, "%Y-%m-%d %H:%M:%S", tb);
+    return std::string(timebuf);
+}
+
+int64_t StrToTime(const std::string & timeStrParam){
+    tm tb = {0};
+    strptime(timeStrParam.c_str(), "%Y-%m-%d %H:%M:%S", &tb);
+    // cout << "year: " << tb.tm_year + 1900 << endl; // 注意
+    // cout << "mouth: " << tb.tm_mon + 1 << endl; // 注意
+    // cout << "day: " << tb.tm_mday << endl;
+    // cout << "hour: " << tb.tm_hour << endl;
+    // cout << "min: " << tb.tm_min << endl;
+    // cout << "sec: " << tb.tm_sec << endl;
+    time_t tt = mktime(&tb);
+    return static_cast<int64_t>(tt);
+}
+```
+
+

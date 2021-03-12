@@ -162,3 +162,8 @@ SRCDIR := $(shell find $(DIR) -maxdepth 5 -type d)
 ```
 -L LINK_THIRD_LIBDIR -Wl,-rpath,$(LINK_THIRD_LIBDIR) -lwukong_link -lsqlite3 -lcurl -lpthread -lssl -lcrypto 
 ```
+
+### 指定目录
+```
+make -C xxxx
+```

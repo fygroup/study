@@ -171,4 +171,22 @@ make install
 
 ```
 
-### 
+### find_xxx
+```
+CMAKE_PREFIX_PATH
+```
+
+### 子目录编译
+```
+# 添加子目录
+ADD_SUBDIRECTORY(src)
+
+```
+
+### cmake 改变中间文件的路径
+```
+mkdir build
+cd build
+cmake ..
+```
+

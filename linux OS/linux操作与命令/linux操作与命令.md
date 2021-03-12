@@ -60,6 +60,8 @@ https://www.jianshu.com/p/f1788f596a57
     x86:    ldd xxx
     arm:    readelf -d xxx
 
+// 查看动态库平台
+readelf -h xxx.so
 
 // 用于显示二进制目标文件的符号表
     nm /lib64/libc.so.6|grep '\sGLIBC_2' 查看动态库的相关信息
