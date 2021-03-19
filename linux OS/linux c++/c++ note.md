@@ -3705,6 +3705,8 @@ do {
             break;
     }
 }while(status != future_status::ready);
+
+cout << "result is " << fut.get() << endl;
 // 输出 timeout timeout timeout timeout ... ready
 ```
 

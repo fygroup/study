@@ -1369,3 +1369,13 @@ mount -t tmpfs -o size=1G tmpfs /mnt/mytmpfs
 // 也可以在挂载后，重新挂载(remount) tmpfs 即可改变内存上限
 mount -o remount,size=512m/mnt/tmp
 ```
+
+### 配置域名服务器
+```
+// 注意区分 /etc/host
+// 域名如果在hosts中找不到对应的IP，会访问此文件寻找域名解析服务器
+
+vim /etc/resolv.conf
+nameserver 10.151.6.6
+nameserver 8.8.8.8
+```

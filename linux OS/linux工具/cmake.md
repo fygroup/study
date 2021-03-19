@@ -190,3 +190,13 @@ cd build
 cmake ..
 ```
 
+### gdb 内存检测编译
+```
+// 编译选项
+-g -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak 
+
+// 运行环境配置
+export ASAN_OPTIONS=$ASAN_OPTIONS:log_path=./asan.log:suppressions=$SUPP_FILE:new_delete_type_mismatch=0:alloc_dealloc_mismatch=0
+
+
+```
