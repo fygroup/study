@@ -1379,3 +1379,12 @@ vim /etc/resolv.conf
 nameserver 10.151.6.6
 nameserver 8.8.8.8
 ```
+
+### tar  压缩 忽略目录结构
+```
+tar zcvf xxx.tar.gz -C 目录 压缩的目标目录
+
+/dir1/dir2/xxx
+
+tar zcvf xxx.tar.gz -C /dir1/dir2 xxx
+```
