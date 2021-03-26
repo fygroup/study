@@ -428,8 +428,11 @@ ip link set dev eth1 down   停止
 ip neighbour 
 
 //更改路由表的默认网关
-//注意：这里是指更改网络设备的网关
+// 为dev添加网关
 ip route add default via 192.168.8.1 dev eth0
+
+// 为dev配置网关
+route add default gw 192.168.8.1 dev eth0
 
 //查看网络设备
 /etc/sysconfig/network-scripts/ifcfg-em2
