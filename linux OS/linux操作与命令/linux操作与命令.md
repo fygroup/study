@@ -1391,3 +1391,9 @@ tar zcvf xxx.tar.gz -C 目录 压缩的目标目录
 
 tar zcvf xxx.tar.gz -C /dir1/dir2 xxx
 ```
+
+### tar 压缩 选择目录结构
+```
+// 选择目录dir下aa和bb
+tar zcvf aaa.tar.gz dir/aa dir//bb
+```

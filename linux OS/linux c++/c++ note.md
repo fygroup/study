@@ -1494,10 +1494,14 @@ T SysIpc<T>::list[SysIpc<T>::n];
 ```
 
 ### sys/time.h
-```
+```c++
 #include <sys/time.h>
 struct timeval tv;
 gettimeofday(&tv,NULL);
+tv.tv_sec;  // 秒
+tv.tv_usec; // 微秒
+// 毫秒 = 秒 * 1000 + 微妙/1000
+uint64 ms = ((uint64_t)tv.tv_sec) * 1000 + ((uint64_t)tv.tv_usec / 1000);
 sprintf(tarDir,"%s/tmp%ld%ld/",tarDir,tv.tv_sec,tv.tv_usec);
 ```
 
