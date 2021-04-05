@@ -378,6 +378,8 @@ ifconfig eth0 down //关闭网卡
 ifconfig eth0 hw ether 00:AA:BB:CC:DD:EE //修改MAC地址
 ifconfig eth0 up //启动网卡
 
+// 开机启动时，如果没有赋予其mac地址，那么会随机设定
+
 // 配置IP地址
 ifconfig eth0 192.168.1.56 
 // 给eth0网卡配置IP地址,并加上子掩码
@@ -1396,4 +1398,28 @@ tar zcvf xxx.tar.gz -C /dir1/dir2 xxx
 ```
 // 选择目录dir下aa和bb
 tar zcvf aaa.tar.gz dir/aa dir//bb
+```
+
+### 更改系统时间
+```
+date +%Y-%m-%d -s "2021-04-01"
+date +%T -s "11:14:00"
+```
+
+### ntpd服务的相关设置文件
+```
+/etc/ntp.conf
+这个是NTP daemon的主要设文件，也是 NTP 唯一的设定文件
+
+/usr/share/zoneinfo/
+在这个目录下的文件其实是规定了各主要时区的时间设定文件，例如北京地区的时区设定文件在/usr/share/zoneinfo/Asia/Beijing 就是了。这个目录里面的文件与底下要谈的两个文件(clock 与localtime)是有关系的
+
+/etc/sysconfig/clock
+这个文件其实也不包含在NTP 的 daemon 当中，因为这个是linux的主要时区设定文件。每次开机后，Linux 会自动的读取这个文件来设定自己系统所默认要显示的时间
+
+/etc/localtime
+这个文件就是“本地端的时间配置文件”。刚刚那个clock 文件里面规定了使用的时间设置文件(ZONE) 为/usr/share/zoneinfo/Asia/Beijing ，所以说，这就是本地端的时间了，此时， Linux系统就会将Beijing那个文件另存为一份/etc/localtime文件，所以未来我们的时间显示就会以Beijing那个时间设定文件为准
+
+/etc/timezone
+系统时区文件
 ```
