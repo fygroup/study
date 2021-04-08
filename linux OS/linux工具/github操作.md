@@ -261,3 +261,10 @@ git push origin :current
 // git stash drop
 移除stash
 ```
+
+### git pull push 带用户 密码
+```
+git push https://diaohaiyong:939791536a-@gitlab.sz.sensetime.com/senseNebula-m/nebula-m.git develop-v2.1.2_jcv
+git pull https://diaohaiyong:939791536a-@gitlab.sz.sensetime.com/senseNebula-m/nebula-m.git develop-v2.1.2_jcv
+
+```
