@@ -653,27 +653,57 @@ S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
     RTC机制利用系统硬件提供的Real Time Clock机制，通过读取RTC硬件/dev/rtc，通过ioctl()设置RTC频率
     精度可调，而且非常高
 
-    int fd = open ("/dev/rtc", O_RDONLY);
- 
-    // Set the freq as 4Hz
-    if(ioctl(fd, RTC_IRQP_SET, 1) < 0) {perror();}
-
-    // Enable periodic interrupts
-    if(ioctl(fd, RTC_PIE_ON, 0) < 0) {perror();}
- 
-    for(i = 0; i < 100; i++) {
-        // 每4Hz时间，read返回
-        if(read(fd, &data, sizeof(unsigned long)) < 0) {perror();}
-        printf("timer\n");
-    }
-    // Disable periodic interrupts
-    ioctl(fd, RTC_PIE_OFF, 0);
-    close(fd);
-
 4、select()
     通过使用select()，来设置定时器
     原理利用select()方法的第5个参数，第一个参数设置为0，三个文件描述符集都设置为NULL，第5个参数为时间结构体
     这种方法精度能够达到微妙级别，网上有很多基于select()的多线程定时器，说明select()稳定性还是非常好
+```
+
+### RTC
+```
+// linux系统有两个时钟
+一个是由主板电池驱动的"Real Time Clock"也叫做RTC或者叫CMOS时钟，硬件时钟。当操作系统关机的时候，用这个来记录时间，但是对于运行的系统是不用这个时间的。
+另一个时间是"System clock"也叫内核时钟或者软件时钟，是由软件根据时间中断来进行计数的，内核时钟在系统关机的情况下是不存在的，所以，当操作系统启动的时候，内核时钟是要读取RTC时间来进行时间同步。并且在系统关机的时候将系统时间写回RTC中进行同步。
+
+// Linux内核与RTC进行互操作的时机只有两个：
+1) 内核在启动时从RTC中读取启动时的时间与日期
+2) 内核在需要时将时间与日期回写到RTC中
+
+// 通过 /dev/rtc 硬件时钟实现timer
+    unsigned long data = 0;
+    int fd = open("/dev/rtc", O_RDONLY);
+    /* set the freq as 4Hz */
+    ioctl(fd, RTC_IRQP_SET, 4);
+    /* enable periodic interrupts */
+    ioctl(fd, RTC_PIE_ON, 0);
+    struct timeval tv;
+    for (size_t i = 0; i < 100; i++ )
+    {
+        read(fd, &data, sizeof(data));
+        gettimeofday(&tv, NULL);
+        uint64_t a = (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
+        printf("timer %u\n", a);
+    }
+    /* enable periodic interrupts */
+    ioctl(fd, RTC_PIE_OFF, 0);
+    close(fd);
+
+#define RTC_AIE_ON	    _IO('p', 0x01)	/* Alarm int. enable on		*/
+#define RTC_AIE_OFF	    _IO('p', 0x02)	/* ... off			*/
+#define RTC_UIE_ON	    _IO('p', 0x03)	/* Update int. enable on	*/
+#define RTC_UIE_OFF	    _IO('p', 0x04)	/* ... off			*/
+#define RTC_PIE_ON	    _IO('p', 0x05)	/* Periodic int. enable on	*/
+#define RTC_PIE_OFF	    _IO('p', 0x06)	/* ... off			*/
+#define RTC_WIE_ON	    _IO('p', 0x0f)  /* Watchdog int. enable on	*/
+#define RTC_WIE_OFF 	_IO('p', 0x10)  /* ... off			*/
+
+#define RTC_ALM_SET 	_IOW('p', 0x07, struct rtc_time) /* Set alarm time  */
+#define RTC_ALM_READ	_IOR('p', 0x08, struct rtc_time) /* Read alarm time */
+#define RTC_RD_TIME	    _IOR('p', 0x09, struct rtc_time) /* Read RTC time   */
+#define RTC_SET_TIME	_IOW('p', 0x0a, struct rtc_time) /* Set RTC time    */
+#define RTC_IRQP_READ	_IOR('p', 0x0b, unsigned long)	 /* Read IRQ rate   */
+#define RTC_IRQP_SET	_IOW('p', 0x0c, unsigned long)	 /* Set IRQ rate    */
+
 ```
 
 ### 文件大小、遍历目录
