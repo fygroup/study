@@ -313,6 +313,39 @@ sudo systemctl restart docker
 ```
 ```
 
+### docker network
+```
+// 三种基本的网络模式
+docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+46053022478c        bridge              bridge              local
+48c25f0ece64        host                host                local
+adca62142796        none                null                local
+
+// 查看桥接详细内容
+docker network inspect bridge
+[
+    {
+        "Name": "bridge",
+        "Driver": "bridge",
+        "IPAM": {
+            "Config": [
+                {
+                    "Subnet": "172.17.0.0/16",
+                    "Gateway": "172.17.0.1"    // docker0 eth
+                }
+            ]
+        },
+        "Containers": {
+            "45e8bd7ca6532aac5822734e933a0f07a4dddacd92938ff2c5247092a15a59ad": {
+                "Name": "malx_ubuntu",
+                "IPv4Address": "172.17.0.2/16", // 容器malx_ubuntu的ip
+            }
+        }
+    }
+]
+```
+
 ### docker网络模式
 ```
 https://www.cnblogs.com/zuxing/articles/8780661.html
@@ -321,4 +354,10 @@ https://www.jianshu.com/p/d84cdfe2ea86
 Bridge(默认) Container host none
 
 但如果启动容器的时候使用host模式，那么这个容器将不会获得一个独立的Network Namespace，而是和宿主机共用一个Network Namespace。容器将不会虚拟出自己的网卡，配置自己的IP等，而是使用宿主机的IP和端口
+
+
+// NAT转发
+netstat -apn | grep "172.17.0.1"
+udp        0      0 172.17.0.1:123          0.0.0.0:*                           14089/ntpd  
+
 ```

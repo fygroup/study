@@ -1378,7 +1378,7 @@ mount -o remount,size=512m/mnt/tmp
 
 ### 配置域名服务器
 ```
-// 注意区分 /etc/host
+// 注意区分 /etc/hosts
 // 域名如果在hosts中找不到对应的IP，会访问此文件寻找域名解析服务器
 
 vim /etc/resolv.conf
@@ -1423,4 +1423,50 @@ date +%T -s "11:14:00"
 
 /etc/timezone
 系统时区文件
+```
+
+### 查看发行版的版本
+```
+cat /etc/os-release
+cat /etc/issue
+```
+
+### 自启动
+```
+/etc/init.d
+/etc/rc[0-9].d
+
+(1) init.d vs init
+    /etc/init.d/就是旧时代linux的用法
+    /etc/init/是现在Ubuntu的提倡并一步步转型的用法
+    为了平缓过渡，便让service命令可以同时寻找到两个文件夹
+
+(2) 启动服务
+    上述两个文件夹的区别也就是服务启动方式的区别，目前有三种启动方式(mysql为例)
+    [1] 只从/etc/init.d/文件夹启动
+        /etc/init.d/mysql start
+    [2] 只从/etc/init/文件夹启动(Ubuntu提倡)
+        sudo start mysql
+    [3] 从两个文件夹中启动
+        service start mysql
+
+(3) /etc/rc[0-9].d
+    /etc/rc[0-9].d文件夹下软链接的是/etc/init.d/中的脚本
+    /etc/rc2.d/S01binfmt-support  /etc/rc4.d/S01dbus
+    /etc/rc2.d/S01dbus            /etc/rc4.d/S01ssh
+    /etc/rc2.d/S01ssh             /etc/rc5.d/S01binfmt-support
+    S:开机自启动
+    K:开机自kill
+```
+
+### dash bash
+```
+dash: 小巧，但不友好
+bash: 庞大，但很友好
+
+// 查看
+ls -l /bin/sh
+
+// 由dash切换成bash
+sudo dpkg-reconfigure dash
 ```
