@@ -302,6 +302,17 @@ sudo gpasswd -a ${USER} docker
 sudo systemctl restart docker
 ```
 
+### 容器权限运行
+```
+// 以宿主机uid 1000:1000运行容器
+docker run -u 1000:1000
+
+// 前提是容器要存在1000:1000的用户，如果不存在
+I have no name!@6ae7c7d24c8a:/$ id
+uid=1008 gid=1008 groups=1008
+
+```
+
 
 ### volumns管理
 ```

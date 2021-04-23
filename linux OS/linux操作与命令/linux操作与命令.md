@@ -1470,3 +1470,8 @@ ls -l /bin/sh
 // 由dash切换成bash
 sudo dpkg-reconfigure dash
 ```
+
+### 查看系统标准头文件路径
+```
+cpp -v
+```
