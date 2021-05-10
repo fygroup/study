@@ -276,12 +276,29 @@ mount -t proc none /mnt
 
 (6) 挂载nfs
     https://help.ubuntu.com/lts/serverguide/network-file-system.html
-    
-    mount -t nfs hostname:/directory /mount/point
-    //注意：nfs只是个服务，不是个设备
+    // ubuntu 安装 nfs
+    // server
+    apt-get install nfs-kernel-server
+    vi /etc/exports     // 添加目录与权限
+        /home/malx/nfs *(rw,sync,no_root_squash,no_subtree_check)
+    service nfs start   // 启动nfs服务
+
+    // client
+    apt-get install nfs-common
+    mount -t nfs 10.151.3.77:/home/malx/nfs /mount/
 
 (7) 挂载多个分区（设备）到一个文件夹
 
+```
+
+### /etc/fstab
+```
+挂载的配置文件
+
+// column
+设备    挂载点  文件系统类型    挂载选项    转储频度    自检次序
+/dev/xxx    /mnt    ext4    ...
+10.151.3.77:/home/malx/nfs  /nfs    nfs
 ```
 
 ### LVM
@@ -1475,3 +1492,12 @@ sudo dpkg-reconfigure dash
 ```
 cpp -v
 ```
+
+### 查看当前系统支持的文件系统
+```
+目录/proc/filesystems提供的内容不准确
+
+文件系统属于linux内核模块，只需查看当前已加载的模块即可
+cat /proc/modules
+```
+

@@ -1,5 +1,247 @@
-### context.WithCancel
+### io
+```go
+1、read
+    import(
+        "bufio"
+        "os"
+        "ioutil"
+    )
+
+    //一次性读取
+    f,err = os.Open("file")
+    s := ioutil.ReadAll(f)
+
+    //分块读取
+    f,err = os.Open("file")
+    buf := make([]byte,10)
+    rd := bufio.NewReader(f)
+    n,err := rd.Read(buf)
+
+    //按行读取
+    rd := bufio.NewReaderSize(f,4096) // 带缓冲的读
+    rd: = bufio.NewReader(f)
+    line,err := rd.ReadString('\n')
+    line,err := rd.ReadLine()
+
+2、write
+    //带缓冲区读写
+    fd,_ := os.OpenFile("bbb.txt")
+    w := bufio.NewWriterSize(fd,4096) // 带缓冲的写
+    w.WriteString("dadadadad")
+    w.Write([]byte("dsadadada\n"))
+    w.flush()
+
+    //输出屏幕
+    w := bufio.NewWriterSize(os.Stdout,111)
+    w1 := bufio.NewReader(f,111)
+    w1.WriteTo(w)
+
+3、其他函数
+    rd.Buffered()   //表示已经缓冲的数据的大小
+    w.Available()   //表示可使用的缓冲区的大小
+
+    //输出文件
+    ioutil.WriteFile("11.gv", []byte(graph.String()), 0666)
+
+    //实例
+    package main
+
+    import (
+        "bufio"
+        "fmt"
+        "os"
+        "unsafe"
+
+        "github.com/awalterschulze/gographviz"
+    )
+
+    func main() {
+
+        graphAst, _ := gographviz.Parse([]byte(`digraph G{}`))
+        graph := gographviz.NewGraph()
+        gographviz.Analyse(graphAst, graph)
+        graph.AddNode("G", "a", nil)
+        graph.AddNode("G", "b", nil)
+        graph.AddEdge("a", "b", true, nil)
+        fmt.Println(graph.String())
+
+        f, _ := os.Open("sjm.txt")
+        f1, _ := os.OpenFile("sjm.txt1", os.O_WRONLY|os.O_CREATE, 0664)
+        rd := bufio.NewReader(f)
+        rd1 := bufio.NewWriter(f1)
+        for line, err := []byte{0}, error(nil); len(line) > 0 && err == nil; {
+            line, _, err = rd.ReadLine()
+            x := (*string)(unsafe.Pointer(&line))
+            if *x == "" {
+                continue
+            }
+            line = append(line, '\n')
+            rd1.Write(line)
+            //fmt.Printf("%v %v\n", *x, p)
+        }
+
+        f.Close()
+        f1.Close()
+    }
 ```
+
+#### defer panic recover
+```go
+1、defer
+    //Defer function按照后进先出的规则执行。例如下面的代码打印 "3210"
+        func b() {
+            for i := 0; i < 4; i++ {
+                defer fmt.Print(i)
+            }
+        }
+
+    // Defer function在方法的return之后执行，如果defer function修改了return的值，返回的是defer function修改后的值。例如下面的例子返回2而不是1
+        func c() (i int) {
+            defer func() { i++ }()
+            return 1
+        }
+
+2、panic 和 recover
+    (1) defer 表达式的函数如果定义在 panic 后面，该函数在 panic 后就无法被执行到
+    (2) F中出现panic时，F函数会立刻终止，不会执行F函数内panic后面的内容，但不会立刻return，而是调用F的defer，如果F的defer中有recover捕获，则F在执行完defer后正常返回，调用函数F的函数G继续正常执行
+        func G() {
+            defer func() {
+                fmt.Println("c")
+            }()
+            F()
+            fmt.Println("继续执行")
+        }
+
+        func F() {
+            defer func() {
+                if err := recover(); err != nil {
+                    fmt.Println("捕获异常:", err)
+                }
+                fmt.Println("b")
+            }()
+            panic("a")
+        }
+        
+        //结果
+            捕获异常: a
+            b
+            继续执行
+            c
+
+    (3) 如果F的defer中无recover捕获，则将panic抛到G中，G函数会立刻终止，不会执行G函数内后面的内容，但不会立刻return，而调用G的defer...以此类推
+        func G() {
+            defer func() {
+                if err := recover(); err != nil {
+                    fmt.Println("捕获异常:", err)
+                }
+                fmt.Println("c")
+            }()
+            F()
+            fmt.Println("继续执行")
+        }
+
+        func F() {
+            defer func() {
+                fmt.Println("b")
+            }()
+            panic("a")
+        }
+        // 结果
+            b
+            捕获异常: a
+            c
+
+    (4) 如果一直没有recover，抛出的panic到当前goroutine最上层函数时，程序直接异常终止
+        func G() {
+            defer func() {
+                fmt.Println("c")
+            }()
+            F()
+            fmt.Println("继续执行")
+        }
+
+        func F() {
+            defer func() {
+                fmt.Println("b")
+            }()
+            panic("a")
+        }
+        //结果
+            b
+            c
+            panic: a
+
+            goroutine 1 [running]:
+            main.F()
+                /xxxxx/src/xxx.go:61 +0x55
+            main.G()
+                /xxxxx/src/xxx.go:53 +0x42
+            exit status 2
+
+    (5) recover都是在当前的goroutine里进行捕获的，这就是说，对于创建goroutine的外层函数，如果goroutine内部发生panic并且内部没有用recover，外层函数是无法用recover来捕获的，这样会造成程序崩溃
+        func G() {
+            defer func() {
+                //goroutine外进行recover
+                if err := recover(); err != nil {
+                    fmt.Println("捕获异常:", err)
+                }
+                fmt.Println("c")
+            }()
+            //创建goroutine调用F函数
+            go F()
+            time.Sleep(time.Second)
+        }
+
+        func F() {
+            defer func() {
+                fmt.Println("b")
+            }()
+            //goroutine内部抛出panic
+            panic("a")
+        }
+        // 结果
+            b
+            panic: a
+
+            goroutine 5 [running]:
+            main.F()
+                /xxxxx/src/xxx.go:67 +0x55
+            created by main.main
+                /xxxxx/src/xxx.go:58 +0x51
+            exit status 2
+
+    (6) recover返回的是interface{}类型而不是go中的 error 类型，如果外层函数需要调用err.Error()，会编译错误，也可能会在执行时panic
+```
+
+### 函数类型转换
+```go
+type Handler interface{
+    ServeHTTP(res, *req)
+}
+
+type HandlerFunc func(res, *req)
+
+func (h HandlerFunc) ServeHTTP(res, *req){
+    h(res, *req)
+}
+
+func Handle(pattern string, handler Handler){
+    ....
+}
+
+func Myfunc(res, *req){
+    ...
+}
+
+func main(){
+    Handle("/dsad/dsada", HandlerFunc(Myfunc))
+    a := make(map[string]Handler)
+    a["/a/a"] = HandlerFunc(func)
+}
+```
+
+### context.WithCancel
+```go
 // 父协程控制子协程退出
 
 fmt.Println("main 函数 开始...")
@@ -327,296 +569,6 @@ var x A2 = new(B)
 给一个函数方法传递 Context 的时候，不要传递 nil，如果不知道传递什么，就使用 context.TODO
 Context 的 Value 相关方法应该传递请求域的必要数据，不应该用于传递可选参数
 Context 是线程安全的，可以放心的在多个 Goroutine 中传递
-```
-
-### grpc 相关资料
-```
-[Go-gRPC 实践指南] https://www.bookstack.cn/read/go-grpc/summary.md
-[go-grpc 英文文档] https://pkg.go.dev/google.golang.org/grpc
-[烟花易冷人憔悴 vlog] https://www.cnblogs.com/FireworksEasyCool/
-[go-grpc 应用] https://eddycjy.com/go-categories/ ！！！
-```
-
-### grpc 超时
-```
-// client
-// 建立连接时超时
-	clientDeadline := time.Now().Add(time.Duration(3 * time.Second))
-	ctx, cancel := context.WithDeadline(ctx, clientDeadline)
-	// 或
-	ctx, cancel := context.Timeout(context.Bakcground(), time.Second*5)
-	defer cancel()
-	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithInsecure()) 
-	// grpc.WithBlock()	这个参数会阻塞等待握手成功，直到超时。如果没有设置这个参数，那么context超时控制将会失效
-// 调用时超时
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(5 * time.Second)))
-	defer cancel()
-
-	client := pb.NewSearchServiceClient(conn)
-	resp, err := client.Search(ctx, &pb.SearchRequest{})
-	if err != nil {
-		statusErr, ok := status.FromError(err)
-		if ok {
-			if statusErr.Code() == codes.DeadlineExceeded {
-				log.Fatalln("client.Search err: deadline")
-			}
-		}
-
-		log.Fatalf("client.Search err: %v", err)
-	}
-
-	log.Printf("resp: %s", resp.Response())
-
-// server
-// 服务端需要判断和处理超时
-func (s *SearchService) Search(ctx context.Context, req *pb.SearchRequest)(*pb.Response, error) {
-	// 先判断客户端是否已超时
-	if ctx.Err() == context.Canceled {
-		return status.New(codes.Canceled, "Client cancelled, abandoning.")
-	}
-	return Search(ctx, req)
-}
-
-
-// 超时传递
-> 客户端客户端发起 RPC 调用时传入了带 timeout 的 ctx
-> gRPC 框架底层通过 HTTP2 协议发送 RPC 请求时，将 timeout 值写入到 grpc-timeout HEADERS Frame 中
-> 服务端接收 RPC 请求时，gRPC 框架底层解析 HTTP2 HEADERS 帧，读取 grpc-timeout 值，并覆盖透传到实际处理 RPC 请求的业务 gPRC Handle 中
-> 如果此时服务端又发起对其他 gRPC 服务的调用，且使用的是透传的 ctx，这个 timeout 会减去在本进程中耗时，从而导致这个 timeout 传递到下一个 gRPC 服务端时变短，这样即实现了所谓的 超时传递 
-
-```
-
-### grpc keepalive
-```
-// 服务端
-var kaep = keepalive.EnforcementPolicy{
-	MinTime:             5 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
-	PermitWithoutStream: true,            // Allow pings even when there are no active streams
-}
-
-var kasp = keepalive.ServerParameters{
-	MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
-	MaxConnectionAge:      30 * time.Second, // If any connection is alive for more than 30 seconds, send a GOAWAY
-	MaxConnectionAgeGrace: 5 * time.Second,  // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
-	Time:                  5 * time.Second,  // Ping the client if it is idle for 5 seconds to ensure the connection is still active
-	Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
-}
-
-s := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp))
-
-
-// 客户端
-var kacp = keepalive.ClientParameters{
-	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
-	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
-	PermitWithoutStream: true,             // send pings even without active streams
-}
-
-conn, err := grpc.Dial(*addr, grpc.WithInsecure(), grpc.WithKeepaliveParams(kacp))
-
-```
-
-### grpc retry
-```
-
-```
-
-### grpc TLS + 自定义认证
-```
-// 密钥
-私钥：server.key	公钥：server.pem
-
-// 不带密钥
-// server
-	s := grpc.NewServer()
-// client
-	conn, err := grpc.Dial(Addr, grpc.WithInsecure())
-
-// 带密钥
-// server
-	c, err := credentials.NewServerTLSFromFile("server.pem", "server.key")
-	server := grpc.NewServer(grpc.Creds(c))
-// client
-	c, err := credentials.NewClientTLSFromFile("server.pem", "go-grpc-example")
-	conn, err := grpc.Dial(Addr, grpc.WithTransportCredentials(c))
-
-// PerRPCCredentials
-// server
-// client
-```
-
-### grpc interceptor
-```golang
-// https://colobu.com/2017/04/17/dive-into-gRPC-interceptor/
-
-// 普通方法：一元拦截器（grpc.UnaryInterceptor）
-// 流方法：流拦截器（grpc.StreamInterceptor）
-
-// 服务端
-type ServerOption
-func UnaryInterceptor(i UnaryServerInterceptor) ServerOption
-func StreamInterceptor(i StreamServerInterceptor) ServerOption
-// 需要实现的 *ServerInterceptor
-type UnaryServerInterceptor func(ctx context.Context, req interface{}, info *UnaryServerInfo, handler UnaryHandler) (interface{},  error)
-type StreamServerInterceptor func(srv interface{}, ss ServerStream, info *StreamServerInfo, handler StreamHandler) error
-
-srv := grpc.NewServer(
-    grpc.UnaryInterceptor(UnaryServerInterceptorDemo),
-    grpc.StreamInterceptor(StreamServerInterceptorDemo),
-)
-
-func UnaryServerInterceptorDemo(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	log.Printf("before handling. Info: %+v", info)
-	resp, err := handler(ctx, req)
-	log.Printf("after handling. resp: %+v", resp)
-	return resp, err
-}
-
-func StreamServerInterceptorDemo(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	log.Printf("before handling. Info: %+v", info)
-	err := handler(srv, ss)
-	log.Printf("after handling. err: %v", err)
-	return err
-}
-
-
-// 客户端
-type DialOption interface {}
-func WithUnaryInterceptor(f UnaryClientInterceptor) DialOption
-func WithStreamInterceptor(f StreamClientInterceptor) DialOption
-// 需要实现的 *ClientInterceptor
-type UnaryClientInterceptor func(ctx context.Context, method string, req, reply interface{}, cc *ClientConn, invoker UnaryInvoker, opts ...CallOption) error
-type StreamClientInterceptor func(ctx context.Context, desc *StreamDesc, cc *ClientConn, method string, streamer Streamer, opts ...CallOption) (ClientStream, error)
-
-grpc.Dial(Addr, grpc.WithInsecure(),
-    grpc.WithUnaryInterceptor(UnaryClientInterceptorDemo),
-    grpc.WithStreamInterceptor(StreamClientInterceptorDemo),
-    ...
-)
-
-func UnaryClientInterceptorDemo(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-	log.Printf("before invoker. method: %+v, request:%+v", method, req)
-	err := invoker(ctx, method, req, reply, cc, opts...)
-	log.Printf("after invoker. reply: %+v", reply)
-	return err
-}
-
-func StreamClientInterceptorDemo(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-	log.Printf("before invoker. method: %+v, StreamDesc:%+v", method, desc)
-	clientStream, err := streamer(ctx, desc, cc, method, opts...)
-	log.Printf("before invoker. method: %+v", method)
-	return clientStream, err
-}
-
-// 链式拦截器
-// 方案一	go-grpc-middleware
-	opts := []grpc.ServerOption{
-		grpc.Creds(c),
-		grpc_middleware.WithUnaryServerChain(
-			RecoveryInterceptor,
-			LoggingInterceptor,
-		),
-	}
-	server := grpc.NewServer(opts...)
-
-// 方案二	自己实现
-	基本原理：利用 handler 传递 handler
-
-	handler(...){
-		interceptor(...)
-	}
-
-	interceptor(..., handler) {
-		handler(...)
-	}
-
-	func InterceptChain(intercepts... grpc.UnaryServerInterceptor) grpc.UnaryServerInterceptor {
-		return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler)(interface{}, error) {
-
-			chain := func(interceptor grpc.UnaryServerInterceptor, handler grpc.UnaryHandler) grpc.UnaryHandler {
-
-				return func(ctxCur context.Context, reqCur interface{}) (interface{}, error){
-					return interceptor(ctxCur, reqCur, info, handler)
-				}
-
-			}
-
-			handlerTmp := handler
-			for _, intercept := range intercepts {
-				handlerTmp = chain(intercept, handlerTmp)
-			}
-
-			return handlerTmp(ctx, req)
-
-		}
-	}
-
-```
-
-### grpc metadata
-```
-https://pandaychen.github.io/2020/02/22/GRPC-METADATA-INTRO/
-
-metadata 其实就是一个 map
-
-// 结构
-func AppendToOutgoingContext(ctx context.Context, kv ...string) context.Context
-func DecodeKeyValue(k, v string) (string, string, error)
-func NewIncomingContext(ctx context.Context, md MD) context.Context
-func NewOutgoingContext(ctx context.Context, md MD) context.Context
-
-func FromIncomingContext(ctx context.Context) (md MD, ok bool)
-func FromOutgoingContext(ctx context.Context) (MD, bool)
-func FromOutgoingContextRaw(ctx context.Context) (MD, [][]string, bool)
-func Join(mds ...MD) MD
-func New(m map[string]string) MD
-func Pairs(kv ...string) MD
-
-type MD map[string][]string
-	func (md MD) Append(k string, vals ...string)
-	func (md MD) Copy() MD
-	func (md MD) Get(k string) []string
-	func (md MD) Len() int
-	func (md MD) Set(k string, vals ...string)
-
-
-// 发送metadata
-	创建ctx
-	创建并写入metadata
-	将metadata关联ctx
-	发送请求(rpc.SomeRpc(ctx, someRequest))
-
-	// 新创建的 Metadata 添加到 context 中
-	md := metadata.Pairs("k1", "v1", "k1", "v2", "k2", "v3")
-	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	
-	// 可以将 key-value 对添加到已有的 context 中
-	// 如果k-v已存在，则覆盖
-	ctx := metadata.AppendToOutgoingContext(ctx, "k1", "v1", "k1", "v2", "k2", "v3")
-	ctx := metadata.AppendToOutgoingContext(ctx, "k3", "v4")
-
-// 接受metadata
-	// Unary Call
-	func (s *server) SomeRPC(ctx context.Context, in *pb.someRequest) (*pb.someResponse, error) {
-		md, ok := metadata.FromIncomingContext(ctx)
-		// do something with metadata
-	}
-
-	// Streaming Call
-	func (s *server) SomeStreamingRPC(stream pb.Service_SomeStreamingRPCServer) error {
-		md, ok := metadata.FromIncomingContext(stream.Context()) // get context from stream
-		// do something with metadata
-	}
-
-```
-
-### grpc-gateway
-```
-通过protobuf的自定义option实现了一个网关，服务端同时开启gRPC和HTTP服务
-HTTP服务接收客户端请求后转换为grpc请求数据，获取响应后转为json数据返回给客户
-
-
-
 ```
 
 ### LRU

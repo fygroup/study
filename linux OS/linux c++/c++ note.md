@@ -705,6 +705,20 @@ string c_str() 返回的是const char*！！！
 当内存比较大时，memset还是比较费时间的
 ```
 
+### atexit
+```c++
+// 一个程序中可以用atexit()注册多个处理函数（注册次数依赖于你的编译器）
+// 这些处理函数的调用顺序与其注册的顺序相反
+
+#include <stdlib.h>
+
+int atexit(void (*function)(void));
+
+::atexit(f1);
+::atexit(f2);
+// f2 f1
+```
+
 ### eof
 ```
 到达文件尾，eof()返回true
@@ -2703,8 +2717,8 @@ std::pair<int, string>::first_type x = 1 //正确
 ```
 
 ### operator new
-```
-1、原型
+```c++
+(1) 原型
     void *operator new(size_t);         //allocate an object
     void *operator new(size_t, void*);  //placement
     void *operator delete(void *);      //free an object
@@ -2713,31 +2727,31 @@ std::pair<int, string>::first_type x = 1 //正确
     void *operator new[](size_t, void*);//placement
     void *operator delete[](void *);    //free an array
 
-2、operator三种形式
+(2) operator三种形式
     (1) void* operator new(size_t) throw(std::bad_alloc);
-        > 用法
-            A *a = new A;
-        > 做了三件事
-            调用operator new (sizeof(A))
-            调用A:A()
-            返回指针
-        > 失败时抛出bad_alloc
+        A *a = new A;
+        // 失败时抛出bad_alloc
 
     (2) void* operator new(size_t, nothrow_value) throw();
-        > 用法
-            A* a = new(std::nothrow) A;
-        > 同上，但是失败时返回null
+        A* a = new(std::nothrow) A;
+        // 同上，但是失败时返回null
             调用operator new (sizeof(A), nothrow_value)
             调用A:A()
             返回指针
     (3) void* operator new(size_t, void* ptr) throw();
-        > 用法
-            //在ptr所指地址上构建一个对象(通过调用其构造函数)
-            char ptr[1024];
-            A* a = new(ptr) A();
-        > 本身返回ptr
-        > 可以被重载
+        //在ptr所指地址上构建一个对象(通过调用其构造函数)
+        char ptr[1024];
+        A* a = new(ptr) A(); // 本身返回ptr，可以被重载
     
+    A* a = new A;
+    // 实际上执行三个步骤
+    char* tmp = operator new (sizeof(A));   // 申请内存
+    new(tmp) A();                           // 在内存上构造对象
+    a = tmp;                                // 返回指针
+    // 注意，上述实际的顺序可能重排
+    a = operator new (sizeof(A));
+    new(a) A();
+
 3、operator示例
     class a {
     public:
@@ -3735,13 +3749,13 @@ public:
     }
 
     // 禁止复制构造
-    lock_guard(const lock_guard &)=delete;      // c++11 
+    lock_guard(const lock_guard &) = delete;      // c++11 
     // 禁止赋值构造
-    lock_guard & operator=(const lock_guard &)=delete;
+    lock_guard & operator=(const lock_guard &) = delete;
 
 private:
     mutex_type & _M_device;
-}
+};
 ```
 
 ### 模板与数组参数
@@ -4208,4 +4222,40 @@ public:
 
 B b;
 b.func();   // B::init()
+```
+
+### 不完全类型
+```c++
+// "不完全类型"指在C++中有声明但又没有定义的类型
+
+class A; // 声明，但没有定义
+
+A* Create();
+A* a = Create();
+delete a;
+// 上述代码可以编译通过，但会导致内存泄漏
+
+// 解决办法
+// 未定义的类型，sizeof(T)是0
+
+typedef char T_must_complete_type[sizeof(A) == 0? -1 : 1];
+T_must_complete_type test_; (void)test_;
+
+```
+
+### backtrace
+```c++
+// https://blog.csdn.net/jasonchen_gbd/article/details/44108405
+
+// backtrace()是glibc（>=2.1）提供的函数，用于跟踪函数的调用关系
+#include <execinfo.h>
+int backtrace(void **buffer, int size);
+char **backtrace_symbols(void *const *buffer, int size);
+void backtrace_symbols_fd(void *const *buffer, int size, int fd);
+```
+
+### abi::__cxa_demangle
+```
+#include <cxxabi.h>
+__cxa_demangle来将backtrace_symbols返回的字符串逐个解析成可以方便看懂的字符串
 ```

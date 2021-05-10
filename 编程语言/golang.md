@@ -86,6 +86,12 @@ var b [] int = a[:]
 //slice、map、interface、channel都是按引用传递
 ```
 
+### array和slice
+```
+array在栈上
+slice在堆上
+```
+
 ### map
 ```
 //声明
@@ -358,36 +364,6 @@ func main() {
 }
 ```
 
-#### 函数类型转换
-```
-type Handler interface{
-    ServeHTTP(res, *req)
-}
-
-type HandlerFunc func(res, *req)
-
-func (h HandlerFunc) ServeHTTP(res, *req){
-    h(res, *req)
-}
-
-func Handle(pattern string, handler Handler){
-    ....
-}
-
-func Myfunc(res, *req){
-    ...
-}
-
-func main(){
-    Handle("/dsad/dsada", HandlerFunc(Myfunc))
-    f := HandlerFunc(Myfunc)
-    Handle("/dsad/dsada", f)
-
-    a := make(map[string]Handler)
-    a["/a/a"] = HandlerFunc(func)
-}
-```
-
 ### reflect
 ```
 // reflect
@@ -586,11 +562,6 @@ strconv.Atoi //string to int
 
 ```
 
-
-#### io
-```
-```
-
 #### container
 ```
 "container/list"   //链表
@@ -657,222 +628,6 @@ x := []int{1, 2, 3, 4}
 y := unsafe.Pointer(&x)
 z := *(*[]int)(y)
 z[0] = 111
-```
-
-### io
-```
-1、read
-    import(
-        "bufio"
-        "os"
-        "ioutil"
-    )
-
-    //一次性读取
-    f,err = os.Open("file")
-    s := ioutil.ReadAll(f)
-
-    //分块读取
-    f,err = os.Open("file")
-    buf := make([]byte,10)
-    rd := bufio.NewReader(f)
-    n,err := rd.Read(buf)
-
-    //按行读取
-    rd := bufio.NewReaderSize(f,4096) // 带缓冲的读
-    rd: = bufio.NewReader(f)
-    line,err := rd.ReadString('\n')
-    line,err := rd.ReadLine()
-
-2、write
-    //带缓冲区读写
-    fd,_ := os.OpenFile("bbb.txt")
-    w := bufio.NewWriterSize(fd,4096) // 带缓冲的写
-    w.WriteString("dadadadad")
-    w.Write([]byte("dsadadada\n"))
-    w.flush()
-
-    //输出屏幕
-    w := bufio.NewWriterSize(os.Stdout,111)
-    w1 := bufio.NewReader(f,111)
-    w1.WriteTo(w)
-
-3、其他函数
-    rd.Buffered()   //表示已经缓冲的数据的大小
-    w.Available()   //表示可使用的缓冲区的大小
-
-    //输出文件
-    ioutil.WriteFile("11.gv", []byte(graph.String()), 0666)
-
-    //实例
-    package main
-
-    import (
-        "bufio"
-        "fmt"
-        "os"
-        "unsafe"
-
-        "github.com/awalterschulze/gographviz"
-    )
-
-    func main() {
-
-        graphAst, _ := gographviz.Parse([]byte(`digraph G{}`))
-        graph := gographviz.NewGraph()
-        gographviz.Analyse(graphAst, graph)
-        graph.AddNode("G", "a", nil)
-        graph.AddNode("G", "b", nil)
-        graph.AddEdge("a", "b", true, nil)
-        fmt.Println(graph.String())
-
-        f, _ := os.Open("sjm.txt")
-        f1, _ := os.OpenFile("sjm.txt1", os.O_WRONLY|os.O_CREATE, 0664)
-        rd := bufio.NewReader(f)
-        rd1 := bufio.NewWriter(f1)
-        for line, err := []byte{0}, error(nil); len(line) > 0 && err == nil; {
-            line, _, err = rd.ReadLine()
-            x := (*string)(unsafe.Pointer(&line))
-            if *x == "" {
-                continue
-            }
-            line = append(line, '\n')
-            rd1.Write(line)
-            //fmt.Printf("%v %v\n", *x, p)
-        }
-
-        f.Close()
-        f1.Close()
-    }
-```
-
-#### defer panic recover
-```
-1、defer
-    //Defer function按照后进先出的规则执行。例如下面的代码打印 "3210"
-        func b() {
-            for i := 0; i < 4; i++ {
-                defer fmt.Print(i)
-            }
-        }
-
-    // Defer function在方法的return之后执行，如果defer function修改了return的值，返回的是defer function修改后的值。例如下面的例子返回2而不是1
-        func c() (i int) {
-            defer func() { i++ }()
-            return 1
-        }
-
-2、panic 和 recover
-    (1) defer 表达式的函数如果定义在 panic 后面，该函数在 panic 后就无法被执行到
-    (2) F中出现panic时，F函数会立刻终止，不会执行F函数内panic后面的内容，但不会立刻return，而是调用F的defer，如果F的defer中有recover捕获，则F在执行完defer后正常返回，调用函数F的函数G继续正常执行
-        func G() {
-            defer func() {
-                fmt.Println("c")
-            }()
-            F()
-            fmt.Println("继续执行")
-        }
-
-        func F() {
-            defer func() {
-                if err := recover(); err != nil {
-                    fmt.Println("捕获异常:", err)
-                }
-                fmt.Println("b")
-            }()
-            panic("a")
-        }
-        
-        //结果
-            捕获异常: a
-            b
-            继续执行
-            c
-
-    (3) 如果F的defer中无recover捕获，则将panic抛到G中，G函数会立刻终止，不会执行G函数内后面的内容，但不会立刻return，而调用G的defer...以此类推
-        func G() {
-            defer func() {
-                if err := recover(); err != nil {
-                    fmt.Println("捕获异常:", err)
-                }
-                fmt.Println("c")
-            }()
-            F()
-            fmt.Println("继续执行")
-        }
-
-        func F() {
-            defer func() {
-                fmt.Println("b")
-            }()
-            panic("a")
-        }
-        // 结果
-            b
-            捕获异常: a
-            c
-
-    (4) 如果一直没有recover，抛出的panic到当前goroutine最上层函数时，程序直接异常终止
-        func G() {
-            defer func() {
-                fmt.Println("c")
-            }()
-            F()
-            fmt.Println("继续执行")
-        }
-
-        func F() {
-            defer func() {
-                fmt.Println("b")
-            }()
-            panic("a")
-        }
-        //结果
-            b
-            c
-            panic: a
-
-            goroutine 1 [running]:
-            main.F()
-                /xxxxx/src/xxx.go:61 +0x55
-            main.G()
-                /xxxxx/src/xxx.go:53 +0x42
-            exit status 2
-
-    (5) recover都是在当前的goroutine里进行捕获的，这就是说，对于创建goroutine的外层函数，如果goroutine内部发生panic并且内部没有用recover，外层函数是无法用recover来捕获的，这样会造成程序崩溃
-        func G() {
-            defer func() {
-                //goroutine外进行recover
-                if err := recover(); err != nil {
-                    fmt.Println("捕获异常:", err)
-                }
-                fmt.Println("c")
-            }()
-            //创建goroutine调用F函数
-            go F()
-            time.Sleep(time.Second)
-        }
-
-        func F() {
-            defer func() {
-                fmt.Println("b")
-            }()
-            //goroutine内部抛出panic
-            panic("a")
-        }
-        // 结果
-            b
-            panic: a
-
-            goroutine 5 [running]:
-            main.F()
-                /xxxxx/src/xxx.go:67 +0x55
-            created by main.main
-                /xxxxx/src/xxx.go:58 +0x51
-            exit status 2
-
-    (6) recover返回的是interface{}类型而不是go中的 error 类型，如果外层函数需要调用err.Error()，会编译错误，也可能会在执行时panic
-
 ```
 
 ### 查看GC
@@ -970,12 +725,6 @@ for i:=0;i<10000;i++{
 即使映射键和值类型不包含指针，并且映射在GC运行之间没有更改，也会发生这种情况
 3、map 不会收缩 “不再使用” 的空间。就算把所有键值删除，它依然保留内存空间以待后用。map=nil
 
-```
-
-### array和slice
-```
-array在栈上
-slice在堆上
 ```
 
 ### cgo
@@ -1258,9 +1007,9 @@ version > go1.11
 
 ```
 
-### go install build
+### go install vs go build
 ```
-go install命令只比go build命令多做了一件事，即：安装编译后的结果文件到指定目录
+go install命令只比 go build命令多做了一件事，即：安装编译后的结果文件到指定目录
 
 go install 编译目标文件的同时，也将编译产生的静态库文件保存在工作区的pkg目录下
 go build 只会编译目标文件产生最终结果

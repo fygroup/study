@@ -1,7 +1,6 @@
 ### JSW
-```
-session加密，将其放到客户端。本地只保留密钥，验证只需要找到对应的密钥，再解密session获得用户信息
-
+```go
+// session加密，将其放到客户端。本地只保留密钥，验证只需要找到对应的密钥，再解密session获得用户信息
 
 import (
     "github.com/dgrijalva/jwt-go"
@@ -42,80 +41,111 @@ func CheckToken(tokenString string, secret string) bool{
 }
 ```
 
-
-#### net/http
-(1)基础结构
-```
-//handler重中之重的基础
+### net/http
+```go
+// 重要的接口与结构
 type Handler interface {
     ServeHTTP(ResponseWriter, *Request)
 }
 
-//重要的serveMux路由结构
+type HandlerFunc func(ResponseWriter, *Request)
+
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
+	f(w, r)
+}
+
+// serveMux路由
 type ServeMux struct {
     mu    sync.RWMutex
     m     map[string]muxEntry
     hosts bool 
 }
-
 type muxEntry struct {
     explicit bool
     h        Handler
     pattern  string
 }
 
-//服务器
+// 默认路由，当外部没有指定路由时，系统用此路由
+var DefaultServeMux = &defaultServeMux
+var defaultServeMux ServeMux
+
+// 监听服务
 func ListenAndServe(addr string, handler Handler) error {
     server := &Server{Addr: addr, Handler: handler}
     return server.ListenAndServe()
 }
 
-type Server struct {
-    Addr         string        
-    Handler      Handler       
-    ReadTimeout  time.Duration 
-    WriteTimeout time.Duration 
-    TLSConfig    *tls.Config   
 
-    MaxHeaderBytes int
-
-    TLSNextProto map[string]func(*Server, *tls.Conn, Handler)
-
-    ConnState func(net.Conn, ConnState)
-    ErrorLog *log.Logger
-    disableKeepAlives int32     nextProtoOnce     sync.Once 
-    nextProtoErr      error     
+// 两个注册函数，用的都是默认路由
+// 1
+func Handle(pattern string, handler Handler) {
+  	DefaultServeMux.Handle(pattern, handler)
+}
+// 2
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	DefaultServeMux.HandleFunc(pattern, handler)
+}
+func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+	if handler == nil {
+		panic("http: nil handler")
+	}
+	mux.Handle(pattern, HandlerFunc(handler))
 }
 
 ```
-(1)函数作为处理器
-```
-func helloHandler(w http.ResponseWriter, req *http.Request) {
-    io.WriteString(w, "hello, world!\n")
+
+### http拦截器
+```golang
+
+type Handler interface {
+    ServeHTTP(ResponseWriter, *Request)
 }
 
-http.HandlerFunc()
+type HandlerFunc func(ResponseWriter, *Request)
+
+func (h HandlerFunc) ServerHTTP(w ResponseWriter, r *Request) {
+	h(w,r)
+}
+
+
+type HttpMiddleware []http.Handler
+
+func (it Interceptor) ServeHTTP(w ResponseWriter, r *Request) {
+
+}
+
+func Hello(w,r)
+
+mux.Handle("/aaa", Interceptor(Hello))
+
+
+func Interceptor(f func(ResponseWriter, *Request)) {
+	return func(w ResponseWriter, r *Request){
+		// do something...
+		f(w,r)
+	}
+}
+
 
 ```
-(2)自定义处理器
-
 
 
 ### serveFile
-```
+```go
 type Dir string
 
 func (d Dir) Open(name string) (File, error) {
-  ...
+  //...
 }
 
 type FileSystem interface {
   Open(name string) (File, error)
 }
 
-http.FileServer()方法返回的是fileHandler实例，fileHandler结构体实现了Handler接口的方法 ServeHTTP()
+// http.FileServer()方法返回的是fileHandler实例，fileHandler结构体实现了Handler接口的方法 ServeHTTP()
 
-ServeHTTP 方法内的核心是 serveFile() 方法
+// ServeHTTP 方法内的核心是 serveFile() 方法
 
 (1) handler接口
   type Handler interface {

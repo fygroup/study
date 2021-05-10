@@ -1100,8 +1100,6 @@ gcc -O3 !!!!!!!!
 
 static 函数声明要写在.c文件里面
 
-退出时调用函数
-atexit (my_exit);
 exit(0);
 
 #pragma pack (2) /*指定按2字节对齐*/
