@@ -286,6 +286,8 @@ mount -t proc none /mnt
     // client
     apt-get install nfs-common
     mount -t nfs 10.151.3.77:/home/malx/nfs /mount/
+    mount -t nfs -o nolock,tcp 10.151.3.77:/home/malx/nfs /home
+
 
 (7) 挂载多个分区（设备）到一个文件夹
 
@@ -1501,3 +1503,7 @@ cpp -v
 cat /proc/modules
 ```
 
+### lsof
+```
+
+```

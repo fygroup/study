@@ -629,3 +629,21 @@ a1 := math.Float32frombits(v)
 
 
 ```
+
+### go mod 私有项目
+```
+// 场景
+import "gitlab.sz.sensetime.com/SenseStardust/stardust"
+
+(1) 更改git http -> ssh (~/.gitconfig)
+    git config --global url."git@gitlab.sz.sensetime.com:".insteadOf "https://gitlab.sz.sensetime.com/"
+    gitlab网上添加公钥
+
+(2) 私有下载地址
+    go env -w GOPRIVATE="gitlab.sz.sensetime.com"
+
+(3) go get 下载私有项目(注意分支)
+    go get gitlab.sz.sensetime.com/SenseStardust/stardust@master
+
+(4) go mod tidy
+```
