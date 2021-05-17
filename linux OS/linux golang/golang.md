@@ -647,3 +647,21 @@ import "gitlab.sz.sensetime.com/SenseStardust/stardust"
 
 (4) go mod tidy
 ```
+
+### []string []interface{}
+```golang
+
+// []string 不能转换成 []interface{}
+func f(v []interface{}) {}
+a := []string{"a", "b"}
+f(a)    // 错误
+
+// slice interface{} 转换
+func f(v []interface{}) {}
+a := []string{"a", "b"}
+b := make([]interface{}, 2)
+for i,v := range a {
+    b[i] = v
+}
+f(b)    // 正确
+```
