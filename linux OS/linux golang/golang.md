@@ -665,3 +665,45 @@ for i,v := range a {
 }
 f(b)    // 正确
 ```
+
+### 遍历interface{}
+```go
+func TypeJudge(i interface{}) {
+	ref := reflect.ValueOf(i)
+	if ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
+	switch ref.Type().Kind() {
+	case reflect.Array, reflect.Slice:
+		fmt.Println("reflect.Array")
+		for i := 0; i < ref.Len(); i++ {
+			TypeJudge(ref.Index(i).Interface())
+		}
+	case reflect.Map:
+		fmt.Println("reflect.Map")
+		iter := ref.MapRange()
+		for iter.Next() {
+			k := iter.Key().Interface().(string)
+			fmt.Printf("key %v \n", k)
+			TypeJudge(iter.Value().Interface())
+		}
+	case reflect.Struct:
+		refType := ref.Type()
+		fmt.Println("struct ", refType.Name())
+		_, ok := refType.MethodByName("String")
+		if ok {
+			fmt.Println("value ", ref.Interface())
+			return
+		}
+		for i := 0; i < ref.NumField(); i++ {
+			name := refType.Field(i).Name
+			if unicode.IsUpper([]rune(name)[0]) {
+				fmt.Printf("name: %v \n", name)
+				TypeJudge(ref.Field(i).Interface())
+			}
+		}
+	default:
+		fmt.Printf("value: %v \n", i)
+	}
+}
+```
