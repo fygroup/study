@@ -268,3 +268,9 @@ git push https://diaohaiyong:939791536a-@gitlab.sz.sensetime.com/senseNebula-m/n
 git pull https://diaohaiyong:939791536a-@gitlab.sz.sensetime.com/senseNebula-m/nebula-m.git develop-v2.1.2_jcv
 
 ```
+
+### 撤销commit
+```
+git reset --soft HEAD^
+仅仅是撤回commit操作，代码仍然保留
+```

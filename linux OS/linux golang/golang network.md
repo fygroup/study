@@ -260,3 +260,14 @@ func login(client *http.Client) {
 }
 ```
 
+### client timeout
+```golang
+// net.Dialer.Timeout                   限制建立TCP连接的时间
+// http.Transport.TLSHandshakeTimeout   限制 TLS握手的时间
+// http.Transport.ResponseHeaderTimeout 限制读取response header的时间
+// http.Transport.ExpectContinueTimeout 限制client在发送包含 Expect: 100-continue的header到收到继续发送body的response之间的时间等待。注意在1.6中设置这个值会禁用HTTP/2(DefaultTransport自1.6.2起是个特例)
+
+// 上述不能限制发送request的时间，除非服务端设置了超时
+
+
+```

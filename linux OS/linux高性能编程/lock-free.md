@@ -67,7 +67,7 @@ void threadFunc(void) {
     for (int i = 0; i < 1000000; i++) {
         do {
             val = count;
-        } while (!atmoic_compare_exchange_weak(&count, &val, val + 1))
+        } while (!atomic_compare_exchange_weak(&count, &val, val + 1))
     }
     return;
 }

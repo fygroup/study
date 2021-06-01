@@ -105,9 +105,11 @@ QoS 2：消息仅传送一次(最高级别)
     发送者收到 PUBREC 消息后，它就可以安全丢弃掉之前的发布消息，因为它已经知道接收者成功收到了消息
     发布者会保存 PUBREC 消息并应答一个 PUBREL，等待接收者回复 PUBCOMP 消息，当发送者收到 PUBCOMP 消息之后会清空之前所保存的状态。
 
-当接收者接收到一条 QoS 为 2 的 PUBLISH 消息时，他会处理此消息并返回一条 PUBREC 进行应答。当接收者收到 PUBREL 消息之后，它会丢弃掉所有已保存的状态，并回复 PUBCOMP。
+当接收者接收到一条 QoS 为 2 的 PUBLISH 消息时，他会处理此消息并返回一条 PUBREC 进行应答
+当接收者收到 PUBREL 消息之后，它会丢弃掉所有已保存的状态，并回复 PUBCOMP
 
-无论在传输过程中何时出现丢包，发送端都负责重发上一条消息。不管发送端是 Publisher 还是 Broker，都是如此。因此，接收端也需要对每一条命令消息都进行应答。
+无论在传输过程中何时出现丢包，发送端都负责重发上一条消息，不管发送端是 Publisher 还是 Broker。因此，接收端也需要对每一条命令消息都进行应答
+
     Publisher                       Broker                          Subscriber
     store(Msg)
                 PUBLISH(QoS2,Msg)->   
@@ -124,10 +126,36 @@ QoS 2：消息仅传送一次(最高级别)
     发消息 -> 收到确认 -> 发删除消息 -> 收到删除确认 -+ 
                                                    +---> 删除消息 
                         收到删除消息 ---------------+
+
+
+
+// QoS降级
+在 MQTT 协议中，从 Broker 到 Subscriber 这段消息传递的实际 QoS 等于
+Publisher 发布消息时指定的 QoS 等级和 Subscriber 在订阅时与 Broker 协商的 QoS 等级，这两个 QoS 等级中的最小那一个
+Actual Subscribe QoS = MIN(Publish QoS, Subscribe QoS)
 ```
 
-### MQTT控制报文
+### Retain
 ```
+服务端需要保存PUBLISH RETAIN标志为1的报文，存储内容Message和QoS
+
+一个Topic只能有一条Retained消息，新的Retained消息将覆盖老的Retained消息
+
+订阅者使用通配符订阅主题，它会收到所有匹配的主题上的 Retained 消息
+
+当服务端收到 Retain 标志为 1 的 PUBLISH 报文时(payload非空)，对于已存在的匹配订阅者，正常转发，并在转发前清除 Retain 标志
+
+当新的订阅注册时，服务端就会查找是否存在匹配该订阅的保留消息，如果保留消息存在，就会立即转发给订阅者，且 Retain 标志必须保持为 1
+
+MQTT v5.0 对于订阅建立时是否发送保留消息做了更细致的划分，并在订阅选项中提供了 Retain Handling 字段。例如某些客户端可能仅希望在首次订阅时接收保留消息，又或者不希望在订阅建立时接收保留消息，都可以通过 Retain Handling 选项调整。
+
+保留消息虽然存储在服务端中，但它并不属于会话的一部分。也就是说，即便发布这个保留消息的会话终结，保留消息也不会被删除
+
+删除保留消息只有两种方式：
+客户端往某个主题发送一个 Payload 为空的保留消息，服务端就会删除这个主题下的保留消息
+客户端设置该消息过期，过期后就会被删除
+
+借助保留消息，新的订阅者能够立即获取最近的状态，而不需要等待无法预期的时间，这在很多场景下很非常重要的
 ```
 
 ### mosquitto(MQTT代理)
@@ -176,6 +204,176 @@ mosquitto_pub -h 192.168.1.181 -p 8883 -t 111 -m "this is w show" –cafile ca.c
 如果一个客户端要重发这个特殊的控制报文，在随后重发那个报文时，它必须使用相同的标识符
 
 当客户端处理完这个报文对应的确认后，这个报文标识符就释放可重用
+```
+
+### MQTT CONNECT
+```
+CONNECT Control Packet
+
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    00010000   1^   Control Packet Type
+1    00001100   12   Packet Length
+// 可变报头
+2    00000000   0    Protocol Name Length MSB
+3    00000100   4    Protocol Name Length LSB
+4    01001101   M*   Protocol Name 1st Byte
+5    01010001   Q*   Protocol Name 2nd Byte
+6    01010100   T*   Protocol Name 3rd Byte
+7    01010100   T*   Protocol Name 4th Byte
+8    00000100   4    Protocol Level(协议级别)
+9    00000010   2    Connect Flags(连接标志)
+10   00000000   0    Keep Alive MSB
+11   00000000   0    Keep Alive LSB(保持连接)
+// 有效载荷
+12   00000000   0    Client Id Length MSB
+13   00000000   0    Client Id Length LSB(标识符)
+...
+
+> 连接标志 Connect Flags
+    0:  reserved
+    1:  清理会话 Clean Session
+    2:  遗嘱标志 Will Flag
+    3-4:遗嘱QoS Will QoS
+    5:  遗嘱保留 Will Retain
+    6:  密码标志 Password Flag
+    7:  用户名标志 User Name
+
+> 保持连接 Keep Alive
+    客户端传输完成一个控制报文的时刻到发送下一个报文的时刻，两者之间允许空闲的最大时间间隔
+    客户端：在连接时间值内没有其他报文发送，客户端必须发送一个PINGREQ报文
+    服务端：服务端在一点五倍的保持连接时间内没有收到客户端的控制报文，它必须断开客户端的网络连接
+
+```
+
+### MQTT CONNACK
+```
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    00100000   2^   Control Packet Type
+1    00000010   2    Packet Length
+// 可变报头
+2    00000000   0    Connect Acknowledge Flags(连接确认标志)
+3    00000000   0    Connect Response Code(连接返回码)
+
+> 连接确认标志
+    0位表示Session Present标志，1-7位设置为0
+    > session present
+        如果服务端收到清理会话(clean session)标志为1，Session Present标志为0
+        如果服务端收到清理会话(clean session)标志为0
+            如果服务端保存了会话状态，Session Present标志为1
+            如果服务端没保存会话状态，Session Present标志为0
+        如果服务端发送了一个包含非零返回码的CONNACK报文，必须将Session Present标志为0
+
+> 返回码
+    值	返回码响应
+    0	接受，连接已被服务端接受
+    1	拒绝，不支持的协议版本	服务端不支持客户端请求的MQTT协议级别
+    2	拒绝，不合格的客户端标识符	客户端标识符是正确的UTF-8编码，但服务端不允许使用
+    3	拒绝，服务端不可用	网络连接已建立，但MQTT服务不可用
+    4	拒绝，无效的用户名或密码	用户名或密码的数据格式无效
+    5	拒绝，未授权	客户端未被授权连接到此服务器
+    6-255		保留
+```
+
+### MQTT PUBLISH
+```
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    00110000   3    Type, DUP, QoS, RETAIN(重发、服务质量(2位)、保留标识)
+1    00000000   ?   Packet Length(剩余长度 = 可变报头的长度 + 有效载荷的长度)
+// 可变报头
+2    00000000   0    Topic Length MSB
+3    00000011   3    Topic Length LSB (topic 长度)
+4    01100001   a    Topic 1st Byte     
+5    00101111   /    Topic 2nd Byte
+6    01100010   b    Topic 3rd Byte
+7    00000000   0    报文标识符 MSB
+8    00001010   10   报文标识符 LSB
+// 有效荷载
+
+```
+
+### MQTT PUBACK
+```
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    01000000   4    报文类型、保留位
+1    00000000   ?    Packet Length(剩余长度 = 可变报头的长度 + 有效载荷的长度)
+// 可变报头
+2    00000000   0    报文标识符 MSB
+3    00001010   10   报文标识符 LSB
+```
+
+### MQTT PUBREC
+```
+QoS 2，第一步
+
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    01010000   5    报文类型、保留位
+1    00000000   ?    Packet Length(剩余长度 = 可变报头的长度 + 有效载荷的长度)
+// 可变报头
+2    00000000   0    报文标识符 MSB
+3    00001010   10   报文标识符 LSB 等待确认的PUBLISH报文的报文标识符
+```
+
+### MQTT PUBREL
+```
+QoS 2，第二步
+
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    11000010   6    报文类型、保留位
+1    00000000   ?    Packet Length(剩余长度 = 可变报头的长度 + 有效载荷的长度)
+// 可变报头
+2    00000000   0    报文标识符 MSB
+3    00001010   10   报文标识符 LSB 等待确认的PUBREC报文相同的报文标识符
+```
+
+### MQTT PUBCOMP
+```
+QoS 2，第三步
+
+Byte Bits       Dec  Description
+--------------------------------
+// 固定报头
+0    01110000   7    报文类型、保留位
+1    00000000   ?    Packet Length(剩余长度 = 可变报头的长度 + 有效载荷的长度)
+// 可变报头
+2    00000000   0    报文标识符 MSB
+3    00001010   10   报文标识符 LSB 等待确认的PUBREL报文相同的报文标识符
+```
+
+### MQTT SUBSCRIBE
+```
+Byte Bits       Dec  Description
+--------------------------------
+0    10000010   8^   Control Packet Type
+1    00001010   10   Packet Length
+2    00000000   0    Packet Identifier MSB
+3    00000000   0    Packet Identifier LSB
+4    00000000   0    Filter Length MSB
+5    00001100   12   Filter Length LSB
+6    01110100   t^   Filter 1st Byte
+7    01100101   e^   Filter 2nd Byte
+8    01110011   s^   Filter 3rd Byte
+9    01110100   t^   Filter ...
+10   00101111   /^          ...
+11   01101101   m^          ...
+12   01100101   e^          ...
+13   01110011   s^          ...
+14   01110011   s^          ...
+15   01100001   a^          ...
+16   01100111   g^          ...
+17   01100101   e^          ...
+18   00000000   0    Filter QoS 
 ```
 
 

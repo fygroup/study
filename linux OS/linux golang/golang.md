@@ -635,7 +635,7 @@ a1 := math.Float32frombits(v)
 // 场景
 import "gitlab.sz.sensetime.com/SenseStardust/stardust"
 
-(1) 更改git http -> ssh (~/.gitconfig)
+(1) 更改git http -> ssh (~/.gitconfig) (version < 1.13)
     git config --global url."git@gitlab.sz.sensetime.com:".insteadOf "https://gitlab.sz.sensetime.com/"
     gitlab网上添加公钥
 
