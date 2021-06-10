@@ -272,25 +272,25 @@ fmt.Println("main 函数 退出")
 ```
 
 ### 任意类型 T() 都能够调用 *T 的方法吗？反过来呢？
-```
+```go
 (1) *T 调用 T()
-	*T类型的值可以调用为类型T声明的方法，这是因为解引用指针总是合法的
+	// *T类型的值可以调用为类型T声明的方法，这是因为解引用指针总是合法的
 	func(t T) f(){}
 	var a *T = new(T)
 	a.f()	// 合法
 
 (2) T 调用 *T()
-	T类型的值可以调用为类型*T声明的方法，但是仅限于T的值可寻址
-	编译器在调用指针属主方法前，会自动取此T值的地址。因为不是任何T值都是可寻址的，所以并非任何T值都能够调用为类型*T声明的方法
+	// T类型的值可以调用为类型*T声明的方法，但是仅限于T的值可寻址
+	// 编译器在调用指针属主方法前，会自动取此T值的地址。因为不是任何T值都是可寻址的，所以并非任何T值都能够调用为类型*T声明的方法
 	func(t *T) f() {}
 	T a
 	a.f()	// 合法，前提是a可寻址
 
 (3) 不可寻址的值
-	字符串中的字节
-	map 对象中的元素(slice 对象中的元素是可寻址的，slice的底层是数组)
-	常量
-	包级别的函数等
+	// 字符串中的字节
+	// map 对象中的元素(slice 对象中的元素是可寻址的，slice的底层是数组)
+	// 常量
+	// 包级别的函数等
 
 	type T string
 	func(t *T) f(){}
@@ -303,7 +303,7 @@ fmt.Println("main 函数 退出")
 ```
 
 ### const group 自动补全
-```
+```go
 const (
 	a, b = "golang", 100
 	d, e
@@ -321,15 +321,15 @@ const (
 ```
 
 ### 无类型常量和有类型常量
-```
+```go
 const N = 100
 var x int = N	// 正确
 
 const M int32 = 100
 var y int = M	// 错误
 
-无类型常量，赋值给其他变量时，如果字面量能够转换为对应类型的变量，则赋值成功
-有类型的常量，赋值给其他变量时，需要类型匹配才能成功，所以显示地类型转换
+// 无类型常量，赋值给其他变量时，如果字面量能够转换为对应类型的变量，则赋值成功
+// 有类型的常量，赋值给其他变量时，需要类型匹配才能成功，所以显示地类型转换
 
 var y int = int(M) // 正确
 
@@ -429,7 +429,7 @@ func main(){
 ```
 
 ### sync.Pool
-```
+```go
 type Pool struct {
 	...
 	New func() interface{}
@@ -461,7 +461,7 @@ go中不能对指针进行自增或自减运算
 ```
 
 ### 接口赋值
-```
+```go
 type A interface {
 	f(int)error
 }
@@ -479,14 +479,11 @@ var x A2 = new(B)
 
 ### sync.Map
 ```
-
-
-
 ```
 
 ### context
-```
-每个 Goroutine 在执行之前，都要先知道程序当前的执行状态，通常将这些执行状态封装在一个 Context 变量中，传递给要执行的 Goroutine 中
+```go
+// 每个 Goroutine 在执行之前，都要先知道程序当前的执行状态，通常将这些执行状态封装在一个 Context 变量中，传递给要执行的 Goroutine 中
 
 (1) 接口
 	type Context interface {
@@ -504,7 +501,7 @@ var x A2 = new(B)
 	}
 
 (2) Background和TODO
-	这两个函数分别返回一个实现了 Context 接口的 background 和 todo
+	// 这两个函数分别返回一个实现了 Context 接口的 background 和 todo
 
 (3) withCancel
 	ctx, cancel := context.WithCancel(context.Background())
@@ -563,16 +560,18 @@ var x A2 = new(B)
     f(ctx, favContextKey("color"))
 }
 
-// 注意事项
-不要把 Context 放在结构体中，要以参数的方式显示传递
-以 Context 作为参数的函数方法，应该把 Context 作为第一个参数
-给一个函数方法传递 Context 的时候，不要传递 nil，如果不知道传递什么，就使用 context.TODO
-Context 的 Value 相关方法应该传递请求域的必要数据，不应该用于传递可选参数
-Context 是线程安全的，可以放心的在多个 Goroutine 中传递
+> 注意事项
+// 不要把 Context 放在结构体中，要以参数的方式显示传递
+// 以 Context 作为参数的函数方法，应该把 Context 作为第一个参数
+// 给一个函数方法传递 Context 的时候，不要传递 nil，如果不知道传递什么，就使用 context.TODO
+// Context 的 Value 相关方法应该传递请求域的必要数据，不应该用于传递可选参数
+// Context 是线程安全的，可以放心的在多个 Goroutine 中传递
 ```
 
 ### LRU
-```
+```go
+// 缓存淘汰算法
+
 github.com/golang/groupcache
 
 //创建一个 LRU Cache
@@ -596,11 +595,11 @@ func (c *Cache) Len()
 //清空 Cache
 func (c *Cache) Clear()
 
-// 注意
-groupcache 中实现的 LRU Cache 并不是并发安全的，如果用于多个 Go 程并发的场景，需要加锁
+> 注意
+// groupcache 中实现的 LRU Cache 并不是并发安全的，如果用于多个 Go 程并发的场景，需要加锁
 
 
-除了上述库，还有github.com/hashicorp/golang-lru
+// 除了上述库，还有github.com/hashicorp/golang-lru
 ```
 
 ### 浮点数与16进制转换
