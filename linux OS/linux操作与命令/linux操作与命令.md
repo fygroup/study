@@ -1034,7 +1034,7 @@ apt 和 apt-get 命令都是基于 dpkg
 
 // 查看已安装的软件
 apt list --installed 
-
+dpkg-query -l
 
 ```
 

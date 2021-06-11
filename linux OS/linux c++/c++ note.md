@@ -2895,7 +2895,7 @@ https://zhuanlan.zhihu.com/p/34725232
 ```
 
 ### 智能指针
-```
+```c++
 #include <memory>
 
 (1) 构造
