@@ -353,6 +353,13 @@ mount -t proc none /mnt
 
 ```
 
+### Device mapper
+```
+/dev/mapper
+
+Device mapper是Linux2.6内核中提供的一种从逻辑设备到物理设备的映射机制
+在该机制下，用户能够很方便的根据自己的需要实现对存储资源的管理
+```
 
 ### 查看设备
 ```
