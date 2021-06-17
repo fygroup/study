@@ -1512,5 +1512,82 @@ cat /proc/modules
 
 ### lsof
 ```
+https://linuxtools-rst.readthedocs.io/zh_CN/latest/tool/lsof.html
 
+lsof是查看文件相关的信息
+可以打开普通文件、目录、网络文件系统的文件、字符或设备文件、(函数)共享库、管道，命名管道、符号链接、网络文件等
+
+// 查看哪些进程打开了某个文件
+lsof /bin/bash
+
+// 列出某个用户打开的文件信息
+lsof -u malx
+
+// 列出某个程序进程所打开的文件信息
+lsof -c mysql
+
+// 列出某个用户以及某个进程所打开的文件信息
+lsof -c mysql -u malx
+
+// 通过某个进程号显示该进程打开的文件
+lsof -p 11968
+
+// 列出所有的网络连接
+lsof -i
+
+// 列出所有tcp 网络连接信息
+lsof -i tcp
+lsof -n -i tcp
+
+// 列出谁在使用某个端口
+lsof -i :3306
+
+// 列出某个用户的所有活跃的网络端口
+lsof -a -u test -i
+
+// 根据文件描述列出对应的文件信息
+lsof -d 3
+
+// 列出被进程号为1234的进程所打开的所有IPV4 network files
+lsof -i 4 -a -p 1234
+
+// 列出目前连接主机nf5260i5-td上端口为：20，21，80相关的所有文件信息，且每隔3秒重复执行
+lsof -i @nf5260i5-td:20,21,80 -r 3
+
+```
+
+### LUKS
+```
+https://blog.betamao.me/2019/10/27/LUKS%E5%85%A8%E7%9B%98%E4%BF%9D%E6%8A%A4%E5%88%86%E6%9E%90/
+https://zhuanlan.zhihu.com/p/36870751
+
+LUKS: Linux硬盘加密提供了一种标准
+
+特点: 必须对加密的卷进行解密，才能挂载其中的文件系统
+
+cryptsetup提供了LUKS磁盘加密的工具
+
+// 步骤
+(1) 创建分区并加密分区
+    > dd if=/dev/zero of=test.img bs=1M count=10
+    > cryptsetup -v -y luksFormat test
+        Are you sure? (Type uppercase yes): YES
+        Enter passphrase for test.img:
+        Verify passphrase:
+
+(2) 映射分区
+    cryptset luksOpen test.img TEST
+    // 会映射到 /dev/mapper/TEST
+
+(3) 格式化分区并挂载使用
+    mkfs.ext4 /dev/mapper/TEST
+    mount /dev/mapper/TEST /mnt/test // 需要输入密码才能挂载
+
+(4) 关闭映射分区
+    umount /mnt/test
+    cryptsetup luksClose TEST
+
+
+// 注意
+    WSL和Docker环境中使用luks均有问题！！！
 ```

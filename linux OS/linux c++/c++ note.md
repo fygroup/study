@@ -4259,3 +4259,148 @@ void backtrace_symbols_fd(void *const *buffer, int size, int fd);
 #include <cxxabi.h>
 __cxa_demangle来将backtrace_symbols返回的字符串逐个解析成可以方便看懂的字符串
 ```
+
+### 字符编码 locale
+```c++
+// 设置编码
+include <locale.h>
+
+(1) C函数设置全局locale
+setlocale(LC_ALL, "zh_CN.utf8");
+
+(2) C++ 设置全局locale
+std::locale::global(std::locale("zh_CN.utf8"));
+
+(3) 单独为wcout设置
+std::wcout.imbue(std::locale("zh_CN.utf8"));
+
+```
+
+### byte or wide
+```
+多字节字符(char)与宽字符(wchar_t)
+
+多字节字符 char 不同的字符占不同的字节
+英文字母'a'占一个字节，汉字'啊'占三个字节
+
+宽字符 wchar_t 一个宽字符站固定的多个字节(linux是4个)
+不管是英文还是中文
+
+// 注意
+在c标准中，选择 "多字节字符" 还是 "宽字符" 由对其执行的第一个操作设置(使用 fwide 函数进行检查)
+
+// 转换方式
+fwide可以设置当前流定向，前提是未有任何的 I/O 操作，也就是当前流尚未被设置任何流定向
+
+(1) 统一使用一种函数(推荐)
+    printf或wprintf
+
+(2) freopen清空定向流
+    //重新打开标准输出流，清空流定向
+    FILE* pFile=freopen("/dev/tty", "w", stdout);
+    wprintf(L"wide freopen succeeded\n");
+
+    //重新打开标准输出流，清空流定向
+    pFile=freopen("/dev/tty", "w", stdout);
+    printf("narrow freopen succeeded\n");
+```
+
+### char* wchar_t* 互转
+```c++
+#include <stdlib.h>
+#include <string>
+
+string ws2s(const wstring& ws) {
+    std::locale::global(std::locale("en_US.utf8"));
+    size_t n = wcstombs(NULL, ws.c_str(), 0);
+    cout << "ws2s n " << n << endl;
+    char* buf = new char[n];
+    memset(buf, 0, n);
+    if (wcstombs(buf, ws.c_str(), n) <= 0) {
+        return "";
+    }
+    std::string res(buf, buf + n);
+    delete buf;
+    return res;
+}
+
+wstring s2ws(const string& s) {
+    std::locale::global(std::locale("en_US.utf8"));
+    size_t sLen = s.size();
+    wchar_t* buf = new wchar_t[sLen];
+    wmemset(buf, 0, sLen);
+    cout << "sLen " << sLen << endl;
+    size_t ret = mbstowcs(buf, s.c_str(), sLen);
+    cout << "ret " << ret << endl;
+    if (ret <= 0) {
+        return L"";
+    }
+    std::wstring res(buf, buf + ret);
+    delete buf;
+    return res;
+}
+
+```
+
+### printf wprintf
+```c++
+// https://www.eet-china.com/mp/a47123.html
+
+// printf 打印多字符，wprintf 打印宽字符
+wchar_t a = L'啊';
+wprintf(L"%lc", a);
+const wchar_t * b = L"啊aa";
+wprintf(L"%ls", b);
+
+// 注意
+// 为了防止输出混乱，避免printf与wprintf混用
+// wchar_t -> char，再进行打印
+// 如果要打印wchar_t，推荐wcout
+
+```
+
+### sync_with_stdio
+```c++
+// https://kc.kexinshe.com/t/81705
+
+// Windows下printf/cout和wprintf/wcout可以混用，fwide函数是空函数
+
+// Linux下printf/cout和wprintf/wcout不可以混用，流的宽窄取决于首次调用哪个函数或先调用fwide(stream, 1)还是fwide(stream, -1)，一旦确定即不可更改，除非重新打开
+
+// iostream库在Linux下有一个坑，默认情况下wcout和cout不能混用。这是因为受到Linux下的C语言stdio.h库的掣肘
+
+// 提前调用了ios::sync_with_stdio(false)，wcout和cout便不会通过stdio.h进行输入输出，而是自己管理缓冲区，就避免了wcout和cout不能混用的问题
+
+// cout wcout
+std::wcout.imbue(std::locale("zh_CN.utf8"));
+std::wcout << L"1" << std::endl;
+std::cout << "2" << std::endl;
+std::wcout << L"3" << std::endl;
+std::cout << "2" << std::endl;
+// 输出 1 3
+std::ios_base::sync_with_stdio(false); // 默认 true
+std::wcout.imbue(std::locale("zh_CN.utf8"));
+std::wcout << L"1" << std::endl;
+std::cout << "2" << std::endl;
+std::wcout << L"3" << std::endl;
+std::cout << "2" << std::endl;
+// 输出 1 2 3 4
+```
+
+### wstring string 互相转换
+```c++
+// string 可看作 char[]
+// wstring 可看作 wchar_t[]
+
+#include <string>
+#include <locale>
+#include <codecvt>
+
+std::string a = "啊aa";
+cout << a.size() << endl;   // 5
+std::wstring_convert<std::codecvt_utf8<wchar_t>> convert;
+std::wstring b = convert.from_bytes(a); // string -> wstring
+cout << b.size() << endl;   // 3        避免打印wstring
+std::string c = convert.to_bytes(b);
+
+```

@@ -416,17 +416,6 @@ SIGHUP会在以下3种情况下被发送给相应的进程：
 
 ```
 
-### 字符编码
-```
-//语言环境设置环境变量 LANG
-//include <locale.h>
-//char *setlocale(int category, const char *locale);
-setlocale(LC_ALL, "utf8");
-
-//注意：utf8编码的字符串含中文和英文时，注意长度！！！
-
-```
-
 ### capability
 ```
 //从2.1版开始,Linux内核有了能力(capability)的概念,即它打破了UNIX/LINUX操作系统中超级用户/普通用户的概念,由普通用户也可以做只有超级用户可以完成的工作
