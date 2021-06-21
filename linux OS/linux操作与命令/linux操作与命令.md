@@ -774,6 +774,13 @@ fg 12314
     gdb ./test test.core    //调试
 
 
+(4) gdb直接调试
+    gdb a.out
+    run  运行
+    bt   打印错误
+    f n  进入函数域
+    p *** 打印当前变量
+
 ```
 
 ### 查看ssh记录
@@ -1424,7 +1431,7 @@ tar zcvf xxx.tar.gz -C /dir1/dir2 xxx
 ### tar 压缩 选择目录结构
 ```
 // 选择目录dir下aa和bb
-tar zcvf aaa.tar.gz dir/aa dir//bb
+tar zcvf aaa.tar.gz dir/aa dir/bb
 ```
 
 ### 更改系统时间
