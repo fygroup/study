@@ -2926,7 +2926,7 @@ https://zhuanlan.zhihu.com/p/34725232
 
     std::shared_ptr<int> a = std::make_shared<int>(10);
     std::shared_ptr<int> & b = a; // 引用 不会改变计数
-    std::shared_ptr<int> & c = a; // 复制计数加一 不会改变计数
+    std::shared_ptr<int> c = a; // 复制计数加一 不会改变计数
     cout << a.use_count() << endl;
     // 空指针的计数为0
     shared_ptr<int> a;      // 计数0
