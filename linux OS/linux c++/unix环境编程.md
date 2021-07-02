@@ -781,3 +781,106 @@ int64_t StrToTime(const std::string & timeStrParam){
 2 << 0, 2 << 1, 2 << 2, 2 << 3 ...
 
 ```
+
+### eventfd
+```c++
+// eventfd是一个用来通知事件的文件描述符，是一种linux上的线程通信方式
+// 可以用来实现用户空间的事件/通知驱动的应用程序
+// 和信号量等其他线程通信不同的是eventfd可以用于进程间的通信，还可以用于内核发信号给用户态的进程
+
+int eventfd(unsigned int initval, int flags);
+// 产生一个文件描述符，可以对这个文件描述符进行read、write、poll、select等操作
+// 该对象是一个内核维护的无符号的64位整型计数器，初始化为initval的值
+// read(): 读操作就是将counter值置0，如果是semophore就减1
+// write(): 设置counter的值
+> flag
+    EFD_CLOEXEC     like O_CLOEXEC
+    EFD_NONBLOCK    like O_NONBLOCK
+    EFD_SEMAPHORE   支持semophore语义的read，简单说就值递减1
+
+(1) read: 读取计数器中的值
+> 如果计数器中的值大于0
+    > 设置了EFD_SEMAPHORE标志位，则返回1，且计数器中的值也减去1
+    > 没有设置EFD_SEMAPHORE标志位，则返回计数器中的值，且计数器置0
+> 如果计数器中的值为0
+    设置了EFD_NONBLOCK标志位就直接返回-1
+    没有设置EFD_NONBLOCK标志位就会一直阻塞直到计数器中的值大于0
+
+(2) write: 向计数器中写入值
+> 如果写入值的和小于0xFFFFFFFFFFFFFFFE，则写入成功
+> 如果写入值的和大于0xFFFFFFFFFFFFFFFE
+    > 设置了EFD_NONBLOCK标志位就直接返回-1
+    > 如果没有设置EFD_NONBLOCK标志位，则会一直阻塞直到read操作执行
+
+(3) close: 关闭文件描述符
+```
+
+### timefd
+```c++
+// timerfd是Linux为用户程序提供的一个定时器接口
+// 这个接口基于文件描述符，通过文件描述符的可读事件进行超时通知，所以能够被用于select/poll的应用场景
+
+(1) create
+int timerfd_create(int clockid, int flags);
+// 函数创建一个定时器对象，同时返回一个与之关联的文件描述符
+// clockid: clockid标识指定的时钟计数器，可选值（CLOCK_REALTIME、CLOCK_MONOTONIC。。。）
+//          CLOCK_REALTIME:     系统实时时间,随系统实时时间改变而改变
+//          CLOCK_MONOTONIC:    从系统启动这一刻起开始计时,不受系统时间被用户改变的影响
+// flags:   TFD_NONBLOCK/TFD_CLOEXEC
+
+
+(2) write
+struct timespec {
+    time_t tv_sec; /* Seconds */
+    long   tv_nsec; /* Nanoseconds */
+};
+struct itimerspec {
+    struct timespec it_interval;  /* Interval for periodic timer （定时间隔周期）*/
+    struct timespec it_value; /* Initial expiration (第一次超时时间)*/
+};
+int timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *old_value);
+// 此函数用于设置新的超时时间，并开始计时,能够启动和停止定时器
+// fd:          参数fd是timerfd_create函数返回的文件句柄
+// flags:       参数flags 0,1
+//              1:  代表设置的是绝对时间
+//              0:  代表相对时间
+// new_value:   指定定时器的超时时间以及超时间隔时间
+// old_value:   如果old_value不为NULL, old_vlaue返回之前定时器设置的超时时间，具体参考timerfd_gettime()函数
+// it_interval不为0则表示是周期性定时器，it_value和it_interval都为0表示停止定时器
+
+
+(3) read
+int timerfd_gettime(int fd, struct itimerspec *curr_value);
+// 函数获取距离下次超时剩余的时间
+
+uint64_t exp;
+read(fd, &exp, sizeof(uint64_t)); 
+//可以用read函数读取计时器的超时次数，改值是一个8字节无符号的长整型
+```
+
+### __thread
+```c++
+// __thread是GCC内置的线程局部存储设施，存取效率可以和全局变量相比
+// __thread变量每一个线程有一份独立实体，各个线程的值互不干扰
+
+// __thread使用规则
+//      只能修饰POD类型，不能修饰class类型
+//      __thread变量只能初始化为编译器常量
+
+__thread int var = 1;
+
+auto td = std::thread([](){
+    i++;
+    std::lock_guard<std::mutex> lg(mt);
+    cout << std::this_thread::get_id() << endl;
+    cout << i << endl;  // 2
+});
+auto td1 = std::thread([](){
+    i++;
+    std::lock_guard<std::mutex> lg(mt);
+    cout << std::this_thread::get_id() << endl;
+    cout << i << endl;  // 2
+});
+
+
+```

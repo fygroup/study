@@ -4255,9 +4255,9 @@ void backtrace_symbols_fd(void *const *buffer, int size, int fd);
 ```
 
 ### abi::__cxa_demangle
-```
+```c++
 #include <cxxabi.h>
-__cxa_demangle来将backtrace_symbols返回的字符串逐个解析成可以方便看懂的字符串
+// __cxa_demangle来将backtrace_symbols返回的字符串逐个解析成可以方便看懂的字符串
 ```
 
 ### 字符编码 locale
@@ -4403,4 +4403,15 @@ std::wstring b = convert.from_bytes(a); // string -> wstring
 cout << b.size() << endl;   // 3        避免打印wstring
 std::string c = convert.to_bytes(b);
 
+```
+
+### 容器 swap
+```c++
+// vector swap 为例
+// swap 交换两个地址
+vector<int> a(10, 1);
+vector<int> b;
+b.swap(a);
+cout << a.size() << endl;   // 0
+cout << b.size() << endl;   // 10
 ```

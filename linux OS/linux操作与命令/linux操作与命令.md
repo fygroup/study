@@ -1464,6 +1464,12 @@ cat /etc/os-release
 cat /etc/issue
 ```
 
+### linux启动流程
+```
+针对Debian
+
+```
+
 ### 自启动
 ```
 /etc/init.d
@@ -1597,4 +1603,59 @@ cryptsetup提供了LUKS磁盘加密的工具
 
 // 注意
     WSL和Docker环境中使用luks均有问题！！！
+```
+
+### e4crypt(ext4 cryptfs) vs eCryptfs vs dm-crypt(LUKS)
+```
+dm-crypt            块级别加密
+e4crypt eCryptfs    文件级别加密
+
+读写性能 dm-crypt > e4crypt > eCryptfs
+```
+
+### graphviz
+```dot
+digraph base_flow {
+    // 步骤1： 定义digraph的属性
+    label = <<B>graphviz使用流程</B>>
+    size = 10; // 图大小
+    // bgcolor	= "背景颜色"
+    // fontcolor = "字体颜色"
+    // fontname = "字体"
+    fontsize = 22
+    
+    // 步骤2： 定义node、edge的属性
+    node[shape=box fontsize = 10]
+    edge[arrowsize=0.5 color="red" fontsize=22 fontcolor=grey]
+
+    // 步骤3： 定义node、subgraph
+    A[label="hello"]
+    B[label="world"]
+    C[label="me"]
+
+    subgraph cluster_flow1 { // 子图 必须为cluster_*
+        // 在subgraph中也可以定义各种属性
+        label = ""
+        node[color="grey"]
+        aaa[label=aaa]
+        bbb[label=bbb shape=ellipse]
+        ccc[label=ccc shape=ellipse]
+        aaa -> { bbb ccc };
+    }
+
+    // 步骤4： 添加关系
+    A -> B
+    B -> C [label=" do you like me?" fontsize=10 color=green dir=none]
+    B -> aaa [label=" fuck" dir=both color=blue]
+    { rank=same B,C}
+
+    subgraph cluster_flow2 {
+        label=""
+        bgcolor="beige"
+        node [shape="record"]
+        ca [label="{a | b | c}"]
+    }
+
+    // { rank = same node1,node2 } // node等级限制， same,min,max,source,sink
+}
 ```

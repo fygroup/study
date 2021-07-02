@@ -4,12 +4,13 @@ https://github.com/ttroy50/cmake-examples
 
 ```
 
-### add target 
+### ADD_xxx
 ```
 ADD_EXECUTABLE
     生成可执行程序
 
 ADD_SUBDIRECTORY
+    添加子目录
     
 ADD_LIBRARY
     创建库，动态和静态库
@@ -171,19 +172,14 @@ make install
 
 ```
 
-### find_xxx
-```
-CMAKE_PREFIX_PATH
-```
 
-### 子目录编译
+### 添加子目录
 ```
-# 添加子目录
+// 子目录必须有CMakeLists.txt
 ADD_SUBDIRECTORY(src)
-
 ```
 
-### cmake 改变中间文件的路径
+### cmake 的build路径
 ```
 mkdir build
 cd build
@@ -199,4 +195,30 @@ cmake ..
 export ASAN_OPTIONS=$ASAN_OPTIONS:log_path=./asan.log:suppressions=$SUPP_FILE:new_delete_type_mismatch=0:alloc_dealloc_mismatch=0
 
 
+```
+
+### file GLOB(收集文件)
+```
+file(GLOB <variable>
+     [LIST_DIRECTORIES true|false] [RELATIVE <path>]
+     [<globbing-expressions>...])
+file(GLOB_RECURSE <variable> [FOLLOW_SYMLINKS]
+     [LIST_DIRECTORIES true|false] [RELATIVE <path>]
+     [<globbing-expressions>...])
+
+file(GLOB files  *)
+    挑选出当前文件下的所有文件
+
+file(GLOB files  LIST_DIRECTORIES false *)
+    LIST_DIRECTORIES设置为false，默认true
+    只列出文件
+
+set(CUR ${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB files  LIST_DIRECTORIES false RELATIVE ${CUR}/.. *)
+    如我们不需要绝对路径，只需要相对某个文件夹的路径，则可以通过设置RELATIVE的值来设置
+```
+
+### find
+```
+CMAKE_PREFIX_PATH
 ```
