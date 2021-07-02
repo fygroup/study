@@ -1464,12 +1464,6 @@ cat /etc/os-release
 cat /etc/issue
 ```
 
-### linux启动流程
-```
-针对Debian
-
-```
-
 ### 自启动
 ```
 /etc/init.d
