@@ -2167,18 +2167,16 @@ My<T>::My(const My<T1> & m){
 ```
 
 ### Traits Classes 
-```
-https://www.cnblogs.com/mangoyuan/p/6446046.html
-https://cloud.tencent.com/info/a180e28f80b999eb22700e2407fc0957.html
-https://blog.csdn.net/lihao21/article/details/55043881
+```c++
+// https://www.cnblogs.com/mangoyuan/p/6446046.html
+// https://cloud.tencent.com/info/a180e28f80b999eb22700e2407fc0957.html
+// https://blog.csdn.net/lihao21/article/details/55043881
 
-在 C++ 中，traits 习惯上总是被实现为 struct ，但它们往往被称为 traits classes
-Traits classes 的作用主要是用来为使用者提供类型信息
+// Traits classes 的作用主要是用来为使用者提供类型信息
+// STL中，容器与算法是分开的，容器与算法之间通过迭代器联系在一起
+// 函数的template参数推导机制推导的只是参数，无法推导函数的返回值类型
 
-STL中，容器与算法是分开的，容器与算法之间通过迭代器联系在一起
-
-函数的template参数推导机制推导的只是参数，无法推导函数的返回值类型
-
+// traits 使用的关键技术 -> 模板的特化与偏特化
 template <typename T>
 struct iterator_traits {
     typedef typename T::value_type value_type;
@@ -2198,12 +2196,12 @@ typename iterator_traits<T>::value_type func(T a) {
 ```
 
 ### value_type
-```
+```c++
 //对于大部分STL都适用
 
 vector<int>::iterator it = a.begin();
 vector<int>::iterator::value_type a = 1;
-等价于
+// 等价于
 int a = 1;
 
 //萃取
@@ -2212,9 +2210,9 @@ public:
     class iterator {
     public:
         typedef T value_type;
-        ...
+        // ...
     };
-...
+    // ...
 };
 ```
 
@@ -2921,7 +2919,7 @@ https://zhuanlan.zhihu.com/p/34725232
 
 (3) 引用次数
     // shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
-    // 每使用他一次，内部的引用计数加每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
+    // 每使用他一次，内部的引用计数加1；每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
     // shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
 
     std::shared_ptr<int> a = std::make_shared<int>(10);
@@ -2975,6 +2973,47 @@ https://zhuanlan.zhihu.com/p/34725232
         所以！！！auto_ptr几乎没用！！！
 
 (8) 智能指针做参数传值更好
+```
+
+### unique_ptr shared_ptr
+```c++
+// shared_ptr  允许多个指针指向同一个对象
+// unique_ptr  独占所指向的对象，不能拷贝复制，unique_ptr销毁，其指向的对象也被销毁
+
+// shared_ptr 和 unique_ptr 共有操作
+shared_ptr<T> sp	// 空智能指针，可以指向类型为T的对象
+unique_ptr<T> up	// 同上
+p	                // 将p用作一个条件判断，若p指向一个对象，则为true
+*p                  // 解引用p，获得它指向的对象
+p->mem              // 等价于(*p).mem
+p.get()             // 返回p中保存的指针，要小心使用。
+swap(p,q)           // 交换p和q中的指针
+p.swap(q)           // 同上
+
+// shared_ptr 独有操作
+make_shared<T> (args)	// 返回一个shared_ptr，指向一个动态分配的类型为T的对象
+shared_ptr<T> p(q)	    // p是shared_ptr q的拷贝；此操作会增加q中的计数器
+p=q	                    // p和q都是shared_ptr，所保存的指针必须能相互转换
+                        // 此操作会递减p的引用计数，递增q的引用计数；若p的引用计数变为0，则将其管理的原内存释放
+p.unique()	            // 若p.use_count()为1，返回true；否则返回false
+p.use_count()           // 返回与p 共享对象的智能指针数量；可能很慢，主要用于调试
+
+// unique_ptr 独有操作
+unique_ptr<T> u1        // 空unique_ptr，可以指向类型为T的对象。u1会使用delete来释放它的指针
+unique_ptr<T,D> u2      // 同上。u2会使用一个类型为D的可调用对象来释放它的指针
+unique_ptr<T,D> u(d)    // 空unique_ptr，可以指向类型为T的对象，用类型为D的对象d代替delete
+u=nullptr               // 释放u指向的对象，将u置为空
+u.release()             // u放弃对指针的控制权，返回指针，并将u置空
+                        // 注意release后需要自己管理内存 auto u = u2.release(); delete(u);
+u.reset(q)              // 如果提供了内置指针q，令u指向这个对象；否则将u置空
+u.reset(nullptr)
+
+// unique_ptr不支持拷贝和赋值，如何拷贝或赋值unique_ptr
+std::unique_ptr<int> a1(new int [10]);
+std::unique_ptr<int> a2 = std::move(a1);    // unique_ptr实现了移动语义
+unique_ptr<int> a3(a2.release());           // 赋予unique_ptr一个指针，必须先要释放一个unique_ptr的一个指针
+a2.reset(a3.release());                     // 赋予unique_ptr一个指针，必须先要释放一个unique_ptr的一个指针
+
 ```
 
 ### IO体系
