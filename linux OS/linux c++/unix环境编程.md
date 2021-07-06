@@ -404,15 +404,14 @@ SIGHUP会在以下3种情况下被发送给相应的进程：
 3、execvp函数用新的程序替换当前进程的代码段、数据段、堆段和栈段。
 
 // 如何父进程退出，确保子进程也退出
-    https://zhuanlan.zhihu.com/p/56833833
-    pid_t pid = fork()
-    if (pid == 0) {
-        /*父进程退出时，会收到SIGKILL信号*/
-        prctl(PR_SET_PDEATHSIG,SIGKILL);
-        .....;
-    }
-
-    Linux下可通过 prctl进行对进程的各种控制，例如设置/获得进程名
+https://zhuanlan.zhihu.com/p/56833833
+pid_t pid = fork()
+if (pid == 0) {
+    /*父进程退出时，会收到SIGKILL信号*/
+    prctl(PR_SET_PDEATHSIG,SIGKILL);
+    .....;
+}
+Linux下可通过 prctl进行对进程的各种控制，例如设置/获得进程名
 
 ```
 
@@ -881,6 +880,12 @@ auto td1 = std::thread([](){
     cout << std::this_thread::get_id() << endl;
     cout << i << endl;  // 2
 });
+```
 
+### prctl
+```c++
+#include <sys/prctl.h>
 
+// prctl是进程制定而设计的的各种控制，例如设置/获得进程名
+int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
 ```

@@ -141,14 +141,16 @@ sr0
     dd if=/dev/sda1 of=test.img bs=1M count=100
 
 2、虚拟成loop设备
-    losetup -f test.img
-    //或
-    losetup -f 
-        /dev/loop0
-    losetup /dev/loop0 test.img
+    // 方法一
+    losetup -f test.img             // 直接分配loop设备
+    // 方法二
+    losetup -f                      // 查看可用loop设备
+    losetup /dev/loop0 test.img     // 将镜像分配给指定loop设备
+    // 查看已分配的loop设备
+    losetup
 
 3、设备分区
-    fdisk /dev/loop0
+    fdisk /dev/loop0                // 交互式分区
 
 4、刷新设备
     partprobe /dev/loop0
@@ -1652,4 +1654,42 @@ digraph base_flow {
 
     // { rank = same node1,node2 } // node等级限制， same,min,max,source,sink
 }
+```
+
+### /proc/partitions
+```
+文件/proc/partitions 可以查看分区信息
+major minor  #blocks  name
+   1        0      65536 ram0
+   1        1      65536 ram1
+   1        2      65536 ram2
+   1        3      65536 ram3
+   1        4      65536 ram4
+   1        5      65536 ram5
+   1        6      65536 ram6
+   1        7      65536 ram7
+   1        8      65536 ram8
+   1        9      65536 ram9
+   1       10      65536 ram10
+   1       11      65536 ram11
+   1       12      65536 ram12
+   1       13      65536 ram13
+   1       14      65536 ram14
+   1       15      65536 ram15
+ 179        0   61071360 emmcblk0   // dev emmcblk0 下面都是它的分区
+ 179        1       1024 emmcblk0p1
+ 179        2      20480 emmcblk0p2
+ 179        3     512000 emmcblk0p3
+ 179        4      81920 emmcblk0p4
+ 179        5   59768832 emmcblk0p5
+ 179       24      16384 emmcblk0rpmb
+ 179       16       4096 emmcblk0boot1
+ 179        8       4096 emmcblk0boot0
+ 179       32   31457280 mmcblk1    // dev mmcblk1 下面都是它的分区
+ 179       33   31457248 mmcblk1p1
+
+fdisk -l 也能获得类似信息
+
+// 注意
+mount, df -h 命令只能看到挂载的信息
 ```

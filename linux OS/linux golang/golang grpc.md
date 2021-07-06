@@ -9,6 +9,23 @@
 [从实践到原理，带你参透 gRPC] https://segmentfault.com/a/1190000019608421
 ```
 
+### 编译
+```bash
+# install
+go install \
+	github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
+    github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 \
+    google.golang.org/protobuf/cmd/protoc-gen-go \
+    google.golang.org/grpc/cmd/protoc-gen-go-grpc
+
+# grpc-go
+protoc -I . -I $GOPATH/src/ -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/ -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/ --go_out ./api/ --go_opt paths=source_relative --go-grpc_out ./api/ --go-grpc_opt paths=source_relative pb/auth-manager-service.proto
+# grpc-gateway
+protoc -I . -I $GOPATH/src/ -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/ -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/ --grpc-gateway_out ./api/ --grpc-gateway_opt logtostderr=true --grpc-gateway_opt paths=source_relative --grpc-gateway_opt generate_unbound_methods=true pb/auth-manager-service.proto
+# grpc-swagger
+protoc -I . -I $GOPATH/src/ -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/ -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/ --openapiv2_out ./api/ --openapiv2_opt logtostderr=true --openapiv2_opt paths=source_relative pb/auth-manager-service.proto
+```
+
 ### grpc server
 ```go
 // route-guide-server.proto
