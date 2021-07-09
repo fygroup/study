@@ -936,6 +936,9 @@ journalctl --vacuum-size=1G
 //指定日志文件保存多久
 journalctl --vacuum-time=1years
 
+
+// 注意
+wsl docker 中对 systemctl 不友好，尽量用 service
 ```
 
 ### hwclock
