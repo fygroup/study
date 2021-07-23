@@ -262,6 +262,8 @@ func login(client *http.Client) {
 
 ### client timeout
 ```golang
+
+// [Go net/http 超时机制完全手册] https://colobu.com/2016/07/01/the-complete-guide-to-golang-net-http-timeouts/
 // net.Dialer.Timeout                   限制建立TCP连接的时间
 // http.Transport.TLSHandshakeTimeout   限制 TLS握手的时间
 // http.Transport.ResponseHeaderTimeout 限制读取response header的时间

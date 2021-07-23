@@ -130,7 +130,7 @@ std::atomic提供了4种 memory ordering: Relaxed, Release-Acquire, Release-Cons
 ```
 
 ### 基于atomic实现锁
-```
+```c++
 1、spin_lock
     (1) WO的实现方式
         struct Spinlock {

@@ -792,10 +792,10 @@ int eventfd(unsigned int initval, int flags);
 // 该对象是一个内核维护的无符号的64位整型计数器，初始化为initval的值
 // read(): 读操作就是将counter值置0，如果是semophore就减1
 // write(): 设置counter的值
-> flag
-    EFD_CLOEXEC     like O_CLOEXEC
-    EFD_NONBLOCK    like O_NONBLOCK
-    EFD_SEMAPHORE   支持semophore语义的read，简单说就值递减1
+// flag
+//      EFD_CLOEXEC     like O_CLOEXEC
+//      EFD_NONBLOCK    like O_NONBLOCK
+//      EFD_SEMAPHORE   支持semophore语义的read，简单说就值递减1
 
 (1) read: 读取计数器中的值
 > 如果计数器中的值大于0

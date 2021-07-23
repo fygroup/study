@@ -274,3 +274,11 @@ git pull https://diaohaiyong:939791536a-@gitlab.sz.sensetime.com/senseNebula-m/n
 git reset --soft HEAD^
 仅仅是撤回commit操作，代码仍然保留
 ```
+
+### .gitignore不生效
+```
+解决方法就是先把本地缓存删除（改变成未track状态），然后再提交
+
+git rm -r --cached .
+git add -A
+```

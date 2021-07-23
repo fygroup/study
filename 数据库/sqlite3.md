@@ -14,6 +14,8 @@ http://www.chiark.greenend.org.uk/doc/sqlite3-doc/sharedcache.html
 
 Shared-Cache Locking (v3.3.0)
 
+file:aux.db?cache=shared
+
 ```
 
 ### sqlite3_bind_text

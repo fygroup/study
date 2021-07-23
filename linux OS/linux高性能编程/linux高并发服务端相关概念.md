@@ -383,3 +383,18 @@ https://developer.ibm.com/zh/languages/java/articles/j-jtp0730/
 
 ```
 
+### 并发模型 CSP模型和Actor模型
+```
+[Actor模型和CSP模型的区别] https://www.jdon.com/concurrent/actor-csp.html
+```
+
+### 并发模式
+```
+[go常见并发模式] https://chai2010.gitbooks.io/advanced-go-programming-book/content/ch1-basic/ch1-06-goroutine.html
+
+(1) 生产者消费者模型
+
+(2) 发布订阅模型
+
+
+```

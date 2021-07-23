@@ -706,3 +706,10 @@ func TypeJudge(i interface{}) {
 	}
 }
 ```
+
+### rand
+```go
+import "math/rand"
+myrand := rand.New(rand.NewSource(time.Now().Unix()))
+myrand.Intn(100)
+```
