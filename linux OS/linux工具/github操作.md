@@ -170,12 +170,8 @@ rm <file> && git rm <file> && git commit
 情形一：文件没有被放到暂存区，撤销修改就回到和版本库一模一样的状态；
 情形二：文件已经添加到暂存区后，又作了修改，撤销修改就回到添加到暂存区后的状态。
 
-// git checkout -b <分支>
-我们创建分支，然后切换到分支
-相当于git branch <分支> && git checkout <分支>
-
-// git checkout -b <分支> origin/<分支>   （origin/<分支> 已存在？？？）
-在本地创建和远程分支对应的分支
+git checkout -b <分支> origin/<分支>
+本地创建和远端对应的分支
 
 // git branch
 查看分支

@@ -43,7 +43,71 @@
     void Singleton::Init() {
         value_ = new Singleton;
     }
-    
+
+// thread_once 原理
+pthread_once_t once_control = PTHREAD_ONCE_INIT;
+int pthread_once(pthread_once_t * once_control,void (*init_routin)(void));
+// 当线程执行开始执行pthread_once函数后，线程会首先检查控制变量：
+// 如果控制变量的状态为“未进行初始化”，则开始执行pthread_once中指定的init_routin函数
+// 如果当前控制变量的状态为“初始化已结束”，则直接返回
+// 如果当前控制变量的状态为“正在进行初始化”，则线程将等待直到控制变量的状态变为“初始化已结束”
+
+```
+
+### Double-checked Locking
+```c++
+// 双重检查锁
+
+// 为什么需要此模式
+// 多线程频繁的锁竞争会带来性能损耗，可以利用Double-checked Locking模式来减少锁竞争和加锁载荷。目前此模式广泛应用于单例模式中
+
+// Double-checked Locking 原型
+if check() {
+    lock() {
+        if check() {
+            // do something...
+        }
+    }
+}
+
+// Double-checked Locking 错误的使用
+if (instance == NULL) {
+    Lock(){
+        if (instance == NULL) {
+            instance = new Instance();  // 问题出在这
+        }
+    }
+}
+// new的过程分为三步：分配内存、初始化、返回指针。此过程可能被编译重排，导致步骤3先于1、2，进而出现错误
+// 解决方案：使用内存屏障
+
+// c++ singleton(double-checked locking)
+#include <atomic>
+#include <mutex>
+
+class Singleton {
+public:
+    static Singleton* GetInstance();
+
+private:
+    Singleton() = default;
+    static std::atomic<Singleton*> s_instance;
+    static std::mutex s_mutex;
+};
+
+Singleton* Singleton::GetInstance() {
+  Singleton* p = s_instance.load(std::memory_order_acquire); // 注意
+  if (p == nullptr) { // 1st check
+    std::lock_guard<std::mutex> lock(s_mutex);
+    p = s_instance.load(std::memory_order_relaxed);
+    if (p == nullptr) { // 2nd (double) check
+      p = new Singleton();
+      s_instance.store(p, std::memory_order_release); // 注意
+    }
+  }
+  return p;
+}
+
 ```
 
 ### copyable uncopyable

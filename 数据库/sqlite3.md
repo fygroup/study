@@ -1,3 +1,18 @@
+### 锁和并发控制
+```
+http://shouce.jb51.net/sqlite/14.html
+https://huili.github.io/lockandimplement/machining.html
+
+粗粒度，文件级别锁，读写锁
+
+五种方式的文件锁状态
+1) UNLOCKED
+2) SHARED
+3) RESERVED
+4) PENDING
+5) EXCLUSIVE
+```
+
 ### lock
 ```
 http://www.chiark.greenend.org.uk/doc/sqlite3-doc/sharedcache.html

@@ -240,6 +240,29 @@ func main(){
 }
 ```
 
+### 拦截器
+```go
+type Handler interface{
+    ServeHTTP(res, *req)
+}
+
+type HandlerFunc func(res, *req)
+
+func (h HandlerFunc) ServeHTTP(res, *req){
+    h(res, *req)
+}
+
+
+func X(h Handler) Handler {
+    return HandlerFunc(func(res, *req) {
+        // do something...
+        h.ServeHTTP(req)
+    })
+}
+
+http.Hander("/xxx", X(X(X()))
+```
+
 ### context.WithCancel
 ```go
 // 父协程控制子协程退出
@@ -490,8 +513,8 @@ var x A2 = new(B)
 		// Deadline 方法需要返回当前 Context 被取消的时间，也就是完成工作的截止时间
 		Deadline() (deadline time.Time, ok bool)
 
-		// 返回一个 Channel，这个 Channel 会在当前工作完成或者上下文被取消之后关闭
-		Done() <-chan struct{}
+		// 当 context 被取消或者到了 deadline，返回一个被关闭的 channel
+        Done() <-chan struct{}
 		
 		// 方法会返回当前 Context 结束的原因，它只会在 Done 返回的 Channel 被关闭时才会返回非空的值
 		Err() error
@@ -645,6 +668,20 @@ import "gitlab.sz.sensetime.com/SenseStardust/stardust"
     go get gitlab.sz.sensetime.com/SenseStardust/stardust@master
 
 (4) go mod tidy
+
+// 注意
+(1) go get 需要输入密码
+    将本机的公钥添加到gitlab上面
+
+(2) gitlab.sz.sensetime.com/viper/charts/kafka.git  四级目录
+    go get gitlab.sz.sensetime.com/viper/charts/kafka@master    // 错误
+    go get gitlab.sz.sensetime.com/viper/charts/kafka.git       // 正确
+
+(3) 使用https
+    更改 git ssh -> http rm ~/.gitconfig
+    cat ~/.netrc
+    machine gitlab.sz.sensetime.com login malixiang password mlx.04211317
+
 ```
 
 ### []string []interface{}

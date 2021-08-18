@@ -372,3 +372,46 @@ netstat -apn | grep "172.17.0.1"
 udp        0      0 172.17.0.1:123          0.0.0.0:*                           14089/ntpd  
 
 ```
+
+### Docker-in-Docker
+```
+在Docker容器中运行Docker
+
+// 为什么需要docker-in-docker
+在 CI 中，通常会有一个 CI Engine 负责解析流程，控制整个构建过程，而将真正的构建交给 Agent 去完成。例如，Jenkins 、GitLab
+使用gitlab的docker，当然你也可以直接使用gitlab程序，但是部署起来麻烦
+所以问题来了：Agent已经是容器化的，怎么在容器上构建镜像呢？这就要用到docker-in-docker
+
+// 实现docker-in-docker三种方法
+(1) DooD
+    在宿主机上是通过/var/run/docker.sock套接字与docker守护程序通信的
+    此方案的原理是将套接字放到容器内，此时容器内操作docker实际上是与宿主机的docker进行通信
+
+    docker run -v /var/run/docker.sock:/var/run/docker.sock -ti docker
+    docker images // 显示宿主机docker的镜像
+
+    接下来就可以在容器中创建镜像了
+
+(2) DinD
+    此方案是在容器中创建完整的docker全家桶，官方给的image是 docker:dind
+    并且需要特权模式才能运行
+
+    docker run --privileged -d --name dind-test docker:dind
+
+    此方案不推荐
+
+(3) Sysbox
+    上述方案1、2不安全，此方案结合了1和2的好处
+
+```
+
+### CI/CD run 部署
+```
+// 运行 gitlab-runner 容器
+docker run -d --name gitlab-runner --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /home/malx/docker_gitlab_runner:/etc/gitlab-runner gitlab/gitlab-runner
+
+// 注册runner
+docker run --rm -it -v /home/malx/docker_gitlab_runner:/etc/gitlab-runner gitlab/gitlab-runner register
+
+
+```

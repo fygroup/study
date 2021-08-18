@@ -70,6 +70,17 @@ readelf -h xxx.so
     strings libxxx.so
 ```
 
+### not a dynamic executable
+```
+ldd arm-himix200-linux-gcc
+// not a dynamic executable
+
+readelf -h arm-himix200-linux-gcc   // 查看平台
+readelf -l arm-himix200-linux-gcc   // 查看缺失的库(ldd)
+
+apt-get install gcc-multilib        // 下载全平台libc库
+```
+
 ### sh重定向
 ```
 nohup sh start.sh 1>>log.txt 2>&1  &

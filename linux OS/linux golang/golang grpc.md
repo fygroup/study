@@ -373,3 +373,21 @@ func (s *server) SomeStreamingRPC(stream pb.Service_SomeStreamingRPCServer) erro
 request -> http.server -> rpc.Dial -> rpc.server
 
 ```
+
+### runtime.JSONPb
+```go
+a := &api.MyStruct{
+	Time: timestamppb.New(time.Now()),
+}	// MyStruct必须经过proto编译,才可以使用
+marshal := &runtime.Marshal{}
+buf,err := marshal.Marshal(a)
+fmt.Println(string(buf))
+```
+
+### timestamp 保留毫秒
+```go
+t := Time: timestamppb.New(time.Now())
+fmt.Println(t.AsTime())
+t.Nanos = (x.Nanos / 1e6) * 1e6
+fmt.Println(t.AsTime())
+```
