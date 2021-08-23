@@ -1458,6 +1458,9 @@ date +%T -s "11:14:00"
 
 ### ntpd服务的相关设置文件
 ```
+ntpdate -u 10.151.3.74
+同步ntp时间
+
 /etc/ntp.conf
 这个是NTP daemon的主要设文件，也是 NTP 唯一的设定文件
 
@@ -1706,4 +1709,32 @@ fdisk -l 也能获得类似信息
 
 // 注意
 mount, df -h 命令只能看到挂载的信息
+```
+
+### shell 交互式输入
+```
+// 提示进行确认（输入正常退出，输入错误则需重新输入）
+
+#!/bin/bash
+
+while true
+do
+    read -r -p "Are You Sure? [y/n] " input
+    
+    case $input in 
+        [yY][eE][sS]|[yY])
+            echo "yes"
+            exit 1
+            ;;
+
+        [nN][oO]|[nN])
+            echo "no"
+            exit 1
+            ;;
+
+        *)
+            echo "invalid input... "
+    esac
+
+done
 ```
