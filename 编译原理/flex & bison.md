@@ -26,6 +26,4 @@ flex & bison.pdf
 
 yyrestart(f) 设置句柄输入
 
-
-
 ```
