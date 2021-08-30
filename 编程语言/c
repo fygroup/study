@@ -1337,6 +1337,18 @@ local int complain(char *fmt, ...) {
     g.ret = 1;
     return 0;
 }
+
+float averge(int n_values, ...) {
+    va_list var_arg;					// 准备访问可变参数
+    va_start(var_arg, n_values) 		// 第一个参数是va_list变量的名字;第2个参数是省略号前最后一个有名字的参数
+    // 取值
+    for(;;)
+        sum += va_arg(var_arg, int); 	// 第二个参数是参数的类型
+    va_end(var_arg); 					// 完成处理可变参数,手动清栈
+}
+
+
+
 //----数组与指针-------------------------------------
 
 // 定义函数指针

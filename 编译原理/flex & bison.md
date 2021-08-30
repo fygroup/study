@@ -27,3 +27,19 @@ flex & bison.pdf
 yyrestart(f) 设置句柄输入
 
 ```
+
+### bison 关键术语
+```c+
+$$
+    $$ = $1
+
+%union{
+
+}
+
+%token <d> NUMBER
+
+%type <a> exp factor term
+
+
+```
