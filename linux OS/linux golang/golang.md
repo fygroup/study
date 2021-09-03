@@ -750,3 +750,18 @@ import "math/rand"
 myrand := rand.New(rand.NewSource(time.Now().Unix()))
 myrand.Intn(100)
 ```
+
+### vscode go build -tags=xxx
+```go
+go env -w GOFLAGS="-tags=aaa"
+
+// test/file1
+// +build aaa
+package test
+func Test() {}
+
+// test/file2
+// +build bbb
+package test
+func Test() {}
+```

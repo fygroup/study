@@ -488,6 +488,9 @@ ip route delete ...
 https://zhuanlan.zhihu.com/p/32848232
 https://wangchujiang.com/linux-command/c/iptables.html
 
+// 查看规则
+iptables -L
+
 //添加iptables规则禁止用户访问域名为www.sexy.com的网站。
 iptables -I FORWARD -d www.sexy.com -j DROP
 
