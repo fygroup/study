@@ -132,6 +132,32 @@ go语言的阻塞主要有4种场景
 
 ### GC
 
+### 绕过GC的扫描
+```
+https://zhuanlan.zhihu.com/p/404334020
+https://blog.crazytaxii.com/posts/avoiding_high_gc_overhead_with_large_heap/
+
+通过绕开GC扫描可以减轻GC压力，有以下几种方法
+(1) 无指针数据结构
+    例如 []byte []int ...
+    Go 内存管理器知道每个分配的内存是什么类型的数据，并且会标记处不包含指针的内存以便 GC 在扫描时忽略
+
+(2) CGO调用C运行库跳过GC分配内存，也跳过了GC扫描
+
+(3) 直接问 OS 要内存，GC 就不会发现它
+    syscall.Syscall6(
+        syscall.SYS_MMAP,
+        0, // address
+        uintptr(len)*eltsize,
+        syscall.PROT_READ|syscall.PROT_WRITE,
+        syscall.MAP_ANON|syscall.MAP_PRIVATE,
+        uintptr(fd), // No file descriptor
+        0,           // offset
+    )
+
+```
+
+
 ### goroute调度
 ```
 M P G

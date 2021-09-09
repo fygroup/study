@@ -765,3 +765,232 @@ func Test() {}
 package test
 func Test() {}
 ```
+
+### time.NewTicker
+```go
+// 周期定时器
+
+func Work(){
+    ticker := time.NewTicker(3 * time.Second)
+    defer ticker.Stop() // 退出主动关闭，减少系统消耗
+
+    for (
+        select {
+            case <-ticker.C:
+                // do something.
+            case ...
+        }
+    )
+
+}
+
+```
+
+### runtime.SetFinalizer
+```go
+// Unreachable指的是可以被垃圾回收器回收的对象，但是由于没有GC发生，所以没有释放
+
+// 释放对象
+a := Object{}
+a = nil
+
+// 在使用者看来，Object已经没有引用了，可以在gc的时候被回收
+// 但是可能存在object对象成员函数运行goroutine，没有结束。所以cache始终不能满足不可达的条件，也就不会被gc回收， 从而产生了内存泄露的问题
+// 当然可以主动'close'上述的goroute，但这无疑增加使用成本
+
+// runtime.SetFinalizer
+// gc检测到unreachable对象有关联的SetFinalizer函数时，会执行关联的SetFinalizer函数，同时取消关联。这样当下一次gc的时候，对象重新处于unreachable状态并且没有SetFinalizer关联， 就会被回收
+
+// 类似c++的析构函数
+
+// 示例
+type Task struct {
+    StopCh chan int
+    Onstop func()
+}
+
+func NewTask() *Task {
+    t := &Task{
+        StopCh: make(chan int)
+    }
+    go t.Work()
+    runtime.SetFinalizer(t, Task.Stop)
+    return t
+}
+
+func (t *Task) Work() {
+    ticker := time.NewTicker(10 * time.Hour)
+    defer ticker.Stop()
+    for {
+        select {
+            case <- ticker.C:
+                // ...
+            case <- t.StopCh:
+            if t.Onstop != nil {
+                t.OnStop()
+            }
+            return
+        }
+    }
+}
+
+func(t *Task) Stop() {
+    close(t.StopCh)
+}
+
+// 注意！
+// 执行runtime.GC()的时候，go程序并没有执行垃圾回收，这可能与go虚拟机有关
+// go runtime做得越来越智能，不久的将来用户深入操作空间更小，所以更要星辰大海
+
+```
+
+### runtime.KeepAlive
+```
+```
+
+### reflect.NewAt
+```go
+// 貌似可以模仿c++ placement new
+a:=make([]byte, 1000)
+ptr := unsafe.Pointer(&buf)
+rf := reflect.NewAt(reflect.TypeOf(&Object{}), ptr).Elem()
+b := rf.Interface().(*Object)
+
+// 此时b结构就在a的数组空间上
+// 注意!
+// go的数据结构有很多内部都带有指针，这么做的意义不大（无法做到精细控制内存）
+
+```
+
+### go写屏障
+```
+```
+
+### Channel Closing Principle
+```go
+// 如何优雅的关闭channnel
+// https://go101.org/article/channel-closing.html
+
+// 通道关闭原则
+// 不要从接收端关闭channel
+// 不要关闭有多个并发发送者的channel
+
+// 三种情况
+// (1) M 个消费者，1 个生产者，生产者通过关闭数据通道说"我不发送了"
+// 一个生产者
+dataCh := make(chan int, 100)
+for {
+    value := rand.Intn(100)
+    if value == 6 {
+        close(dataCh)
+    } else {
+        datach <- value
+    }
+}
+// 多消费者
+for i:=0; i<10; i++ {
+    go func() {
+        for value := range dataCh {
+            fmt.Println(value)
+        }
+    }()
+}
+
+// (2) 1 个消费者，N 个生产者，消费者通过关闭一个信号通道说"不要再发送了"
+// 多生产者
+dataCh := make(chan int, 100)
+stopCh := make(chan struct{})
+for i:=0; i<10; i++ {
+    go func() {
+        for {
+            value := rand.Intn(100)
+            select {
+                case <- stopCh:
+                    return
+                case dataCh <- value:
+            }
+        }
+    }()
+}
+// 一个消费者
+for value := range dataCh {
+    if value == 6 { // 当值等于6时关闭通道
+        close(stopCh)
+    }
+    fmt.Println(value)
+}
+
+// (3) M 个接收者，N 个发送者，任意一个去关闭一个信号通道说"让我们结束这场游戏吧"
+// 多生产者
+dataCh := make(chan int, 100)
+stopCh := make(chan struct{})
+toStop := make(chan string, 1) // 可以通知关闭几个channel
+for i:=0; i<10; i++ {
+    go func (i int){
+        for {
+            value := rand.Intn(100)
+
+            if value == 4 { // 如果value等于4，发送关闭请求
+                select {
+                    case toStop <- "producter "+ i:
+                    default:
+                }
+                return
+            }
+
+            // 每次循环优先检查是否需要关闭退出
+            select {
+                case <-stopCh:
+                    return
+                default:
+            }
+
+            select {
+                case <-stopCh:
+                    return
+                case dataCh <- value:
+            }
+
+        }
+    }(i)
+}
+
+// 中间协调
+go func() {
+    r := <- toStop
+    fmt.Println(r)
+    close(stopCh)
+}()
+
+// 多消费者
+for i:=0; i<10; i++ {
+    go func (i int){
+        for {
+            // 每次循环优先检查是否需要关闭退出
+            select {
+                case <-stopCh:
+                    return
+                default:
+            }
+                    
+
+            select {
+                case <-stopCh:
+                    return
+                case value := <-dataCh:
+                    if value == 6 { // 如果value等于6，发送关闭请求
+                        select {
+                            case toStop <- "receiver "+ i:
+                            default:
+                        }
+                        return
+                    }
+                    fmt.Println(value)
+            }
+        }
+    }(i)
+}
+
+
+
+```
