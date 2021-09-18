@@ -626,7 +626,7 @@ S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
 
 ```
 
-### linux下的定时器
+### linux下的几种定时器(不全)
 ```
 1、sleep()和usleep()
     sleep精度是1秒，usleep精度是1微妙
@@ -816,6 +816,7 @@ int eventfd(unsigned int initval, int flags);
 
 ### timefd
 ```c++
+#include <sys/timerfd.h>
 // timerfd是Linux为用户程序提供的一个定时器接口
 // 这个接口基于文件描述符，通过文件描述符的可读事件进行超时通知，所以能够被用于select/poll的应用场景
 
@@ -854,7 +855,8 @@ int timerfd_gettime(int fd, struct itimerspec *curr_value);
 
 uint64_t exp;
 read(fd, &exp, sizeof(uint64_t)); 
-//可以用read函数读取计时器的超时次数，改值是一个8字节无符号的长整型
+// 当定时器超时，read读事件发生即可读，返回超时次数（从上次调用timerfd_settime()启动开始或上次read成功读取开始），它是一个8字节的unit64_t类型整数
+// 如果定时器没有发生超时事件，则read将阻塞若timerfd为阻塞模式，否则返回EAGAIN 错误（O_NONBLOCK模式），如果read时提供的缓冲区小于8字节将以EINVAL错误返回。
 ```
 
 ### __thread

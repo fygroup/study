@@ -1999,21 +1999,21 @@ class Dep { // Stands for dependency
 
 // 遍历数据的属性
 Object.keys(data).forEach(key => {
-  let internalValue = data[key]     //闭包
+	let internalValue = data[key]     //闭包
 	//或者直接给个变量
 	// 每个属性都有一个依赖类的实例
-  const dep = new Dep()
+	const dep = new Dep()
 
-  Object.defineProperty(data, key, {
-	  get () {
-      dep.depend()
-      return internalValue
-	  },
-	  set (newVal) {
-	    internalValue = newVal
-		dep.notify()
-	  }
-  })
+	Object.defineProperty(data, key, {
+		get () {
+			dep.depend()
+			return internalValue
+		},
+		set (newVal) {
+			internalValue = newVal
+			dep.notify()
+		}
+	})
 })
 
 // watcher 不再调用 dep.depend

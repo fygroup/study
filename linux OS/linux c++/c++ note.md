@@ -312,8 +312,6 @@ struct equal_to:public binary_function<T,T,bool>
 		return a == b;
 	}
 };
-// 当前程序
-readlink("/proc/self/exe", pPath, 1024); 当前程序的绝对路径
 
 #ifndef GOOGLE_GLOG_DLL_DECL
 # if defined(_WIN32) && !defined(__CYGWIN__)
@@ -455,9 +453,6 @@ F_OK      测试文件是否存在
 
 成功执行时，返回0。失败返回-1
 
-//---得到工作路径-----------------
-/proc/self/exe 它代表当前程序
-int nRet = readlink("/proc/self/exe", pPath, nLen - 1);
 //nRet表示返回字符串的长度
 
 //---改变工作目录-----------------
@@ -1721,7 +1716,7 @@ b = a;      // 赋值函数
         }
 
         A& operator=(A&& a) {
-
+            // 移动赋值
         }
     };
 
@@ -1879,6 +1874,12 @@ b->f(); // 错误，动态确定时虚指针已清零
 
 ### decltype
 ```
+decltype作为操作符，用于获取"表达式"的数据类型
+
+C++11标准引入decltype，主要是为泛型编程而设计，以解决泛型编程中有些类型由模板参数决定而难以（甚至不可能）表示的问题
+
+从语义上说，decltype的设计适合于通用库编写者或编程新手。总体上说，对于变量或函数参数作为表达式，由decltype推导出的类型与源码中的定义可精确匹配。而正如sizeof操作符一样，decltype不对操作数求值
+
 decltype和auto都可以用来推断类型，但是二者有几处明显的差异
 > auto忽略顶层const，decltype保留顶层const
 > 对引用操作，auto推断出原有类型，decltype推断出引用
@@ -2313,6 +2314,12 @@ struct TestS {
 
 struct TestS a = {1, "dasda", 'c'};
 struct TestS a {1, "dasda", 'c'};
+
+// 注意
+c++中只允许POD对象可以进行上述的初始化
+带有构造函数的对象不再被视为POD。对象只能包含其他POD类型作为非静态成员(包括基本类型)
+当然POD也可以具有静态功能和静态复杂数据成员
+struct默认不带构造函数可以进行上述初始化，class默认带有构造函数不能进行上述初始化
 ```
 
 ### ({})
@@ -4453,4 +4460,22 @@ vector<int> b;
 b.swap(a);
 cout << a.size() << endl;   // 0
 cout << b.size() << endl;   // 10
+```
+
+### 当前工作路径与程序路径
+```
+/proc/self/ 它代表当前程序运行环境
+
+// 工作路径
+ls -l /proc/self/cwd
+
+// 程序路径
+ls -l /proc/self/exe
+
+// c语言中可以通过此方法获得工作与程序路径
+#include <unistd.h>
+int readlink(const char * path, char * buf, size_t bufsiz);
+char cwdAbsPath[1024];
+readlink("/proc/selef/cwd", cwdAbsPath, 1024);
+readlink("/proc/selef/exe", cwdAbsPath, 1024);
 ```
