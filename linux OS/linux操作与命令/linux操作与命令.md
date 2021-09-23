@@ -731,7 +731,7 @@ Linux 系统内存中的 cache 并不是在所有情况下都能被释放当做�
     shmget 方式申请的共享内存会占用 cache 空间，除非主动释放，否则相关的 cache 空间都不会被自动释放
 > mmap
     mmap 方法申请的 MAP_SHARED 标志的内存会占用 cache 空间，除非进程将这段内存 munmap，否则相关的 cache 空间都不会被自动释放
-实际上 shmget、mmap 的共享内存，在内核层都是通过 tmpfs 实现的，tmpfs 实现的存储用的都是 cache
+实际上 shmget、mmap 的共享内存，在内核层都是通过 tmpfs 实现的，而 tmpfs 实现的存储用的都是 cache
 ```
 
 ### pstree

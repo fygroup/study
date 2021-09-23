@@ -42,7 +42,7 @@ https://zhuanlan.zhihu.com/p/37872762
 ```
 
 ### 信号量
-```
+```c++
 (1) POSIX信号量与System V信号量
     用于共享内存的同步，注意区别于线程的互斥量！！！（下面有详解）
     Posix信号量是基于内存的，即信号量值是放在共享内存中的，与文件系统中的路径名对应的名字来标识的。性能更优越
@@ -132,8 +132,9 @@ POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
 ```
 <img src="../picture/7.png" alt="shm_open+mmap" height=300 width=500/>
 
-```
-(1) shmget
+```c++
+(1) System V共享内存
+    shmget() shmat() shmdt()
     > 进程一 read
         #include<sys/shm.h>
         #include <sys/types.h>
@@ -147,11 +148,11 @@ POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
         int main(){
 
             //proj_id是一个1－255之间的一个整数值，典型的值是一个ASCII值
-            key_t key = ftok("file",0x03); 
+            key_t key = ftok("file", 3); 
 
             //创建共享内存,如果存在则报错
             //int shmid = shmget(key,sizeof(shared,IPC_CREAT|0666));
-            int shmid = shmget((key_t)MEM_KEY, sizeof(shared),0666|IPC_CREAT|IPC_EXCL); 
+            int shmid = shmget(key, sizeof(shared),0666|IPC_CREAT|IPC_EXCL); 
             
             if (shmid == -1) perror();
 
@@ -173,7 +174,9 @@ POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
         }shared;
 
         int main(){
-            int shmid = shmget((key_t)MEM_KEY, sizeof(shared),0666|IPC_CREAT); //创建共享内存
+            key_t key = ftok("file", 3);
+
+            int shmid = shmget(key, sizeof(shared),0666|IPC_CREAT); //创建共享内存
             if (shmid == -1) perror();
             shm = shmat(shmid, 0, 0);
             if（shm == (void*)-1）perror();
@@ -182,7 +185,8 @@ POSIX的shm_open()打开一个文件，用mmap映射到自己的内存地址
             if (shmdt(shm) == -1) perror();
         }
 
-(2) shm_open+mmap
+(2) POSIX共享内存
+    shm_open() mmap() shm_unlink()
     > server
         #include <sys/mmap.h>
         #include <sys/shm.h>

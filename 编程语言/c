@@ -1170,14 +1170,14 @@ ftruncate()
 
 相关函数：open、truncate
 表头文件：#include <unistd.h>
-函数原型：int ftruncate(int fd, off_t  length)
+函数原型：int ftruncate(int fd, size_t length)
 函数说明：ftruncate()会将参数fd指定的文件大小改为参数length指定的大小。参数fd为已打开的文件描述词，而且必须是以写入模式打开的文件。如果原来的文件件大小比参数length大，则超过的部分会被删去
 返 回  值：0、-1
 
 参考UNIX 高级环境编程 14.9节，需要先设置文件的长度， 再调用mmap才不会出现总线错误
 
 #include <stdio.h>     
- #include <unistd.h>   
+#include <unistd.h>   
  
 main()   
  {   
