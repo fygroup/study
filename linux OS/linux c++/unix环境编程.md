@@ -626,7 +626,7 @@ S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
 
 ```
 
-### linux下的几种定时器(不全)
+### linux下的几种定时器
 ```
 1、sleep()和usleep()
     sleep精度是1秒，usleep精度是1微妙
@@ -641,14 +641,19 @@ S_IXOTH 00001 权限, 代表其他用户具有可执行的权限.
     RTC机制利用系统硬件提供的Real Time Clock机制，通过读取RTC硬件/dev/rtc，通过ioctl()设置RTC频率
     精度可调，而且非常高
 
-4、select()
+4、select
     通过使用select()，来设置定时器
     原理利用select()方法的第5个参数，第一个参数设置为0，三个文件描述符集都设置为NULL，第5个参数为时间结构体
     这种方法精度能够达到微妙级别，网上有很多基于select()的多线程定时器，说明select()稳定性还是非常好
+
+5、timefd
+    since kernel 2.6.25
+    timerfd是Linux为用户程序提供的一个定时器接口，基于文件描述符，可以和epoll一起用
+
 ```
 
 ### RTC
-```
+```c++
 // linux系统有两个时钟
 一个是由主板电池驱动的"Real Time Clock"也叫做RTC或者叫CMOS时钟，硬件时钟。当操作系统关机的时候，用这个来记录时间，但是对于运行的系统是不用这个时间的。
 另一个时间是"System clock"也叫内核时钟或者软件时钟，是由软件根据时间中断来进行计数的，内核时钟在系统关机的情况下是不存在的，所以，当操作系统启动的时候，内核时钟是要读取RTC时间来进行时间同步。并且在系统关机的时候将系统时间写回RTC中进行同步。
@@ -868,7 +873,7 @@ read(fd, &exp, sizeof(uint64_t));
 //      只能修饰POD类型，不能修饰class类型
 //      __thread变量只能初始化为编译器常量
 
-__thread int var = 1;
+__thread int i = 1;
 
 auto td = std::thread([](){
     i++;
@@ -918,4 +923,53 @@ key_t ftok(const char *pathname, int proj_id);
 // 当函数执行成功，则会返回key_t键值（文件信息与proj_id合成的值），否则返回-1
 // 在一般的UNIX中，通常是将文件的索引节点取出，然后在前面加上子序号就得到key_t的值
 // 所以相同文件名得到的 key_t 不一定一样，因为文件可能被删除再创建，文件索引不一样了
+```
+
+### cputime walltime
+```c++
+// https://levelup.gitconnected.com/8-ways-to-measure-execution-time-in-c-c-48634458d0f9
+// cputime cpu时间
+// walltime 墙上时间(运行时间)
+
+(1) time command
+    // cputime walltime
+    $ time ***
+    // real 0m5.931s walltime
+    // user 0m5.926s clocktime
+    // sys 0m0.005s
+
+(2) c++ <chrono>
+    // walltime
+    auto begin = std::chrono::high_resolution_clock::now();
+    // do something...
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    
+(3) <sys/time.h> gettimeofday()
+    // Walltime
+    struct timeval begin, end;
+    gettimeofday(&begin, 0);
+    // do something...
+    gettimeofday(&end, 0);
+    long seconds = end.tv_sec - begin.tv_sec;
+    long microseconds = end.tv_usec - begin.tv_usec;
+    double elapsed = seconds + microseconds*1e-6;
+    printf("Time measured: %.3f seconds.\n", elapsed);
+
+(4)  <time.h> time()
+    // walltime only measure second!!!
+    time_t begin, end;
+    time(&begin);
+    // do something...    
+    time(&end);
+    time_t elapsed = end - begin;
+    printf("Result: %.20f\n", sum);
+
+(5) <time.h> clock()
+    // clocktime
+    clock_t start = clock();
+    // do something...
+    clock_t end = clock();
+    double elapsed = double(end - start)/CLOCKS_PER_SEC;
+    printf("Time measured: %.3f seconds.\n", elapsed);
 ```
