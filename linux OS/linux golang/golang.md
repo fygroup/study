@@ -1018,3 +1018,22 @@ norace 的作用是：跳过竞态检测
 该指令表示编译器遇到写屏障时就会产生一个错误，并且允许递归。也就是这个函数调用的其他函数如果有写屏障也会报错。简单来讲，就是针对写屏障的处理，防止其死循环
 
 ```
+
+### fallthrough
+```go
+// switch case中，fallthrough强制执行后面的case代码
+
+switch {
+    case false:
+        fmt.Println("The integer was <= 1")
+        fallthrough
+    case true:
+        fmt.Println("The integer was <= 2")
+        fallthrough
+    case true:
+        fmt.Println("The integer was <= 4")
+        fallthrough
+    default:
+        fmt.Println("default case")
+}
+```
