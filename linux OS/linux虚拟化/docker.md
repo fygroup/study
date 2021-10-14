@@ -326,12 +326,24 @@ uid=1008 gid=1008 groups=1008
 
 ### docker network
 ```
+https://www.cnblogs.com/zuxing/articles/8780661.html
+https://www.jianshu.com/p/d84cdfe2ea86
+
 // 三种基本的网络模式
 docker network ls
 NETWORK ID          NAME                DRIVER              SCOPE
 46053022478c        bridge              bridge              local
 48c25f0ece64        host                host                local
 adca62142796        none                null                local
+
+Bridge(默认)
+    相当于Vmware中的Nat模式，容器使用独立network Namespace，并连接到docker0虚拟网卡(宿主机)
+Host
+    相当于Vmware中的桥接模式，与宿主机在同一个网络中，但没有独立IP地址
+Container
+    这个模式指定新创建的容器和已经存在的一个容器共享一个Network Namespace，而不是和宿主机共享
+none
+    无网络
 
 // 查看桥接详细内容
 docker network inspect bridge
@@ -355,22 +367,10 @@ docker network inspect bridge
         }
     }
 ]
-```
 
-### docker网络模式
-```
-https://www.cnblogs.com/zuxing/articles/8780661.html
-https://www.jianshu.com/p/d84cdfe2ea86
-
-Bridge(默认) Container host none
-
-但如果启动容器的时候使用host模式，那么这个容器将不会获得一个独立的Network Namespace，而是和宿主机共用一个Network Namespace。容器将不会虚拟出自己的网卡，配置自己的IP等，而是使用宿主机的IP和端口
-
-
-// NAT转发
+// 查看NAT转发
 netstat -apn | grep "172.17.0.1"
 udp        0      0 172.17.0.1:123          0.0.0.0:*                           14089/ntpd  
-
 ```
 
 ### Docker-in-Docker

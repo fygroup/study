@@ -483,10 +483,44 @@ ip route delete ...
 
 ```
 
+### route
+```
+route  [add|del] [-net|-host] target [netmask Nm] [gw Gw] [[dev] If]
+
+add: 添加一条路由规则
+del: 删除一条路由规则
+-net: 目的地址是一个网络
+-host: 目的地址是一台主机
+target: 目的网络或主机
+netmask: 目的地址的网络掩码
+gw: 路由数据包通过的网关
+dev If: 强制路由关联到指定的设备接口，否则的话内核会其自身的相应规则决定选用那个设备接口。在大多数正常的网络中你可能并不需要指定本项。假如dev If是命令行的最后一个选项的话，那么关键字dev可以省略
+
+// 例子
+
+```
+
 ### iptables
 ```
 https://zhuanlan.zhihu.com/p/32848232
 https://wangchujiang.com/linux-command/c/iptables.html
+
+// 规则链 -I
+INPUT链 ：处理输入数据包。
+OUTPUT链 ：处理输出数据包。
+FORWARD链 ：处理转发数据包。
+PREROUTING链 ：用于目标地址转换（DNAT）
+POSTROUTING链 ：用于源地址转换（SNAT）
+
+// 动作 -j
+ACCEPT ：接收数据包
+DROP ：丢弃数据包
+REDIRECT ：重定向、映射、透明代理
+SNAT ：源地址转换
+DNAT ：目标地址转换
+MASQUERADE ：IP伪装（NAT），用于ADSL
+LOG ：日志记录
+SEMARK : 添加SEMARK标记以供网域内强制访问控制（MAC）
 
 // 查看规则
 iptables -L

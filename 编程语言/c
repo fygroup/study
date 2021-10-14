@@ -1362,6 +1362,11 @@ cout << nounitbuf; //这里则让cout回到正常的缓冲方式
 int a[10][5] = int (*a)[5]
 
 
-
-
-
+### 整型常量后缀
+```
+u、U									unsigned
+l、L									long
+ll、LL									long long
+lu、LU、Lu、lU、ul、uL、Ul、UL			unsigned long
+llu、LLU、LLu、llU、ull、ULL、uLL、Ull	unsigned long long
+```
