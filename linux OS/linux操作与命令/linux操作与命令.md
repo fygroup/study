@@ -1775,3 +1775,9 @@ do
 
 done
 ```
+
+### ssh-keygen -R
+```
+远程ip发生变化，登陆失败，需要先清除know_hosts，再登陆
+ssh-keygen -R [10.151.3.69]:8847
+```

@@ -1374,11 +1374,11 @@ for_each(m.begin(), m.end(), [](const pair<string, string> & i){
 ```
 
 ### sort
-```
+```c++
 // std::sort
 #include <algorithm>
-vector<xxx> a;
-sort(a.begin(),a.end(),[](const xxx & x, const xxx & y){return(x>y);}); //注意const!!!
+vector<int> a;
+sort(a.begin(),a.end(),[](const int & x, const int & y){return(x>y);}); //注意const!!!
 
 // qsort
 int x[10];
@@ -1388,7 +1388,7 @@ int func(const void* a, const void* b){
 }
 
 // 注意
-list不能排序，因为list的iterator不是随机的，而vector可以，因为他是随机的
+// list不能排序，因为list的iterator不是随机的，而vector可以，因为他是随机的
 ```
 
 ### const char*(初始化)
