@@ -1281,11 +1281,6 @@ void func(string a){} //此处 不能是&！！！！！
 func("aaaa");
 ```
 
-### explicit
-```
-C++提供了关键字explicit，可以阻止不应该允许的经过转换构造函数进行的隐式转换的发生,
-```
-
 ### __declspec 
 ```
 (1) __declspec(align(#))精确控制用户自定数据的对齐方式 ，#是对齐值
@@ -4462,20 +4457,44 @@ cout << a.size() << endl;   // 0
 cout << b.size() << endl;   // 10
 ```
 
-### 当前工作路径与程序路径
-```
-/proc/self/ 它代表当前程序运行环境
+### 隐式转换与explicit
+```c++
+// explicit 关键字只能用于类内部的构造函数声明上
+// explicit 关键字作用于单个参数的构造函数
 
-// 工作路径
-ls -l /proc/self/cwd
+// 当一个构造函数只有一个参数，而且该参数又不是本类的const引用时，这种构造函数称为转换构造函数
+class T {
+    T(){}       
+    T(int a) {} // 转换构造
+};
 
-// 程序路径
-ls -l /proc/self/exe
+// 隐式转换背后发生了什么
+std::string s = "aaa";
+// c++11 之前
+// 字符串属于 const char* 类型，string有相应的构造函数
+// 生成临时string("aaa")
+// 调用复制构造函数传给s
+// 总结：整个过程创建了s和一个临时量，发生了一次拷贝。一共两个string
 
-// c语言中可以通过此方法获得工作与程序路径
-#include <unistd.h>
-int readlink(const char * path, char * buf, size_t bufsiz);
-char cwdAbsPath[1024];
-readlink("/proc/selef/cwd", cwdAbsPath, 1024);
-readlink("/proc/selef/exe", cwdAbsPath, 1024);
+// c++11 之后
+// 字符串属于 const char* 类型，string有相应的构造函数
+// 调用构造函数生成临时string("aaa")
+// 临时变量属于右值，调用移动构造函数创建s
+// 临时变量的数据移动到s里
+// 总结：整个过程创建了s和一个临时量，没有发生拷贝。一共两个string
+
+// 大部分编译器已经做到的优化、c++17之后
+// 直接调用string(const char*)构造函数创建s
+
+
+// 自定义转换接口一共也就两个，转换构造函数和用户定义转换函数
+struct T {
+    T(int);          // 转换构造函数  int -> T
+    T(const T1 &);   // 转换构造函数  T1  -> T
+
+    // 自定义转换函数，返回转换类型，可以隐式转换
+    operator int(); // T -> int
+    operator T1();  // T -> T1
+    // 从c++11开始explicit还可以用于用户定义的转换函数
+};
 ```

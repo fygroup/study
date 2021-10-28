@@ -1,6 +1,7 @@
 
 ### grpc 相关资料
 ```
+[Go RPC 开发指南] https://books.studygolang.com/go-rpc-programming-guide/
 [Go-gRPC 实践指南] https://www.bookstack.cn/read/go-grpc/summary.md
 [go-grpc 英文文档] https://pkg.go.dev/google.golang.org/grpc
 [烟花易冷人憔悴 vlog] https://www.cnblogs.com/FireworksEasyCool/

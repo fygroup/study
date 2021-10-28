@@ -15,3 +15,23 @@ yylex();    // 词法分析器调用
 yyrestart(f);  // 是词法分析器读取输入文件
 
 ```
+
+### 关键字
+```
+yylex()
+yytext
+yylineno
+yyterminate()
+
+yyout
+yyin = fopen("argv[1]", "r")
+yyrestart(f)
+
+YY_BUFFER_STATE bp = yy_create_bufffer(yyin, YY_BUF_SIZE)
+yy_switch_to_buffer(bp)
+
+%x IFILE
+^#... {BEGIN IFILE; }
+<IFILE>... {...}
+
+```

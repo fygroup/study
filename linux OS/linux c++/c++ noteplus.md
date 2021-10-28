@@ -88,7 +88,8 @@ class D : public B<D> {
 
 
 // (2) 继承一个模板类的子模板类
-    template<typename T> class A {
+    template<typename T> 
+    class A {
     public:
         template<typename T1> class Base{};
     };

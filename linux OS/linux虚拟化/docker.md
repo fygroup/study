@@ -78,7 +78,8 @@ https://yeasy.gitbooks.io/docker_practice/content/
         -q          只列出容器ID, docker ps -a -q
     10) cp
         docker cp aaa:/aaa/aa /home/malx
-
+    11) system
+        docker system df -v     查看容器占用空间
 ```
 
 ### 镜像

@@ -973,3 +973,22 @@ key_t ftok(const char *pathname, int proj_id);
     double elapsed = double(end - start)/CLOCKS_PER_SEC;
     printf("Time measured: %.3f seconds.\n", elapsed);
 ```
+
+
+### 当前工作路径与程序路径
+```c++
+// /proc/self/ 它代表当前程序运行环境
+
+// 工作路径
+// ls -l /proc/self/cwd
+
+// 程序路径
+// ls -l /proc/self/exe
+
+// c语言中可以通过此方法获得工作与程序路径
+#include <unistd.h>
+int readlink(const char * path, char * buf, size_t bufsiz);
+char cwdAbsPath[1024];
+readlink("/proc/selef/cwd", cwdAbsPath, 1024);
+readlink("/proc/selef/exe", cwdAbsPath, 1024);
+```
