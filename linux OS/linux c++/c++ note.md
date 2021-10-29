@@ -816,28 +816,39 @@ public:
 ```
 
 ### 模板的特化和偏特化
-```
-1、模板函数
+```c++
+(1) 模板函数
     // 声明
-    template<typename T, typename T1> void func(T, T1);
+    template<typename T1, typename T2> void func(T1, T2);
+    
+    template<typename T1, typename T2> 
+    void func(T1, T2) {}
     
     // 特化
-    template<>
-    void func(int a, char b) {}
+    template<> void func(int a, char b) {}          
+    template<> void func<int, char>(int a, char b) {}   // 两个写法都行
 
-    template<>
-    void func<int, char>(int a, char b){}
+    // 偏特化 函数模板不能被偏特化
+    // 因为模板特化版本不参与函数的重载抉策过程，因此在和函数重载一起使用的时候，可能出现不符合预期的结果。因此标准C++禁止了函数模板的偏特化
+    // template<typename T2> void func<int, T2>(int a, T2 b) {}   错误!!!
+    // 要实现模板函数偏特化可以借助类模板偏特化
+    template<typename T1, typename T2>
+    struct F {
+        void operator()(T1, T2);
+    };
 
-    // 偏特化
     template<typename T1>
-    void func(char a, T1 b) {}
+    struct F<T1, int> {
+        void operator()(T1, int) {}
+    };
 
-2、模板类
+    F<char, int>()('a', 12);
+
+(2) 模板类
     // 声明
     template<typename T, typename T1> class Test{};
     // 特化
     template<> class Test<int, char>{};
-
     //偏特化
     template<typename T1> class Test<int, T1>{};
 
@@ -845,19 +856,12 @@ public:
 ```
 
 ### 模板的实例化
-```
-(1) 显示实例化
-    存在以下模板函数
-    template <typename T>
-    void Swap(T &a, T &b)
-    > 第一种方式是声明所需的种类，用<>符号来指示类型，并在声明前加上关键词template，如下：
-        template void Swap<int>(int &, int &);
-    > 第二种方式是直接在程序中使用函数创建，如下：
-        Swap<int>(a,b);
-    显式实例化直接使用了具体的函数定义，而不是让程序去自动判断。
+```c++
+template <typename T> void Swap(T &a, T &b);
+template<> void Swap<int>(int& a, int& b) {}
 
-(2) 隐式实例化
-    就是最正常的调用，Swap(a,b)
+Swap<int>(a,b);
+Swap(a,b)
 ```
 
 ### 处理模板化基类内的名称
@@ -1447,13 +1451,11 @@ const char* y = ss.str().c_str();
 
 ### 多参数
 ```
-void func(){} 
+#include <functional>
+template<typename T, typename... Args> // 返回值类型，参数类型
+static void forkRun(function<T(Args...)> func, Args... args);
 
-template<typename T, typename... Args> //T 返回 argvs参数
-void func(T value, Args... args){
-    cout << value << endl;
-    func(args...);
-}
+
 ```
 
 ### \_\_func\_\_
@@ -2100,9 +2102,9 @@ void callback(function<void(Argvs...)> f, Argvs&&... argvs){
 }
 ```
 
-### 模板偏特化(指针)
-```
-1、模板函数
+### 模板特化(指针)
+```c++
+(1) 模板函数
     template<typename T> void func(T* t) {
         cout << "T*" << endl;
     }
@@ -2115,7 +2117,7 @@ void callback(function<void(Argvs...)> f, Argvs&&... argvs){
     func(a);      // T
     func(&a);     // T*
 
-2、模板类
+(2) 模板类
     template<typename T>
     class a{
     public:
@@ -2136,8 +2138,27 @@ void callback(function<void(Argvs...)> f, Argvs&&... argvs){
     a<char*> x1;
 ```
 
-### 类模板中的模板函数
+### 模板函数数组特化
+```c++ ???
+// reference to array of unknown bound 'int []'
+
+template<typename T> void func(T a) {}
+// 指针特化
+template<typename T> void func(T * a);
+// 引用特化
+template<typename T> void func(T & a);
+
+// int数组特化
+template<> void func<int[]>(int a []) {}
+// int数组特化(注意下面的数字)
+template<> void func<int[]>(int (&a) [10]) {}  
+// int指针特化
+template<> void func<int*>(int *(&a)) {}
+
 ```
+
+### 模板类中的模板函数
+```c++
 template<typename T>
 class My{
 public:
@@ -2149,8 +2170,7 @@ public:
     My(T t_):t(t_){}
     virtual ~My(){}
     My(const My<T> & m) = default;
-    template<typename T1>               //注意
-    My(const My<T1> & m);
+    template<typename T1> My(const My<T1> & m); //注意
     T & operator=(const My<T> m) = default;
 };
 
@@ -2159,7 +2179,6 @@ template<typename T1>
 My<T>::My(const My<T1> & m){
     t = static_cast<T>(m.t);
 }
-
 ```
 
 ### Traits Classes 
@@ -2437,20 +2456,19 @@ fp = freopen("file.txt", "w+", stdout); // /输出重定向，输出数据将保
 ```
 
 ### wait waitpid
-```
+```c++
 #include <sys/wait.h>
 
 pid_t wait(int *statloc);
 pid_t waitpid(pid_t pid,int *statloc, int options);
 // statloc  指向终止进程的终止状态，如果不关心终止状态可指定为空指针
 // pid      有四种情况
-            pid == -1 等待任意子进程
-            pid > 0   等待进程ID与pid相等的子进程
-            pid == 0  等待组ID等于调用进程组ID的任意子进程
-            pid < -1  等待组ID等于pid绝对值的任意子进程
+//          pid == -1 等待任意子进程
+//          pid > 0   等待进程ID与pid相等的子进程
+//          pid == 0  等待组ID等于调用进程组ID的任意子进程
+//          pid < -1  等待组ID等于pid绝对值的任意子进程
 
-pid_t wait(int *statloc)
-{
+pid_t wait(int *statloc) {
     return waitpid(-1, statloc, 0);
 }
 
@@ -2464,7 +2482,9 @@ if((pid = fork())<0){
     execl("/bin/sh", "sh", "-c", cmdstring, (char *)0);
 } else {
     while(waitpid(pid, &status, 0) < 0){
-        if(errno != EINTER){ // 慢系统调用
+        // 对于慢系统调用，当返回错误时，要判断errno是否是EINTR
+        // EINTR，可能由于系统中断导致系统阻塞调用提前返回（详见套接字）
+        if(errno != EINTER){
             status = -1;
             break;
         }
@@ -2474,7 +2494,7 @@ if((pid = fork())<0){
 ```
 
 ### map 判断键值是否存在
-```
+```c++
 (1) insert
     std::map<int, string> myMap;
     std::pair<std::map<int, string>::iterator, bool> findItem;  
@@ -2485,7 +2505,6 @@ if((pid = fork())<0){
     } else {
         // myMap 中有insert的数据，说明插入失败
     }
-    // 打印数据
     cout << findItem.first->first << endl;
     cout << findItem.first->second << endl;
         
@@ -2493,17 +2512,17 @@ if((pid = fork())<0){
     map<>::iterator it = m.find('key');
     if (it == m.end()) #不存在
     
-    
 // 插入键值对的方法
-(1) map[键] = 值；直接赋值。 这种方式：当要插入的键存在时，会覆盖键对应的原来的值。如果键不存在，则添加一组键值对。
-(2) map.insert()；这是map自带的插入功能。如果键存在的话，则插入失败，也就是不插入。 使用insert()函数，需要将键值对组成一组才可以插入
+// 1) map[k] = v
+//  直接赋值这种方式，当要插入的键存在时，会覆盖键对应的原来的值。如果键不存在，则添加一组键值对
+// 2) map.insert()
+//  这是map自带的插入功能。如果键存在的话，则插入失败，也就是不插入。 使用insert()函数，需要将键值对组成一组才可以插入
 ```
 
 ### map 键值排序
-```
+```c++
 // map的定义
-template < class Key, class T, class Compare = less<Key>,
-           class Allocator = allocator<pair<const Key,T> > > class map;
+template <class Key, class T, class Compare = less<Key>, class Allocator = allocator<pair<const Key,T> > > class map;
 
 // less的结构
 template <class T>
@@ -2520,7 +2539,7 @@ struct cmpkeylen{
     }
 };
 
-map<string,int,cmpkeylen> mymap;
+std::map<std::string, int, cmpkeylen> mymap;
 //注意 第三个参数是个函数对象，c++ 11中很多库函数都是函数对象
 ```
 
@@ -2547,7 +2566,7 @@ void main()
 ```
 
 ### iterator const_iterator
-```
+```c++
 vector<int> a;
 vector<int>::iterator i = a.begin();
 i++;
@@ -2558,12 +2577,12 @@ vector<int>::const_iterator i;  //对于const 必须用const_iterator !!!
 ```
 
 ### const对象
-```
-const 对象只能访问 const 成员函数
+```c++
+// const 对象只能访问 const 成员函数
 
-const 修饰的参数引用的对象，只能访问该对象的const成员函数，因为调用其他函数有可能会修改该对象的成员
+// const 修饰的参数引用的对象，只能访问该对象的const成员函数，因为调用其他函数有可能会修改该对象的成员
 
-编译器为了避免该类事情发生，会认为调用非const函数是错误的。
+// 编译器为了避免该类事情发生，会认为调用非const函数是错误的。
 
 class A {
     void test() {}
@@ -2571,20 +2590,21 @@ class A {
 };
 
 void accessFunc(const A & a){
-    b.test();   // 错误
+    // b.test();   错误
     b.test1();  // 正确
 }
 
-当函数后面加了const时，返回引用和指针时要加const，但是返回非引用可以不加
+// 当函数后面加了const时，返回引用和指针时要加const，但是返回非引用可以不加
 const A & createA() const {}
 const A * createA() const {}
 A func() const {}
 ```
 
 ### initializer_list
-```
+```c++
 void g(std::vector<int> const &items){}; 
 void g(std::list<int> const &items){};
+
 g({ 1, 2, 3, 4 }); //会报错  编译器分不清 vector还是list
 
 //对于{}的固定数组initializer_list更合适
@@ -2592,43 +2612,34 @@ void g(std::vector<int> const &items){};
 void g(std::list<int> const &items){}; 
 void g(std::initializer_list<int> const &items){}; //注意const initializer_list不能修改，更符合参数的特点
 g({ 1, 2, 3, 4 });
-
 ```
 
 ### 函数对象
-```
-函数对象是实现 operator() 的任何类型
-C++ 标准库主要使用函数对象作为容器和算法内的排序条件
+```c++
+// 函数对象是实现 operator() 的任何类型
+// C++ 标准库主要使用函数对象作为容器和算法内的排序条件
 
 // 优势
-相对于直接函数调用，函数对象有两个优势
-第一个是函数对象可包含状态
-第二个是函数对象是一个类型，因此可用作模板参数
+// 相对于直接函数调用，函数对象有两个优势
+// 第一个是函数对象可包含状态
+// 第二个是函数对象是一个类型，因此可用作模板参数
 
 // 创建函数对象
-若要创建函数对象，请创建一个类型并实现 operator()，例如：
+// 若要创建函数对象，请创建一个类型并实现 operator()，例如：
 class Functor
 {
 public:
-    int operator()(int a, int b)
-    {
+    int operator()(int a, int b) {
         return a < b;
     }
 };
 
-
 // 函数对象和容器
-C++ 标准库在标头文件中包含若干函数对象 <functional>
-这些函数对象的一个用途是用作容器的排序条件
-template <class Key,
-    class Traits=less<Key>,
-    class Allocator=allocator<Key>>
-class set
+// C++ 标准库在标头文件中包含若干函数对象 <functional>
+// 这些函数对象的一个用途是用作容器的排序条件
+template <typename Key, typename Traits=less<Key>, typename Allocator=allocator<Key>> class set;
 
 
-#include <functional>
-template<typename T, typename... Args> //T 返回 argvs参数
-static void forkRun(function<T(Args...)> func, Args... args);
 ```
 
 ### std::function
@@ -2651,11 +2662,12 @@ std::function<int(int ,int)>  a = add;
 std::function<int(int ,int)>  b = mod ; 
 std::function<int(int ,int)>  c = divide(); //divide类构造
 
-// 类成员函数转换
+// 类成员函数提取
 class A{
     void func(int){}
 };
-function<void(A*,int)> f = &A::func;
+
+std::function<void(A*,int)> f = &A::func;
 A a;
 f(&a, 2);
 ```
@@ -2665,36 +2677,34 @@ f(&a, 2);
 // 绑定普通函数
 double my_divide(double x, double y) {return x/y;}
 
-function<double(double,double)> fn_half = std::bind(my_divide, std::placeholders::_1,2);  // placeholders::_1 占位符
+std::function<double(double)> fn_half = std::bind(my_divide, std::placeholders::_1, 5);  // placeholders::_1 占位符
 fn_half(10);
 
 void func(int){}
-int n;
-std::function<void()> f = std::bind(func, n);
+std::function<void()> f = std::bind(func, 12);
 f();
 
 // 绑定成员函数
-struct Foo {
-    void print_sum(int n1, int n2) {
-        std::cout << n1+n2 << '\n';
-    }
-    int data = 10;
-};
-Foo foo;
 // bind绑定类成员函数时，第一个参数表示对象的成员函数的指针，第二个参数表示对象的地址
-auto f = std::bind(&Foo::print_sum, &foo, 95, std::placeholders::_1);
-f(5); // 100
+struct A {
+    int func(int a, int b) {
+        return a + b;
+    }
+};
 
+A ac;
+std::function<int(int)> a = std::bind(&A::func, &ac, std::placeholders::_1, 10);
+cout << a(12) << endl;
+std::function<int(A*, int, int)> b = &A::func;
+cout << b(&ac, 1, 2) << endl;
+std::function<int(int, int)> c = std::bind(&A::func, &ac, std::placeholders::_1, std::placeholders::_2);
+cout << c(5, 2) << endl;
 ```
 
 ### std::pair
-```
-std::pair 是一个结构体模板，其可于一个单元存储两个相异对象
-template<
-    class T1,
-    class T2
-> struct pair;
-
+```c++
+// std::pair 是一个结构体模板，其可于一个单元存储两个相异对象
+template<typename T1, typename T2> struct pair;
 
 // 构造
 std::pair<int, string> a(1, "dasdssa");
@@ -2708,12 +2718,9 @@ cout << a.end << endl;
 a.first = 2;
 a.second = "dasds";
 
-// 类型
+// 成员类型
 std::pair<int, string> a(1, "dasas");
-// 注意 class 中的 typedef 不能用实例调用
-a.first_type x = 1；    // 错误
-std::pair<int, string>::first_type x = 1 //正确
-
+std::pair<int, string>::first_type x = 1
 ```
 
 ### operator new
@@ -2728,34 +2735,40 @@ std::pair<int, string>::first_type x = 1 //正确
     void *operator delete[](void *);    //free an array
 
 (2) operator三种形式
-    (1) void* operator new(size_t) throw(std::bad_alloc);
-        A *a = new A;
-        // 失败时抛出bad_alloc
+    // 1
+    void* operator new(size_t) throw(std::bad_alloc);
+    A *a = new A;
+    // 失败时抛出bad_alloc
 
-    (2) void* operator new(size_t, nothrow_value) throw();
-        A* a = new(std::nothrow) A;
-        // 同上，但是失败时返回null
-            调用operator new (sizeof(A), nothrow_value)
-            调用A:A()
-            返回指针
-    (3) void* operator new(size_t, void* ptr) throw();
-        //在ptr所指地址上构建一个对象(通过调用其构造函数)
-        char ptr[1024];
-        A* a = new(ptr) A(); // 本身返回ptr，可以被重载
+    // 2
+    void* operator new(size_t, nothrow_value) throw();
+    A* a = new(std::nothrow) A;
+    // 同上，但是失败时返回null
+    // 调用operator new (sizeof(A), nothrow_value)
+    // 调用A:A()
+    // 返回指针
+
+    // 3
+    void* operator new(size_t, void* ptr) throw();
+    //在ptr所指地址上构建一个对象(通过调用其构造函数)
+    char ptr[1024];
+    A* a = new(ptr) A(); // 本身返回ptr，可以被重载
     
-    A* a = new A;
-    // 实际上执行三个步骤
-    char* tmp = operator new (sizeof(A));   // 申请内存
-    new(tmp) A();                           // 在内存上构造对象
-    a = tmp;                                // 返回指针
-    // 注意，上述实际的顺序可能重排
-    a = operator new (sizeof(A));
-    new(a) A();
+// new执行时的细节，三个步骤
+A* a = new A;
+char* tmp = operator new (sizeof(A));   // 申请内存
+new(tmp) A();                           // 在内存上构造对象
+a = tmp;                                // 返回指针
+// 注意，上述实际的顺序可能重排
+// 申请内存、返回指针、构造对象
+a = operator new (sizeof(A));
+new(a) A();
 
-3、operator示例
+(3) operator示例
+    template<typename T>
     class a {
     public:
-        int n;
+        T n;
         a(T _n):n(_n){
             cout << "T" << endl;
         }
@@ -2784,15 +2797,15 @@ std::pair<int, string>::first_type x = 1 //正确
 ```
 
 ### new和delete的调用过程
-```
-> new过程
-    (1) 调用operator new标准库函数申请内存
-    (2) 在这一块内存上对类对象进行初始化，调用的是相应的构造函数
-    (3) 返回新分配并构造好的对象的指针
+```c++
+// new过程
+// (1) 调用operator new标准库函数申请内存
+// (2) 在这一块内存上对类对象进行初始化，调用的是相应的构造函数
+// (3) 返回新分配并构造好的对象的指针
 
-> delete过程
-    (1) 调用对象的析构函数
-    (2) 调用标准库函数 operator delete 来释放该对象的内存
+// delete过程
+// (1) 调用对象的析构函数
+// (2) 调用标准库函数 operator delete 来释放该对象的内存
 ```
 
 ### 对象数组与对象指针 ???????????
@@ -2822,13 +2835,13 @@ cout << (void*)&a[0] << endl; // 0x7ffecc65f858
 ```
 
 ### allocator
-```
-https://zhuanlan.zhihu.com/p/34725232
+```c++
+// https://zhuanlan.zhihu.com/p/34725232
 
 #include <memory>
 
 (1) 概念
-    allocator是STL的重要组成,allocator除了负责内存的分配和释放，还负责对象的构造和析构
+    // allocator是STL的重要组成，allocator除了负责内存的分配和释放，还负责对象的构造和析构
     
     // 例如vector的class如下
     template<typename T, typename Alloc = allocator<T>>
@@ -2837,13 +2850,8 @@ https://zhuanlan.zhihu.com/p/34725232
         Alloc data_allocator;
     };
     
-    template<typename T>
-    class allocator{ 
-
-    };
-
     std::vector<int> v;
-    等价于
+    // 等价于
     std::vector<int, allocator<int>> v;
 
 (2) allocator结构
@@ -2858,13 +2866,14 @@ https://zhuanlan.zhihu.com/p/34725232
         typedef size_t size_type;
         typedef ptrdiff_t difference_type;
 
-        // 配置空间，足以存储n个T对象。第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
+        // 分配空间 (n * size(T))
+        // 存储n个T对象，第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
         pointer allocate(size_type n, const void* = 0)
         
-        // 释放先前配置的空间
+        // 释放空间
         void deallocate(pointer p, size_type n)
         
-        // 调用对象的构造函数，等同于 new((void*)p) value_type(x)
+        // 调用对象的构造函数，等同于 new(p) T(x)
         void construct(pointer p, const T& x)
         // 调用对象的析构函数，等同于 p->~T()
         void destroy(pointer p)
@@ -2880,18 +2889,64 @@ https://zhuanlan.zhihu.com/p/34725232
     cout << s[0] << endl;
     alloc.destory(s1);       //析构s1处的内存
     alloc.deallocate(s, 10); //析构整个内存
+    
     // 复制和填充未初始化的内存
-    // allocator 类定义了两个可以构建对象的算法，以下这些函数将在目的地构建元素，而不是给它们赋值
+    // allocator类定义了两个可以构建对象的算法，以下这些函数将在目的地构建元素，而不是给它们赋值
+    #include <memory>
     vector<string> list(10, "aaaa");
     uninitialized_copy_n(list.begin(), 5, s);  //构建填充
     uninitialized_fill_n(list.begin(), 5, s);  //拷贝填充
 
 (4) 实现自己的allocator
-    需要实现四个函数(上述)
-    pointer allocate(size_type n, const void* = 0)
-    void deallocate(pointer p, size_type n)
-    void construct(pointer p, const T& x)
-    void destroy(pointer p)
+    // 根据STL的规范，要实现allocator的接口
+    template<class T>
+    class Allocator
+    {
+    public:
+        typedef T               value_type;
+        typedef T*              pointer;
+        typedef const T*        const_pointer;
+        typedef T&              reference;
+        typedef const T&        const_reference;
+        typedef size_t          size_type;
+        typedef ptrdiff_t       difference_type;
+
+        template<class U>
+        struct rebind
+        {
+            typedef Allocator<U> other;
+        };
+        
+        // 分配空间 (n * size(T))
+        // 存储n个T对象，第二个参数是个提示。实现上可能会利用它来增进区域性(locality)，或完全忽略之
+        pointer allocate(size_type n, const void* hint=0) {
+            return _allocate((difference_type)n, (pointer)0); // 自定义
+        }
+
+        void deallocate(pointer p, size_type n) {
+            return _deallocate(p);  // 自定义
+        }
+
+        void construct(pointer p, const T& value) {
+            _construct(p, value); // 自定义
+        }
+
+        void destroy(pointer p) {
+            _destroy(p); // 自定义
+        }
+
+        pointer address(reference x) {
+            return (pointer)&x;
+        }
+
+        const_pointer address(const_reference x) {
+            return (const_pointer)&x;
+        }
+
+        size_type max_size() const {
+            return size_type(UINT_MAX/sizeof(T));
+        }
+    };
 ```
 
 ### 智能指针
@@ -2914,7 +2969,8 @@ https://zhuanlan.zhihu.com/p/34725232
     std::shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
     cout << *a << endl;     // 错误
     cout << a[0] << endl;   // 1
-    std::shared_ptr<vector<int>> vc = std::make_shared<vector<int>>(10,3);
+
+    std::shared_ptr<std::vector<int>> vc = std::make_shared<vector<int>>(10,3);
     cout << (*vc)[1] << endl;
     cout << vc->operator[](1) << endl;
     cout << vc->size() << endl;
@@ -3799,30 +3855,6 @@ private:
 };
 ```
 
-### 模板与数组参数
-```c++
-// reference to array of unknown bound 'int []'
-
-
-// 没有引用
-template<typename T> void func(T a);
-// 特化数组
-template<>
-void func<int[]>(int a []) {}
-
-
-
-// 有引用
-template<typename T> void func(T & a);
-// 特化数组(注意下面的数字)
-template<>
-void func<int[]>(int (&a) [10]) {}  
-// 特化指针
-template<>
-void func<int*>(int *(&a)) {}
-
-```
-
 ### 为什么需要size_t
 ```cpp
 // 主要为了兼容不同系统，提高移植性
@@ -4211,35 +4243,49 @@ class {
 // type_traits可实现在编译期计算、判断、转换、查询等等功能
 // type_traits提供了编译期的true和false
 
-// integral_constant 该对象包含具有指定值的该整型类型的常量
+(1) integral_constant
+// 该对象包含具有指定值的该整型类型的常量
 std::integral_constant<int, 5>::value;       // 5
 std::integral_constant<bool, true>::value;   // true
 
-// true false
+(2) true_type false_type
 std::true_type::value;
 std::false_type::value;
 
-// is_same
+(3) is_same
 
-// decay 获取它的原始类型
+(4) decay
+// 获取它的原始类型
 template<typename T>
 typename std::decay<T>::type* Create(){
     typedef typename std::decay<T>::type U;
     return new U();
 }
 
-// conditonal
+(5) conditional
 std::conditional<true, int, double>::type   //= int
 
+(6) decltype和auto
 // decltype和auto可以实现模板函数的返回类型
 template<typename F, typename Arg>
 auto Func(F f, Arg arg)->decltype(f(arg)){
     return f(arg);
 }
 
+(7) result_of 
 // result_of 在编译期推导出一个函数表达式的返回值类型
+int f(int a, int b) {return a+b;}
+template<typename Fn, typename ...Argvs>
+typename std::result_of<Fn(Argvs...)>::type Func(Fn f, Argvs&&... argvs) {
+    return f(argvs...);
+}
+Func(f, 2, 3);
 
+(8) enable_if
 // enable_if 利用SFINAE实现条件选择重载函数
+
+(9) declval
+// 返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象
 ```
 
 ### 基类调用继承类接口
