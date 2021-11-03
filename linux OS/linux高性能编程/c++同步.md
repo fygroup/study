@@ -1,46 +1,66 @@
 ### std::atomic
-```
-https://www.cnblogs.com/haippy/p/3301408.html
-https://www.jianshu.com/p/8c1bb012d5f8
+```c++
+// https://www.cnblogs.com/haippy/p/3301408.html
+// https://www.jianshu.com/p/8c1bb012d5f8
 
-以下c++ 11
+// c++11
 
-1、类模板
-    template< class T > struct atomic;
-    template<>  struct atomic<Integral>;
-    template<>  struct atomic<bool>;
-    template< class T >  struct atomic<T*>;
+(1) 类模板
+    template<class T> struct atomic;
+    template<> struct atomic<Integral>;
+    template<> struct atomic<bool>;
+    template<class T> struct atomic<T*>;
 
-2、构造函数
+(2) 构造函数
     atomic() = default;
     constexpr atomic(T);
     atomic(const atomic &) = delete;    // 禁止拷贝构造
 
-3、operator=
+(3) operator=
     atomic & operator=(const atomic &) = delete; // 禁止复制赋值
     T operator=(T); // 类似于store()
 
-4、is_lock_free
+(4) is_lock_free
     bool is_lock_free() const noexcept;
-    判断该 std::atomic 对象是否具备 lock-free 的特性
-    如果某个对象满足 lock-free 特性，在多个线程访问该对象时不会导致线程阻塞
+    // 判断该 std::atomic 对象是否具备 lock-free 的特性
+    // 如果某个对象满足 lock-free 特性，在多个线程访问该对象时不会导致线程阻塞
 
-5、store
+(5) store
     void store(T val, memory_order sync = memory_order_seq_cst) noexcept;
 
-6、load
+(6) load
     T load(memory_order sync = memory_order_seq_cst) const noexcept;
 
-7、exchange
+(7) exchange
     T exchange (T val, memory_order sync = memory_order_seq_cst) noexcept;
-    用val替换所包含的值，并返回它之前的值。整个操作是原子性的(一个原子的读-修改-写操作)
+    // 用val替换所包含的值，并返回它之前的值。整个操作是原子性的(一个原子的读-修改-写操作)
 
-8、compare_exchange_weak、compare_exchange_strong
-    bool compare_exchange_weak (T& expected, T val, memory_order sync = memory_order_seq_cst) noexcept;  
-    bool compare_exchange_strong (T& expected, T val, memory_order sync = memory_order_seq_cst) noexcept;
-    比较原子对象的包含值与预期的内容
-    如果是真的，它会用val替换包含的值(比如存储)。
-    如果是假的，它会用所包含的值替换预期,因此调用该函数之后，如果被该原子对象封装的值与参数 expected 所指定的值不相等，expected 中的内容就是原子对象的旧值
+(8) CAS
+    atomic_compare_exchange_weak
+    atomic_compare_exchange_strong
+    atomic_compare_exchange_weak_explicit
+    atomic_compare_exchange_strong_explicit
+    // 以strong为例
+    template <class T>
+    bool atomic_compare_exchange_strong (volatile atomic<T>* obj, T* expected, T val) noexcept;
+    bool atomic_compare_exchange_strong (atomic<T>* obj, T* expected, T val) noexcept;
+    bool atomic_compare_exchange_strong (volatile A* obj, T* expected, T val) noexcept;
+    bool atomic_compare_exchange_strong (A* obj, T* expected, T val) noexcept;
+
+    // 原子地比较当前值(obj)与期望值(expected)的内容
+    // 当前值与期望值相等时，修改当前值为设定值，返回true，obj = val
+    // 当前值与期望值不等时，将期望值修改为当前值，返回false，expected = obj
+    if (*obj == *expected) {
+        *obj = *val
+        return true
+    } else {
+        *expected = *obj
+        return false
+    }
+
+(9) strong vs weak
+    // weak版本的CAS允许偶然出乎意料的返回(spurious failures, 比如在字段值和期待值一样的时候却返回了false)，不过在一些循环算法中，这是可以接受的。通常它比起strong有更高的性能
+    
 
 ```
 

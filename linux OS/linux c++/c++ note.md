@@ -2414,27 +2414,6 @@ const只保证了运行时不直接被修改（但这个东西仍然可能是个
         使用__rcu 附上 RCU保护的数据结构，如果你没有使用rcu_dereference()类中某个函数，Sparse就会警告你这个操作。
 ```
 
-### basic_string
-```
-https://www.byvoid.com/zhs/blog/cpp-string
-
-string并不是一个单独的容器，只是basic_string 模板类的一个typedef 而已
-
-extern "C++" {
-    typedef basic_string<char> string;
-    typedef basic_string<wchar_t> wstring;
-}
-
-// class basic_string
-template <class charT, 
-          class traits = char_traits<charT>,
-          class Allocator = allocator<charT> >
-class basic_string
-{
-//...
-}
-```
-
 ### freopen
 ```
 #include <stdio.h>
@@ -2947,131 +2926,6 @@ cout << (void*)&a[0] << endl; // 0x7ffecc65f858
             return size_type(UINT_MAX/sizeof(T));
         }
     };
-```
-
-### 智能指针
-```c++
-#include <memory>
-
-(1) 构造
-    std::shared_ptr<string> a(new string("dasdas"));
-    std::shared_ptr<string> a = std::make_shared<string>("dasdas")
-    std::shared_ptr<vector<int>> a(new vector<int>(10));
-    cout << a << endl;  //0x5633802bfe70
-
-(2) 切片
-    std::shared_ptr<int> a(new int [10] {1,2,3,4,5});
-    int* pI = a.get();
-    cout << *a << endl;     // 1
-    cout << *(a+1) << endl; // 错误
-    cout << a[0] << endl;   // 错误
-
-    std::shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
-    cout << *a << endl;     // 错误
-    cout << a[0] << endl;   // 1
-
-    std::shared_ptr<std::vector<int>> vc = std::make_shared<vector<int>>(10,3);
-    cout << (*vc)[1] << endl;
-    cout << vc->operator[](1) << endl;
-    cout << vc->size() << endl;
-
-(3) 引用次数
-    // shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
-    // 每使用他一次，内部的引用计数加1；每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
-    // shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
-
-    std::shared_ptr<int> a = std::make_shared<int>(10);
-    std::shared_ptr<int> & b = a; // 引用 不会改变计数
-    std::shared_ptr<int> c = a; // 复制计数加一 不会改变计数
-    cout << a.use_count() << endl;
-    // 空指针的计数为0
-    shared_ptr<int> a;      // 计数0
-    shared_ptr<int> b = a;  // 计数0
-
-(4) 自定义析构函数
-    std::shared_ptr<int[]> a(new int[1], [](int* a){
-        cout << "delete" << endl;
-        delete a;
-    });
-
-(5) 智能指针不能当右值
-    void* a = NULL;
-    //右值Segmentation fault (core dumped)
-    a =  static_cast<void*>(auto_ptr<string>(new string("sadadada")).get()); //此时智能指针是右值
-    cout << *static_cast<string*>(a) << endl; //出错！ 实际上智能指针早已析构了
-    //必须先存成左值
-    auto_ptr<string> x = auto_ptr<string>(new string("sadadada")); //必须现存成左值
-    a =  static_cast<void*>(x.get());
-    cout << *static_cast<string*>(a) << endl;
-
-(6) weak_ptr
-    // weak_ptr是一种不控制对象生命周期的智能指针, 它是指向一个shared_ptr的管理对象
-    shared_ptr<int> a;
-    shared_ptr<int> b = a;  // 计数2
-
-    shared_ptr<int> a;
-    weak_ptr<int> b = a;  // 计数1
-
-    // expire 判断智能指针是否已销毁
-    if (!b.expire()) {}
-
-    // lock 获得指向的智能指针
-    shared_ptr<int> c = b.lock(); // a的计数+1
-    if(c) {}
-
-(7) 糟糕的auto_ptr
-    1) 智能指针所有权
-        auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
-        auto_ptr<string> b;
-        b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
-    2) auto_ptr不要与容器混合使用
-        STL有一条规定：
-        std::auto_ptr 不能和容器混合使用。
-        原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
-        所以！！！auto_ptr几乎没用！！！
-
-(8) 智能指针做参数传值更好
-```
-
-### unique_ptr shared_ptr
-```c++
-// shared_ptr  允许多个指针指向同一个对象
-// unique_ptr  独占所指向的对象，不能拷贝复制，unique_ptr销毁，其指向的对象也被销毁
-
-// shared_ptr 和 unique_ptr 共有操作
-shared_ptr<T> sp	// 空智能指针，可以指向类型为T的对象
-unique_ptr<T> up	// 同上
-p	                // 将p用作一个条件判断，若p指向一个对象，则为true
-*p                  // 解引用p，获得它指向的对象
-p->mem              // 等价于(*p).mem
-p.get()             // 返回p中保存的指针，要小心使用。
-swap(p,q)           // 交换p和q中的指针
-p.swap(q)           // 同上
-
-// shared_ptr 独有操作
-make_shared<T> (args)	// 返回一个shared_ptr，指向一个动态分配的类型为T的对象
-shared_ptr<T> p(q)	    // p是shared_ptr q的拷贝；此操作会增加q中的计数器
-p=q	                    // p和q都是shared_ptr，所保存的指针必须能相互转换
-                        // 此操作会递减p的引用计数，递增q的引用计数；若p的引用计数变为0，则将其管理的原内存释放
-p.unique()	            // 若p.use_count()为1，返回true；否则返回false
-p.use_count()           // 返回与p 共享对象的智能指针数量；可能很慢，主要用于调试
-
-// unique_ptr 独有操作
-unique_ptr<T> u1        // 空unique_ptr，可以指向类型为T的对象。u1会使用delete来释放它的指针
-unique_ptr<T,D> u2      // 同上。u2会使用一个类型为D的可调用对象来释放它的指针
-unique_ptr<T,D> u(d)    // 空unique_ptr，可以指向类型为T的对象，用类型为D的对象d代替delete
-u=nullptr               // 释放u指向的对象，将u置为空
-u.release()             // u放弃对指针的控制权，返回指针，并将u置空
-                        // 注意release后需要自己管理内存 auto u = u2.release(); delete(u);
-u.reset(q)              // 如果提供了内置指针q，令u指向这个对象；否则将u置空
-u.reset(nullptr)
-
-// unique_ptr不支持拷贝和赋值，如何拷贝或赋值unique_ptr
-std::unique_ptr<int> a1(new int [10]);
-std::unique_ptr<int> a2 = std::move(a1);    // unique_ptr实现了移动语义
-unique_ptr<int> a3(a2.release());           // 赋予unique_ptr一个指针，必须先要释放一个unique_ptr的一个指针
-a2.reset(a3.release());                     // 赋予unique_ptr一个指针，必须先要释放一个unique_ptr的一个指针
-
 ```
 
 ### IO体系
@@ -4239,7 +4093,7 @@ class {
 ### type_traits
 ```c++
 #include <type_traits>
-// cype_traits是C++11提供的模板元基础库
+// type_traits是C++11提供的模板元基础库
 // type_traits可实现在编译期计算、判断、转换、查询等等功能
 // type_traits提供了编译期的true和false
 
@@ -4282,7 +4136,9 @@ typename std::result_of<Fn(Argvs...)>::type Func(Fn f, Argvs&&... argvs) {
 Func(f, 2, 3);
 
 (8) enable_if
-// enable_if 利用SFINAE实现条件选择重载函数
+template<bool, typename T = void> struct enable_if {};
+template<typename T> struct enable_if<true, T>{ typedef T type; };
+// 只有当第一个模板参数为 true 时，type 才有定义，否则使用 type 会产生编译错误
 
 (9) declval
 // 返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象
@@ -4350,7 +4206,7 @@ void backtrace_symbols_fd(void *const *buffer, int size, int fd);
 ### 字符编码 locale
 ```c++
 // 设置编码
-include <locale.h>
+#include <locale.h>
 
 (1) C函数设置全局locale
 setlocale(LC_ALL, "zh_CN.utf8");
@@ -4363,21 +4219,38 @@ std::wcout.imbue(std::locale("zh_CN.utf8"));
 
 ```
 
-### byte or wide
+### basic_string
+```c++
+// https://www.byvoid.com/zhs/blog/cpp-string
+
+// string并不是一个单独的容器，只是basic_string 模板类的一个typedef
+
+typedef basic_string<char> string;
+typedef basic_string<wchar_t> wstring;
+
+// class basic_string
+template <class charT, 
+          class traits = char_traits<charT>,
+          class Allocator = allocator<charT> >
+class basic_string
+{
+//...
+}
 ```
-多字节字符(char)与宽字符(wchar_t)
 
-多字节字符 char 不同的字符占不同的字节
-英文字母'a'占一个字节，汉字'啊'占三个字节
-
-宽字符 wchar_t 一个宽字符站固定的多个字节(linux是4个)
-不管是英文还是中文
+### char wchar_t
+```c++
+// 多字节字符(char)与宽字符(wchar_t)
+// 多字节字符 char 不同的字符占不同的字节
+// 英文字母'a'占一个字节，汉字'啊'占三个字节
+// 宽字符 wchar_t 一个宽字符站固定的多个字节(linux是4个)
+// 不管是英文还是中文
 
 // 注意
-在c标准中，选择 "多字节字符" 还是 "宽字符" 由对其执行的第一个操作设置(使用 fwide 函数进行检查)
+// 在c标准中，选择 "多字节字符" 还是 "宽字符" 由对其执行的第一个操作设置(使用 fwide 函数进行检查)
 
 // 转换方式
-fwide可以设置当前流定向，前提是未有任何的 I/O 操作，也就是当前流尚未被设置任何流定向
+// fwide可以设置当前流定向，前提是未有任何的 I/O 操作，也就是当前流尚未被设置任何流定向
 
 (1) 统一使用一种函数(推荐)
     printf或wprintf
@@ -4394,6 +4267,9 @@ fwide可以设置当前流定向，前提是未有任何的 I/O 操作，也就�
 
 ### char* wchar_t* 互转
 ```c++
+typedef basic_string<char> string; 
+typedef basic_string<wchar_t> wstring; 
+
 #include <stdlib.h>
 #include <string>
 
@@ -4465,6 +4341,7 @@ std::cout << "2" << std::endl;
 std::wcout << L"3" << std::endl;
 std::cout << "2" << std::endl;
 // 输出 1 3
+
 std::ios_base::sync_with_stdio(false); // 默认 true
 std::wcout.imbue(std::locale("zh_CN.utf8"));
 std::wcout << L"1" << std::endl;
@@ -4543,4 +4420,178 @@ struct T {
     operator T1();  // T -> T1
     // 从c++11开始explicit还可以用于用户定义的转换函数
 };
+```
+
+### 智能指针
+```
+C++ 11的新特性中引入了三种智能指针，来自动化地管理内存资源
+
+unique_ptr: 管理的资源唯一的属于一个对象，但是支持将资源移动给其他unique_ptr对象。当拥有所有权的unique_ptr对象析构时，资源即被释放
+
+shared_ptr: 管理的资源被多个对象共享，内部采用引用计数跟踪所有者的个数。当最后一个所有者被析构时，资源即被释放
+
+weak_ptr: 与shared_ptr配合使用，虽然能访问资源但却不享有资源的所有权，不影响资源的引用计数。有可能资源已被释放，但weak_ptr仍然存在。因此每次访问资源时都需要判断资源是否有效
+```
+
+### shared_ptr
+```c++
+#include <memory>
+
+(1) 构造
+    std::shared_ptr<string> a(new string("dasdas"));
+    std::shared_ptr<string> a = std::make_shared<string>("dasdas")
+    std::shared_ptr<vector<int>> a(new vector<int>(10));
+    cout << a << endl;  //0x5633802bfe70
+
+(2) 切片
+    std::shared_ptr<int> a(new int [10] {1,2,3,4,5});
+    int* pI = a.get();
+    cout << *a << endl;     // 1
+    cout << *(a+1) << endl; // 错误
+    cout << a[0] << endl;   // 错误
+
+    std::shared_ptr<int[]> a(new int [10] {1,2,3,4,5});
+    cout << *a << endl;     // 错误
+    cout << a[0] << endl;   // 1
+
+    std::shared_ptr<std::vector<int>> vc = std::make_shared<vector<int>>(10,3);
+    cout << (*vc)[1] << endl;
+    cout << vc->operator[](1) << endl;
+    cout << vc->size() << endl;
+
+(3) 引用次数
+    // shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
+    // 每使用他一次，内部的引用计数加1；每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
+    // shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
+
+    std::shared_ptr<int> a = std::make_shared<int>(10);
+    std::shared_ptr<int> & b = a; // 引用 不会改变计数
+    std::shared_ptr<int> c = a; // 复制计数加一 不会改变计数
+    cout << a.use_count() << endl;
+    // 空指针的计数为0
+    shared_ptr<int> a;      // 计数0
+    shared_ptr<int> b = a;  // 计数0
+
+(4) 自定义析构函数
+    std::shared_ptr<int[]> a(new int[1], [](int* a){
+        cout << "delete" << endl;
+        delete a;
+    });
+
+(5) 智能指针不能当右值
+    void* a = NULL;
+    //右值Segmentation fault (core dumped)
+    a =  static_cast<void*>(auto_ptr<string>(new string("sadadada")).get()); //此时智能指针是右值
+    cout << *static_cast<string*>(a) << endl; //出错！ 实际上智能指针早已析构了
+    //必须先存成左值
+    auto_ptr<string> x = auto_ptr<string>(new string("sadadada")); //必须现存成左值
+    a =  static_cast<void*>(x.get());
+    cout << *static_cast<string*>(a) << endl;
+
+(6) 禁止用auto_ptr
+    // 智能指针所有权
+    auto_ptr<string> a = auto_ptr<string>(new string("aaaa"));
+    auto_ptr<string> b;
+    b = a;   // 赋值导致了 a失去了所有权，b获得了所有权
+
+    // STL有一条规定：std::auto_ptr 不能和容器混合使用
+    // 原因是：容器里的元素使用的都是copy，而std::auto_ptr型数据copy后会发生拥有权转移。
+    // 所以！！！auto_ptr几乎没用！！！
+
+(7) 智能指针做参数传值更好
+```
+
+### unique_ptr 与 shared_ptr
+```c++
+// shared_ptr  允许多个指针指向同一个对象
+// unique_ptr  独占所指向的对象，不能拷贝复制，unique_ptr销毁，其指向的对象也被销毁
+
+// shared_ptr 和 unique_ptr 共有操作
+shared_ptr<T> sp	// 空智能指针，可以指向类型为T的对象
+unique_ptr<T> up	// 同上
+p	                // 将p用作一个条件判断，若p指向一个对象，则为true
+*p                  // 解引用p，获得它指向的对象
+p->mem              // 等价于(*p).mem
+p.get()             // 返回p中保存的指针，要小心使用。
+swap(p,q)           // 交换p和q中的指针
+p.swap(q)           // 同上
+
+// shared_ptr 独有操作
+make_shared<T> (args)	// 返回一个shared_ptr，指向一个动态分配的类型为T的对象
+shared_ptr<T> p(q)	    // p是shared_ptr q的拷贝；此操作会增加q中的计数器
+p=q	                    // p和q都是shared_ptr，所保存的指针必须能相互转换
+                        // 此操作会递减p的引用计数，递增q的引用计数；若p的引用计数变为0，则将其管理的原内存释放
+p.unique()	            // 若p.use_count()为1，返回true；否则返回false
+p.use_count()           // 返回与p 共享对象的智能指针数量；可能很慢，主要用于调试
+
+// unique_ptr 独有操作
+unique_ptr<T> u1        // 空unique_ptr，可以指向类型为T的对象。u1会使用delete来释放它的指针
+unique_ptr<T,D> u2      // 同上。u2会使用一个类型为D的可调用对象来释放它的指针
+unique_ptr<T,D> u(d)    // 空unique_ptr，可以指向类型为T的对象，用类型为D的对象d代替delete
+u=nullptr               // 释放u指向的对象，将u置为空
+T* ptr = u.release()    // u放弃对指针的控制权，返回指针，并将u置空
+                        // 注意release后需要自己管理内存 auto u = u2.release(); delete(u);
+u.reset(q)              // 如果提供了内置指针q，令u指向这个对象；否则将u置空
+u.reset(nullptr)
+
+// unique_ptr不支持拷贝和赋值，如何拷贝或赋值unique_ptr
+std::unique_ptr<int> a1(new int [10]);
+std::unique_ptr<int> a2 = std::move(a1);    // unique_ptr实现了移动语义
+unique_ptr<int> a3(a2.release());           // 赋予unique_ptr一个指针，必须先要释放一个unique_ptr的一个指针
+a2.reset(a3.release());                     // 赋予unique_ptr一个指针，必须先要释放一个unique_ptr的一个指针
+
+```
+
+### shared_ptr 循环引用
+```c++
+(1) 循环引用
+    class B;
+    class A {
+    public:
+        std::shared_ptr<B> a;
+        virtual ~A() {
+            cout << "descontruct A" << endl;
+        }
+    };
+
+    class B {
+    public:
+        std::shared_ptr<A> b;
+        virtual ~B() {
+            cout << "descontruct B" << endl;
+        }
+    };
+
+    auto a = shared_ptr<A>(new A);
+    auto b = shared_ptr<B>(new B);
+    a->a = b;
+    b->b = a;
+    cout << a.use_count() << endl;  // 2
+    cout << b.use_count() << endl;  // 2
+    // 导致内存泄漏
+
+(2) weak_ptr
+    // weak_ptr是一种不控制对象生命周期的智能指针, 它是指向一个shared_ptr的管理对象
+    shared_ptr<int> a;
+    shared_ptr<int> b = a;  // 计数2
+    shared_ptr<int> a;
+    weak_ptr<int> b = a;  // 计数1
+
+    // expire 判断智能指针是否已销毁
+    if (!b.expire()) {}
+
+    // lock 获得指向的智能指针
+    shared_ptr<int> c = b.lock(); // a的计数+1
+
+```
+
+### make_unique
+```c++
+// c++ 14 直接提供 make_unique，以下是c++11实现方式
+template<typename T, typename... Argvs>
+std::unique_ptr<T> make_unique(Argvs&&... argvs) {
+    return std::unique_ptr<T>(new T(std::forward<Argvs>(argvs)...));
+}
+
+
 ```

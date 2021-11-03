@@ -61,7 +61,7 @@ https://lumian2015.github.io/lockFreeProgramming/lock-free-vs-spin-lock.html
 lockfree和spinlock都是依赖于原子操作，乍一看它们相似度很高，让我们看看它们的区别
 
 // lockfree
-int count;
+int count = 0;
 void threadFunc(void) {
     int val;
     for (int i = 0; i < 1000000; i++) {
@@ -127,8 +127,6 @@ spinlock
     std::atomic<>::exchange()
     std::atomic<>::compare_exchange_strong()
     std::atomic<>::compare_exchange_weak()
-    当前值与期望值相等时，修改当前值为设定值，返回true
-    当前值与期望值不等时，将期望值修改为当前值，返回false
 
     // CAS
     bool CAS(T *p, T old, T new) {
@@ -150,49 +148,90 @@ spinlock
 
 #### lock-free stack的简单实现
 ```c++
-    struct node_t {
-        std::atomic<node_t*> next;
-        T data;
-    };
+struct node_t {
+    std::atomic<node_t*> next;
+    T data;
+};
 
-    struct stack_t {
-        std::atomic<node_t*> head;
-    };
+struct stack_t {
+    std::atomic<node_t*> head;
+};
 
-    void push(stack_t *stack, node_t *node) {
-        node_t *head = stack->head.load(std::memory_order_relaxed);
-        node->next.store(head, std::memory_order_relaxed);
-        while(!stack->head.compare_exchange_weak(node->next, node, std::memory_order_release));
-        // atomic_compare_exchange_weak如果失败，证明有其他线程更新了栈顶，而这个时候被其他线程更新的新栈顶值会被更新到new_node->next中，因此循环可以直接再次尝试压栈而无需由程序员更新new_node->next
+void push(stack_t *stack, node_t *newNode) {
+    for(;;) {
+        node_t *head = stack->head.load(); // 默认 std::memory_order_relaxed
+        newNode->next = head;
+        if (stack->head.compare_exchange_weak(head, newNode)) break;
     }
+}
 
-    node_t* pop(stack_t *stack) {
-        node_t *head = stack->head.load(std::memory_order_consume);
-        for(;;){
-            if (head = NULL) break;
-            node_t *next = head->next.load(std::memory_order_relaxed);  // (1)
-            if (stack->head.compare_exchange_weak(head, next, std::memory_order_release)) // (2)
-                break;
-        }
-        return head;
+node_t* pop(stack_t *stack) {
+    for(;;){
+        node_t* head = stack->head.load();
+        if (head = NULL) return NULL;
+        node_t *next = head->next.load();                   // (1)
+        if (stack->head.compare_exchange_weak(head, next))  // (2)
+            return head;
     }
+}
+
+// 注意 pop() 中会出现ABA问题，详见下
 ```
 
 #### ABA问题
-```
-    上述的lock-free stack中，很有可能在(1)和(2)之间其它线程插入执行，会引发ABA问题
-    (1) 情景再现
-        > 例如当前栈为 A->B->C->D
-        > thread1执行pop()函数的步骤(1)后被系统中断，此时head=A, next=B
-        > thread2执行delNode = pop()后，又执行pop()一遍，然后执行push(delNode)，此时head=A, next=C
-        > 此时thread1被调度恢复执行步骤(2)，由于head依然是A，所以可以执行成功，但是B已经不存在了，整个栈被破坏
-    (2) 解决方法
-        1) 思路1
-            不要重用容器中的元素，本例中，Pop出来的A不要直接Push进容器，应该new一个新的元素
-            但是！！！当地址A被回收后，new的新地址很有可能是之前A的地址，所以此方法不可行
-        2) 思路2
-            允许内存重用，对指向的内存采用标签指针(Tagged Pointers)的方式，标签作为一个版本号，随着标签指针上的每一次CAS运算而增加，并且只增不减
+```c++
+// 上述的lock-free stack中，很有可能在(1)和(2)之间其它线程插入执行，会引发ABA问题
+(1) 情景再现
+    > 例如当前栈为 A->B->C->D
+    > thread1执行pop()函数的步骤(1)后被系统中断，此时head=A, next=B
+    > thread2执行两次pop(), 然后又将第一次的pop出的node节点push到stack中
+        node_t* node = pop();
+        pop();
+        push(stack, node);
+        // 此时 A->C->D 
+    > 此时thread1被调度恢复执行步骤(2)
+        // stack->head == head == A 所以可以执行成功
+        // stack->head = next == B 但是B已经不存在了，整个栈被破坏
 
+(2) 解决方法
+    1> 不要重用已经删除的元素(此方法不可行)
+        // 不要重用容器中的元素，本例中，Pop出来的A不要直接Push进容器，应该new一个新的元素
+        // 但是！！！当地址A被回收后，new的新地址很有可能是之前A的地址，所以此方法不可行
+
+    2> 递增tag
+        // 允许内存重用，对指向的内存采用标签指针(Tagged Pointers)的方式，标签作为一个版本号，随着标签指针上的每一次CAS运算而增加，并且只增不减
+        // 带版本号的stack如下
+
+struct Node {
+    int val;
+    std::atomic<Node*> next;
+};
+
+struct Stack {
+    std::atomic<Node*> head;
+    std::atomic<uint64_t> tag;
+};
+
+void Push(Stack* stack, Node* newNode) {
+    for(;;){
+        Node* head = stack->head.load();
+        newNode->next.store(head);
+        if (stack->head.atomic_compare_exchange_weak(head, newNode)) return;
+    }
+}
+
+Node* Pop(Stack* stack) {
+    for(;;) {
+        Node* head = stack->head.load();
+        uint64_t tag = stack->tag.load();
+        if (head == NULL) return NULL;
+        Node* next = head->next.load();
+        if (stack->head.atomic_compare_exchange_weak(head, next) && \
+            stack->tag.atomic_compare_exchange_weak(tag, tag + 1)) {
+            return head;
+        }
+    }
+}
 ```
 
 ### lock-free 库

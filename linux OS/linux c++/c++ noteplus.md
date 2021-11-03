@@ -61,7 +61,7 @@ public:
     }
 };
 
-// CRTP积累无法traits子类的type
+// CRTP基类无法traits子类的type
 template <typename C> class B {
     typedef typename C::T T; // 编译失败
     T* p_;
@@ -154,6 +154,27 @@ int main() {
 
 ```
 
+### enable_if
+```c++
+// 定义
+template<bool, typename T = void>
+struct enable_if {};
+
+template<typename T>
+struct enable_if<true, T>{
+    typedef T type;
+};
+
+// enable_if 都用来判断模板参数的类型
+
+// 校验函数模板参数类型必须是int
+template<typename T>
+typename std::enable_if<std::is_intergral<T>::value, bool>::type 
+is_odd(T t) {
+    return bool(T % 2);
+}
+```
+
 ### SFINAE
 ```c++
 // c++98
@@ -184,6 +205,17 @@ struct has_get: public std::false_type{};
 template<typename T>
 struct has_get<T, void_t<decltype(std::declval<T>().get())>> : public std::true_type{};
 std::cout << has_get<A>::value << std::endl;
+
+// 判断是否为智能指针
+template<typename T, typename = void>
+struct is_smart_point : public std::false_type {};
+template<typename T>
+struct is_smart_point<T, 
+    void_t<decltype(std::declval<T>().operator->()),
+           decltype(std::declval<T>().get())>> : public std::true_type {};
+
+std::shared_ptr<int> a;
+cout << is_smart_point<decltype(a)>::value;
 ```
 
 ### 判断类是否存在成员变量、函数、类型
@@ -217,7 +249,6 @@ struct has_member<T, void_t<typename T::type>> : public std::true_type{};
 template<typename T>
 bool has_member_func(T& t) {return has_member<T>::value;}
 
-
 ```
 
 ### 结构体元素数量
@@ -250,19 +281,23 @@ int main(int argc, char** argv) {
 // 用模板实现tuple的遍历
 
 template<typename T, size_t N>
-void printTuple(T & t){
-    printTuple<N-1>(t);
-    cout << std::get<N-1>(t);
-}
+struct PrintTuple {
+    void operator()(T & t) {
+        PrintTuple<T, N-1>()(t);
+        cout << std::get<N-1>(t) << endl;
+    }
+};
 
 template<typename T>
-void printTuple<1>(T & t){
-    cout << std::get<0>(t);
-}
+struct PrintTuple<T, 1> {
+    void operator()(T & t) {
+        cout << std::get<0>(t) << endl;
+    }
+};
 
 template<typename ...Argvs>
 void func(std::tuple<Argvs...> & t) {
-    printTuple<decltype(t) ,sizeof...(Argvs)>(t);
+    PrintTuple<decltype(t) ,sizeof...(Argvs)>()(t);
 }
 
 auto t = make_tuple("dadsa", 1);
@@ -298,11 +333,8 @@ a.func();               // 正确
 
 ### 类型检测
 ```
-
 SFINAE
 enable_if 
 Concept c++20
 void_t
-
-
 ```
