@@ -3606,77 +3606,99 @@ std::thread(func, std::ref(n));
 //     async
 //     future_category
 
-// (1) promise
-void func(std::future<int> & fut){
-    int x= fut.get();
-}
-std::promise<int> prom;                     // 生成一个 std::promise<int> 对象
-std::future<int> fut = prom.get_future();   // 和 future 关联
-std::thread t(func, std::ref(fut));    // 将 future 交给另外一个线程t
-prom.set_value(10);                         // 设置共享状态的值, 此处和线程t保持同步
-t.join();
-// 注意
-// std::promise 的 operator= 没有拷贝语义，operator= 只有 move 语义
-// 一个std::promise实例只能与一个std::future关联共享状态
-
-// (2) promise::set_exception
-void func(fucture<int> & fut){
-    try {
-        int x = fut.get();
-    }catch(std::exception & e){
-        cout << e.what() << endl;
+(1) promise
+    void func(std::future<int> & fut){
+        int x= fut.get();   // 等待
     }
-}
-promise<int> prom;
-functure<int> fnt = prom.get_future();
-thread t(func, std::ref(fnt));
-int x;
-std::cin.exceptions(std::ios::failbit);   // throw on failbit
-try{
-    cin >> x;
-    prom.set_value(x);                  // sets failbit if input is not int
-}catch{
-    prom.set_exception(std::current_exception());
-}
+    std::promise<int> prom;                     // 生成一个 std::promise<int> 对象
+    std::future<int> fut = prom.get_future();   // 和 future 关联
+    std::thread t(func, std::ref(fut));         // 将 future 交给另外一个线程t
+    prom.set_value(10);                         // 设置共享状态的值, 此处和线程t保持同步
+    t.join();
+    // 注意
+    // std::promise 的 operator= 没有拷贝语义，operator= 只有 move 语义
+    // 一个std::promise实例只能与一个std::future关联共享状态
 
-// (3) std::async
-// 这个函数是对上面的对象的一个整合，async先将可调用对象封装起来，然后将其运行结果返回到promise中，这个过程就是一个面向future的一个过程，最终通过future.get()来得到结果
-// 1) 原型
-template<typename Fn, typename ...Argvs>
-std::future<typename std::result_of<Fn(Argvs...)>::type>
-async(std::launch policy, Fn&& fn, Argvs&&... argvs);
-// 2) launch 三中策略
-// std::launch::async 保证异步行为，执行后，系统创建一个线程执行对应的函数
-// std::launch::deffered 当其他线程调用get()来访问共享状态时，将调用非异步行为
-// std::launch::async||std::launch::deffered 默认策略，由系统决定怎么调用
-// 3) future的返回结果
-// std::future_status::deferred 异步操作还没开始
-// std::futurn_status::ready    异步操作已经完成
-// std::futurn_status::timeout  异步操作超时
-
-int func(int a){
-    std::this_thread::sleep_for(std::chrono::seconds(10));
-    return a
-}
-
-auto fut = std::async(std::launch::async, &func, 12);   // 启动线程运行func
-std::future_status status;
-do {
-    status = fut.wait_for(std::chrono::seconds(1));
-    switch (status) {
-        case future_status::ready:
-            break;
-            cout << "ready ";
-        case future_status::deferred:
-            break;
-        case future_status::timeout:
-            cout << "timeout ";
-            break;
+(2) promise::set_exception
+    void func(fucture<int> & fut){
+        try {
+            int x = fut.get();
+        }catch(std::exception & e){
+            cout << e.what() << endl;
+        }
     }
-}while(status != future_status::ready);
+    std::promise<int> prom;
+    std::functure<int> fnt = prom.get_future();
+    thread t(func, std::ref(fnt));
+    int x;
+    std::cin.exceptions(std::ios::failbit);   // throw on failbit
+    try{
+        cin >> x;
+        prom.set_value(x);                  // sets failbit if input is not int
+    }catch{
+        prom.set_exception(std::current_exception());
+    }
 
-cout << "result is " << fut.get() << endl;
-// 输出 timeout timeout timeout timeout ... ready
+(3) std::async
+    // 这个函数是对上面的对象的一个整合，async先将可调用对象封装起来，然后将其运行结果返回到promise中，这个过程就是一个面向future的一个过程，最终通过future.get()来得到结果
+
+    template<typename Fn, typename ...Argvs>
+    std::future<typename std::result_of<Fn(Argvs...)>::type>
+    async(std::launch policy, Fn&& fn, Argvs&&... argvs);
+    // launch 三中策略
+    // std::launch::async 保证异步行为，执行后，系统创建一个线程执行对应的函数
+    // std::launch::deffered 当其他线程调用get()来访问共享状态时，将调用非异步行为
+    // std::launch::async||std::launch::deffered 默认策略，由系统决定怎么调用
+    // future的返回结果
+    // std::future_status::deferred 异步操作还没开始
+    // std::futurn_status::ready    异步操作已经完成
+    // std::futurn_status::timeout  异步操作超时
+
+    template<typename Fn, typename... Argvs>
+    std::future<typename std::result_of<Fn(Argvs...)>::type>
+    async(Fn&& fn, Argvs&&... argvs);   // 默认策略
+
+    int func(int a){
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        return a
+    }
+
+    auto fut = std::async(std::launch::async, &func, 12);   // 启动线程运行func
+    std::future_status status;
+    do {
+        status = fut.wait_for(std::chrono::seconds(1));
+        switch (status) {
+            case future_status::ready:
+                break;
+                cout << "ready ";
+            case future_status::deferred:
+                break;
+            case future_status::timeout:
+                cout << "timeout ";
+                break;
+        }
+    }while(status != future_status::ready);
+
+    cout << "result is " << fut.get() << endl;
+    // 输出 timeout timeout timeout timeout ... ready
+
+(4) 坑爹的async
+    1) 同步的async
+        std::async([](){/*print n*/}, 1);
+        std::async([](){/*print n*/}, 2);
+        std::async([](){/*print n*/}, 3);
+        // 上述代码只会一步一步的执行 1 -> 2 -> 3，并不会同时执行
+        // 第一行std::async创建了一个类型为std::future<void>的临时变量Temp
+        // 临时变量Temp在开始执行第二行之前发生析构
+        // std::future<void>的析构函数，会同步地等操作的返回，并阻塞当前线程
+    2) 一个async，一个线程
+        std::future<void> a = std::async([](){},1);
+        std::future<void> b = std::async([](){},2);
+        std::future<void> c = std::async([](){},3);
+        // async返回的变量没有析构(就没有等待)，所以执行下一步
+        // 但是每个async会创建一个线程，非常消耗资源
+
+    // 推荐folly的future
 ```
 
 ### RAII
