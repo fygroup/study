@@ -383,6 +383,15 @@ https://developer.ibm.com/zh/languages/java/articles/j-jtp0730/
 
 ```
 
+### go vs nodejs 并发模型
+```
+go并发模型：CSP
+
+nodejs: reactor
+
+
+```
+
 ### 并发模型 CSP模型和Actor模型
 ```
 [Actor模型和CSP模型的区别] https://www.jdon.com/concurrent/actor-csp.html
@@ -395,6 +404,4 @@ https://developer.ibm.com/zh/languages/java/articles/j-jtp0730/
 (1) 生产者消费者模型
 
 (2) 发布订阅模型
-
-
 ```
