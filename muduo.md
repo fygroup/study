@@ -32,8 +32,8 @@ TimerQueue
     TimerSet                        cancelingTimers_
 
 TcpServer
-    EventLoop*
-    EventLoopThreadPool*
+    EventLoop*                      loop_
+    EventLoopThreadPool*            threadPool_
     Acceptor*                       acceptor_
     map<string, TcpConnection*>     connections_
     
@@ -43,6 +43,9 @@ Acceptor
     EventLoop*
     Socket                          acceptSocket_       ::socket(listenAddr)
     Channel                         acceptChannel_      Channel(loop, acceptSocket_.fd())
+    NewConnectionCallback           newConnectionCallback_;
+    bool                            listening_;
+    int                             idleFd_;
 
     acceptChannel_.setReadCallback(Acceptor::handleRead)
 
@@ -84,7 +87,8 @@ Poller
 
 // 1
 TcpServer::start()
-    loop_->runInLoop(std::bind(&Acceptor::listen, get_pointer(acceptor_)));
+    threadPool_->start()
+    loop_->runInLoop(std::bind(&Acceptor::listen, get_pointer(acceptor_)))
 
 // 2
 EventLoop::loop()

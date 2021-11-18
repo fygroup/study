@@ -992,3 +992,14 @@ char cwdAbsPath[1024];
 readlink("/proc/selef/cwd", cwdAbsPath, 1024);
 readlink("/proc/selef/exe", cwdAbsPath, 1024);
 ```
+
+### fwrite_unlocked
+```c++
+#include <stdio.h>
+// fwrite_unlocked 是 fwrite 的非线程安全版本
+
+// fwrite 的性能比 fwrite_unlocked 低
+
+// 用fwrite_unlocked要自己保证其原子性
+
+```

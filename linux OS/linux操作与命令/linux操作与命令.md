@@ -303,7 +303,7 @@ mount -t proc none /mnt
 
 
 (7) 挂载多个分区（设备）到一个文件夹
-
+    LVM
 ```
 
 ### /etc/fstab

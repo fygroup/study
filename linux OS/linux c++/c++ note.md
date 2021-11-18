@@ -4553,7 +4553,7 @@ unique_ptr<T,D> u(d)    // 空unique_ptr，可以指向类型为T的对象，用
 u=nullptr               // 释放u指向的对象，将u置为空
 T* ptr = u.release()    // u放弃对指针的控制权，返回指针，并将u置空
                         // 注意release后需要自己管理内存 auto u = u2.release(); delete(u);
-u.reset(q)              // 如果提供了内置指针q，令u指向这个对象；否则将u置空
+u.reset(q)              // 令u指向这个对象，原来u的内容会发生析构
 u.reset(nullptr)
 
 // unique_ptr不支持拷贝和赋值，如何拷贝或赋值unique_ptr
@@ -4614,6 +4614,14 @@ template<typename T, typename... Argvs>
 std::unique_ptr<T> make_unique(Argvs&&... argvs) {
     return std::unique_ptr<T>(new T(std::forward<Argvs>(argvs)...));
 }
+
+// 为什么 make_unique 优于 unique_ptr(new)
+// > 性能
+//  unique_ptr<T>(new T) 造成的内存分配就是两次，一个是new，一个是内部的control block的内存分配
+//  make版本内部使用allocated一下子分配包含new和control block的内存大小空间，并且这样加快程序运行速度、减小内存碎片的分配
+// > 美观
+//  减少new的使用
+
 
 
 ```
