@@ -1585,14 +1585,47 @@ b = a;      // 赋值函数
 ```
 
 ### 右值引用
-```
+```c++
 (1) 右值引用
-    右值引用的目的是为了延长用来初始化对象的生命周期，对于左值，其生命周期与其作用域有关
+
+(2) 右值引用即可表示右值，也可表示左值
+// struct RValue {
+// 	RValue():sources("hello!!!"){}
+// 	RValue(RValue&& a) {
+// 		sources = std::move(a.sources);
+// 		cout<<"&& RValue"<<endl;
+// 	}
+
+// 	RValue(const RValue& a) {
+// 		sources = a.sources;
+// 		cout<<"& RValue"<<endl;
+// 	}
+
+// 	void operator=(const RValue&& a) {
+// 		sources = std::move(a.sources);
+// 		cout<<"&& =="<<endl;
+// 	}
+
+// 	void operator=(const RValue& a) {
+// 		sources = a.sources;
+// 		cout<<"& =="<<endl;
+// 	}
+
+// 	string sources;;
+// };
+// void f(string && s){
+// 	string a(std::forward<string>(s));
+// }
+
+
+
+(1) 右值引用
+    // 右值引用的目的是为了延长用来初始化对象的生命周期，对于左值，其生命周期与其作用域有关
     int a;
     int && b = 1; // 右值引用
     int && b = a; //错误 a是左值，必须引用右值
+    int && b = std::move(a); // 可以转化成右值引用
 
-(1) 编译器优化
     class A
     {
         A(){
