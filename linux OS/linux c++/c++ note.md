@@ -1551,6 +1551,11 @@ A b;
 b = a;      // 赋值函数
 ```
 
+### 关闭编译器优化
+```
+编译选项-fno-elide-constructors用来关闭优化
+```
+
 ### 常量左值引用
 ```
 (1) 左值引用
@@ -1586,150 +1591,77 @@ b = a;      // 赋值函数
 
 ### 右值引用
 ```c++
-(1) 右值引用
+(1) 左值引用和右值引用
+    // 左值可以取地址、位于等号左边；而右值没法取地址，位于等号右边
+    int a = 5;
+    int &ref_a = a;         // 左值引用指向左值，编译通过
+    int &ref_a = 5;         // 左值引用指向了右值，会编译失败
+    const int &ref_a = 5;   // 编译通过 const左值引用是可以指向右值的
 
-(2) 右值引用即可表示右值，也可表示左值
-// struct RValue {
-// 	RValue():sources("hello!!!"){}
-// 	RValue(RValue&& a) {
-// 		sources = std::move(a.sources);
-// 		cout<<"&& RValue"<<endl;
-// 	}
+    int &&ref_a_right = 5;  // ok
+    int &&ref_a_left = a;   // 编译不过，右值引用不可以指向左值
+    ref_a_right = 6;        // 右值引用的用途：可以修改右值
 
-// 	RValue(const RValue& a) {
-// 		sources = a.sources;
-// 		cout<<"& RValue"<<endl;
-// 	}
+(2) 被声明出来的左、右值引用都是左值
+    // 因为被声明出的左右值引用是有地址的，也位于等号左边
+    // 形参是个右值引用
+    void change(string&& right_value) {
+        right_value = "bbb";
+        std::string tmp(right_value);
+        std::string tmp(std::forward<string>(right_value));
+    }
 
-// 	void operator=(const RValue&& a) {
-// 		sources = std::move(a.sources);
-// 		cout<<"&& =="<<endl;
-// 	}
+    std::string a = "aaa";                      // a是个左值
+    std::string & ref_a_left = a;               // ref_a_left是个左值引用
+    std::string && ref_a_right = std::move(a);  // ref_a_right是个右值引用
+    
+    change(a);                                  // 编译不过，a是左值，change参数要求右值
+    change(ref_a_left);                         // 编译不过，左值引用ref_a_left本身也是个"左值"
+    change(ref_a_right);                        // 编译不过，右值引用ref_a_right本身也是个"左值"
+        
+    change(std::move(a));                       // 编译通过
+    change(std::move(ref_a_right));             // 编译通过
+    change(std::move(ref_a_left));              // 编译通过
+    change("bbb");                                  // 当然可以直接接右值，编译通过
+    // &a &ref_a_left &ref_a_right 这三个左值的地址，都是一样的
 
-// 	void operator=(const RValue& a) {
-// 		sources = a.sources;
-// 		cout<<"& =="<<endl;
-// 	}
-
-// 	string sources;;
-// };
-// void f(string && s){
-// 	string a(std::forward<string>(s));
-// }
-
-
-
-(1) 右值引用
-    // 右值引用的目的是为了延长用来初始化对象的生命周期，对于左值，其生命周期与其作用域有关
-    int a;
-    int && b = 1; // 右值引用
-    int && b = a; //错误 a是左值，必须引用右值
-    int && b = std::move(a); // 可以转化成右值引用
-
-    class A
-    {
-        A(){
-            cout << "construct" << endl;
+(3) 右值引用与移动构造
+    // 右值引用就是为移动构造准备的
+    struct RValue {
+        RValue():sources("hello!!!"){}
+        RValue(RValue&& a) {
+            sources = std::move(a.sources);
+            cout<<"&& RValue"<<endl;
         }
 
-        A(const A & a){
-            cout << "copy construct" << endl;
+        RValue(const RValue& a) {
+            sources = a.sources;
+            cout<<"& RValue"<<endl;
         }
-        ~A(){
-            cout << "deconstruct" << endl;
+
+        void operator=(const RValue&& a) {
+            sources = std::move(a.sources);
+            cout<<"&& =="<<endl;
         }
+
+        void operator=(const RValue& a) {
+            sources = a.sources;
+            cout<<"& =="<<endl;
+        }
+        string sources;
     };
-
-    A GetA(){
-        return A();
+    void f(string && s){
+        // s是右值引用, 但他是个左值
+        // string a(s); 不会触发移动拷贝
+        string a(std::forward<string>(s)); // 完美转发,告诉编译器s是个右值,要用移动拷贝
     }
-
-    int main(){
-        A a = GetA();
-    }
-
-    // 正常结果    
-    construct
-    deconstruct
-
-    // 关闭编译器优化 编译选项-fno-elide-constructors用来关闭优化
-    construct
-    copy construct
-    deconstruct
-    copy construct
-    deconstruct
-    deconstruct
-
-
-(2) 指针悬挂与深拷贝
-
-(3) 右值引用与类型推导判断
-    int a;
-    int && b = 1; // 右值引用
-    int && b = a; //错误 a是左值，必须引用右值
-
-    // 类型推断
-    template<typename T>
-    void func(T && t){}
-    // T && t 做参数时，会发生自动类型推断
-
-    func(10);  // t变成右值引用
-    int x = 10;
-    func(x);   // t变成左值引用
-
-    // 注意 移动构造函数不会发生类型推断
-    class A {
-        A(A && a); // 移动构造函数，不会发生类型推导，a必须是右值
-    };
-
-(4) 续命与减少拷贝
-    int func(){
-        return 1;
-    }
-
-    int x = func();    //需要拷贝
-    int && x = func();   //不需要拷贝 仅仅是move
-
-    stringstream ss("dadada");
-    string && ss1 = ss.str(); // str()返回的是拷贝，我们用右值引用可以避免拷贝
-    const char * ss2 = ss1.c_str();
-    char *ss3 = const_cast<char*>(ss2);
-    *ss3 = 'W';
-    cout << ss1 << endl;
-
-(5) 
-(6) 完美转发
-    #include <utility>
-    void func(string& str){}
-    void func(string&& str){}
-    template<typename T>
-    void pfunc(T&& str){
-        func(forward<T>(str)); //自动判断str是左值还是右值
-    }
-
-(7) std::move(移动转移所有权)
-    #include<utility>
-    vector<int>	a = {1,2,3,4,5};
-    vector<int> b = move(a);    // 将a里的内容移动到b中，此时a中的内容为空
-    cout << "===" << endl;
-    for_each(a.begin(),a.end(),[](int& x){cout << x << endl;});
-    cout << "===" << endl;
-    for_each(b.begin(),b.end(),[](int& x){cout << x << endl;});
-    //输出
-    ===
-    ===
-    1
-    2
-    3
-    4
-    5
 ```
 
 ### std::move
 ```c++
 // std::move和std::forward本质就是一个转换函数
 
-// (1) 移动语义(移动构造函数、移动赋值运算符)
+(1) 移动语义(移动构造函数、移动赋值运算符)
     // C++11之前，对象的拷贝控制由三个函数决定：拷贝构造函数、拷贝赋值运算符和析构函数
     // C++11之后，新增加了两个函数：移动构造函数和移动赋值运算符
     // 相比复制构造函数与复制赋值操作符，前者没有再分配内存，而是实现内存所有权转移
@@ -1743,15 +1675,14 @@ b = a;      // 赋值函数
         }
         A(A && a){
             // 移动构造，将a中的指针移动到新建的类中，并且a.ptr = nullptr(需要自己实现), 防止两个实例的析构对一个指针的释放
+            // 注意: 移动构造函数不会发生类型推断, 输入的参数必须是右值
         }
-
         A& operator=(A&& a) {
             // 移动赋值
         }
     };
 
-
-// (2) move
+(2) move
     // 移动语义的前提是传入的必须是右值
     // 有时候你需要将一个左值也进行移动语义(这个左值后面不再使用)
     // 必须提供一个机制来将左值转化为右值(std::move)
@@ -1759,7 +1690,6 @@ b = a;      // 赋值函数
     string b = std::move(a);
     a; // 空，string自己实现了移动语义
     b; // aaa
-
     // move仅仅将左值转换成右值
     // move并没有"移动"什么内容，只是将传入的值转换为右值
     // std::move移动构造函数或者移动赋值运算符，才能充分起到减少不必要拷贝的意义
@@ -1768,10 +1698,8 @@ b = a;      // 赋值函数
     move(T&& t) {
         return static_cast<typename std::remove_reference<T>::Type&&>(t);
     }
-
     // 注意 const A& 和 A&&
-    class string
-    {
+    class string {
         string(const string& rhs);   // 复制构造函数
         string(string&& rhs);    // 移动构造函数
     }
@@ -1779,13 +1707,13 @@ b = a;      // 赋值函数
     // 所以，你其实调用了复制构造函数，那么移动语义当然无法实现
     // 所以，如果你想接下来进行移动，那不要把std::move引用在const对象上
 
-// (3) move使用场景
+(3) move使用场景
     // 1) 定义的类使用了资源并定义了移动构造函数和移动赋值运算符
     // 2) 该变量即将不再使用
 
 ```
 
-### copy elision
+### 返回值优化(RVO)
 ```c++
 // copy elision 是编译器对代码进行优化从而来避免拷贝
 // 什么时候应该move，什么时候应该依靠copy elision
@@ -1813,6 +1741,10 @@ b = a;      // 赋值函数
             return user;
         }
     }
+
+// 不要 return std::move(w)
+// 此时返回的并不是一个局部对象，而是局部对象的右值引用
+// 编译器此时无法进行rvo优化，能做的只有根据std::move(w)来移动构造一个临时对象，然后再将该临时对象赋值到最后的目标。所以，不要试图去返回一个局部对象的右值引用。
 
 ```
 
@@ -4197,6 +4129,47 @@ template<typename T> struct enable_if<true, T>{ typedef T type; };
 
 (9) declval
 // 返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象
+
+(10) is_constructible
+// 用于检查给定类型T是否是带有参数集的可构造类型
+template <class T, class... Args>
+struct is_constructible;
+
+struct T { 
+    T(int, int){}; 
+};
+
+std::is_constructible<T, int>::value // false
+std::is_constructible<T, int, int>::value // true
+
+(11) is_convertible
+// 测试一种类型是否可转换为另一种类型
+template <class From, class To>
+struct is_convertible;
+
+```
+
+### is_function 简单实现
+```c++
+#include <type_traits>
+
+template<typename T>
+struct my_is_function : public false_type {};
+
+template<typename T>
+struct my_is_function<T()> : public true_type {};   // 普通函数
+template<typename T>
+struct my_is_function<T(*)()> : public true_type {}; // 函数指针
+
+template<typename T, typename... Argvs>
+struct my_is_function<T(Argvs...)> : public true_type {};  // 多参数
+template<typename T, typename... Argvs>
+struct my_is_function<T(*)(Argvs...)> : public true_type {};
+
+void f(int);
+
+my_is_function<decltype<f>>::value; // true
+
 ```
 
 ### 基类调用继承类接口
@@ -4332,20 +4305,19 @@ string ws2s(const wstring& ws) {
     std::locale::global(std::locale("en_US.utf8"));
     size_t n = wcstombs(NULL, ws.c_str(), 0);
     cout << "ws2s n " << n << endl;
-    char* buf = new char[n];
+    char buf[n];
     memset(buf, 0, n);
     if (wcstombs(buf, ws.c_str(), n) <= 0) {
         return "";
     }
     std::string res(buf, buf + n);
-    delete buf;
     return res;
 }
 
 wstring s2ws(const string& s) {
     std::locale::global(std::locale("en_US.utf8"));
     size_t sLen = s.size();
-    wchar_t* buf = new wchar_t[sLen];
+    wchar_t buf[sLen];
     wmemset(buf, 0, sLen);
     cout << "sLen " << sLen << endl;
     size_t ret = mbstowcs(buf, s.c_str(), sLen);
@@ -4354,7 +4326,6 @@ wstring s2ws(const string& s) {
         return L"";
     }
     std::wstring res(buf, buf + ret);
-    delete buf;
     return res;
 }
 

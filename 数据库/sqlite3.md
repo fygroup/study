@@ -59,3 +59,8 @@ while (sqlite3_step(stmt) == SQLITE_ROW) {
     
 }
 ```
+
+### 查看索引
+```
+.indexes table
+```
