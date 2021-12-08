@@ -321,8 +321,8 @@ InnoDB与MyISAM的最大不同有两点：一是支持事务，二是采用了�
             使用行级锁定的主要是InnoDB存储引擎
 
         > 索引加锁
-            InnoDB行锁是通过给索引项加锁来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的
-            InnoDB这种行锁实现特点意味着只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用表锁！
+            InnoDB行锁是通过给"索引项加锁"来实现的，这一点MySQL与Oracle不同，后者是通过在数据块中对相应数据行加锁来实现的
+            InnoDB这种行锁实现特点意味着只有通过索引条件检索数据，InnoDB才使用行级锁，否则，InnoDB将使用gap lock, next-key lock, 表锁(存在疑问？有的说mysql innodb不会上表锁)
             
             有时即便使用了索引字段，如果MySQL认为全表扫描效率更高，比如对一些很小的表，它就不会使用索引，这种情况下InnoDB将使用表锁，而不是行锁
         
@@ -338,16 +338,18 @@ InnoDB与MyISAM的最大不同有两点：一是支持事务，二是采用了�
         > next-key lock为了解决Phantom Problem幻读问题
         > 当查询的索引含有唯一属性时，将next-key lock降级为行锁
         > Gap lock设计的目的是为了阻止多个事务将记录插入到同一范围内，而这会导致幻读问题的产生
-        > 有两种方式显式关闭gap锁: 将事务隔离级别设置为RC; 将参数innodb_locks_unsafe_for_binlog设置为1
+        > 有两种方式显式关闭gap锁
+            将事务隔离级别设置为RC(默认是RR)
+            将参数innodb_locks_unsafe_for_binlog设置为1
     2) 加锁方式
         > 进行范围条件而不是相等条件检索数据，并请求共享或排他锁时，会给符合条件的已有数据记录的索引项加锁；对于键值在条件范围内但并不存在的记录（这样做可以防止幻读）
         > 这种加锁机制会阻塞符合条件范围内键值的并发插入，影响性能
         > 如果使用相等条件请求给一个不存在的记录加锁，InnoDB也会使用间隙锁！！！
         例如：
             session1                                                        session2
-            //对不存在的值加间隙锁                                           //这时插入新的value会阻塞
+            //对不存在的值加间隙锁                                            // 这时插入新的value会阻塞
             select * from table where key = value(不存在) for update;       insert into table (key,...) values(value,...);
-            //回滚                                                          //接触阻塞，插入成功
+            //回滚                                                          //解除阻塞，插入成功
             rollback                                                        Query OK, 1 row affected (13.35 sec)
 
 
