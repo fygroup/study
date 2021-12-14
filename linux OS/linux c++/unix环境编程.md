@@ -756,6 +756,13 @@ int64_t StrToTime(const std::string & timeStrParam){
 }
 ```
 
+### localtime gmtime 线程不安全
+```
+localtime gmtime 都用到了static变量，没有做线程安全保护
+localtime_r gmtime_r 是线程安全的
+推荐gettimeofday, 线程安全，且不会系统调用
+```
+
 ### 位运算条件判断
 ```
 // Linux权限控制是基于位运算实现的

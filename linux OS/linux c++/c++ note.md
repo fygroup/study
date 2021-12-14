@@ -4629,3 +4629,8 @@ std::unique_ptr<T> make_unique(Argvs&&... argvs) {
 
 
 ```
+
+### 编译选项 -rdynamic
+```
+-rdynamic 是一个 连接选项 ，它将指示连接器把所有符号（而不仅仅只是程序已使用到的外部符号）都添加到动态符号表（即.dynsym表）里，以便那些通过 dlopen() 或 backtrace() （这一系列函数使用.dynsym表内符号）这样的函数使用
+```
