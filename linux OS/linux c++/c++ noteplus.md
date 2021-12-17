@@ -124,6 +124,11 @@ class A<T<T1, T2>> {
 
 };
 
+template<template<typename...> class T, typename... Argvs>
+class A<T<Argvs...>> {
+    
+};
+
 ```
 
 ### declval
