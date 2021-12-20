@@ -1551,6 +1551,39 @@ A b;
 b = a;      // 赋值函数
 ```
 
+### 一个普通的赋值
+```c++
+
+struct cv_rect {
+    int left;
+    int top;
+    int right;
+    int bottom;
+};
+
+struct Rect_t {
+    std::vector<cv_rect> rects;
+       
+    Rect_t() = default;
+    Rect_t(const std::vector<cv_rect>& vec) {
+        for (size_t i = 0; i < vec.size(); i++) {
+		    this->rects.emplace_back(vec[i]);
+	    }
+    }
+    void operator=(Rect_t && t) {
+        this->rects = std::forward<vector<cv_rect>>(t.rects);
+    }
+
+};
+
+std::vector<cv_rect> v {{1,2,3,4}, {1,2,3,4}};
+Rect_t a;
+a = v;
+// 先构建临时变量Rect_t(v)，调用构造函数 Rect_t(const std::vector<cv_rect>& vec)
+// 再调用移动赋值函数 void operator=(Rect_t && t)
+
+```
+
 ### 关闭编译器优化
 ```
 编译选项-fno-elide-constructors用来关闭优化

@@ -216,16 +216,16 @@ https://blog.csdn.net/Leezha/article/details/78019116
 
 
 // 代码示例
-#include <unistd.h>   
-#include <signal.h>   
-#include <fcntl.h>  
-#include <sys/syslog.h>  
-#include <sys/param.h>   
-#include <sys/types.h>   
-#include <sys/stat.h>   
-#include <stdio.h>  
-#include <stdlib.h>  
-#include <time.h> 
+#include <unistd.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/syslog.h>
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <string.h>
 
 void create_daemon() {
@@ -721,7 +721,7 @@ while((ptr = readdir(dir)) != NULL){
 ```
 
 ### 程序暂停，代码可控
-```
+```c++
 // windows
 system("pause")
 
@@ -904,6 +904,34 @@ auto td1 = std::thread([](){
 int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
 ```
 
+### mmap
+```c++
+#include <sys/mman.h>
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+int munmap(void *addr, size_t length);
+// start    指定要映射的内存地址，一般设置为 NULL 让操作系统自动选择合适的内存地址
+// length   映射地址空间的字节数，它从被映射文件开头 offset 个字节开始算起
+// prot     指定共享内存的访问权限  PROT_READ（可读）, PROT_WRITE（可写）, PROT_EXEC（可执行）, PROT_NONE（不可访问）
+// flags    由以下几个常值指定  MAP_SHARED（共享的） MAP_PRIVATE（私有的）, MAP_FIXED（表示必须使用 start 参数作为开始地址，如果失败不进行修正），其中，MAP_SHARED , MAP_PRIVATE必选其一，而 MAP_FIXED 则不推荐使用
+// fd       表示要映射的文件句柄
+// offset   表示映射文件的偏移量，一般设置为 0 表示从文件头部开始映射
+```
+
+### sendfile
+```c++
+// > linux 2.6
+#include <sys/sendfile.h>
+ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+// in_fd    等待读数据的fd
+// out_fd   等待写数据的fd
+// Offset   正式开始读取数据之前应该向前偏移的byte数
+// count    需要在两个fd之间拷贝的数据数量
+// 注意
+//  in_fd   必须是一个可以mmap的文件描述符，必须指向真实的文件，不能是socket等
+//  out_fd  linux2.6.33之前，out_fd必须是一个socket。但是之后可以是任意文件
+
+```
+
 ### mmap madvise
 ```
 mmap的作用是将硬盘文件的内容映射到内存中，采用闭链哈希建立的索引文件非常适合利用mmap的方式进行内存映射，利用mmap返回的地址指针就是索引文件在内存中的首地址，这样我们就可以放心大胆的访问这些内容了
@@ -914,7 +942,7 @@ mmap的作用是将硬盘文件的内容映射到内存中，采用闭链哈希�
 
 另外就是硬盘缺页中断，这种中断的代表就是mmap，利用mmap映射后的只是逻辑地址，当我们的程序访问时，内核会将硬盘中的文件内容读进物理内存页中，这里我们就会明白为什么mmap之后，访问内存中的数据延时会陡增
 
-出现问题解决问题，上述情况出现的原因本质上是mmap映射文件之后，实际并没有加载到内存中，要解决这个文件，需要我们进行索引的预加载，这里就会引出本文讲到的另一函数madvise，这个函数会传入一个地址指针，已经一个区间长度，madvise会向内核提供一个针对于于地址区间的I/O的建议，内核可能会采纳这个建议，会做一些预读的操作。例如MADV_SEQUENTIAL这个就表明顺序预读
+出现问题解决问题，上述情况出现的原因本质上是mmap映射文件之后，实际并没有加载到内存中，要解决这个文件，需要我们进行索引的预加载，这里就会引出另一函数madvise，这个函数会传入一个地址指针，已经一个区间长度，madvise会向内核提供一个针对于于地址区间的I/O的建议，内核可能会采纳这个建议，会做一些预读的操作。例如MADV_SEQUENTIAL这个就表明顺序预读
 
 如果感觉这样还不给力，可以采用read操作，从mmap文件的首地址开始到最终位置，顺序的读取一遍，这样可以完全保证mmap后的数据全部load到内存中
 ```
