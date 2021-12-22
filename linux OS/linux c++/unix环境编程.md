@@ -742,17 +742,18 @@ std::string TimeToStr(int64_t timeParam) {
     return std::string(timebuf);
 }
 
-int64_t StrToTime(const std::string & timeStrParam){
-    tm tb = {0};
-    strptime(timeStrParam.c_str(), "%Y-%m-%d %H:%M:%S", &tb);
-    // cout << "year: " << tb.tm_year + 1900 << endl; // 注意
-    // cout << "mouth: " << tb.tm_mon + 1 << endl; // 注意
-    // cout << "day: " << tb.tm_mday << endl;
-    // cout << "hour: " << tb.tm_hour << endl;
-    // cout << "min: " << tb.tm_min << endl;
-    // cout << "sec: " << tb.tm_sec << endl;
-    time_t tt = mktime(&tb);
-    return static_cast<int64_t>(tt);
+time_t StrToTime(const std::string & str){
+    int year, mon, day, hour, min, sec;
+    ::sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &year, &mon, &day, &hour, &min, &sec);
+    struct tm t = {0};
+    t.tm_year = year - 1900;
+    t.tm_mon = mon - 1;
+    t.tm_mday = day;
+    t.tm_hour = hour;
+    t.tm_min = min;
+    t.tm_sec = sec;
+    return timegm(&t);  // UTC时区
+    // return mktime(&t); 本地时区
 }
 ```
 
