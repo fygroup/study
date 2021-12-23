@@ -4394,6 +4394,8 @@ wprintf(L"%ls", b);
 // c++ 中 cin与cout是绑定的，因为可以保证cin之前会将cout输出缓冲区的数据刷新到输出文件中，不利于性能
 std::ios_base::sync_with_stdio(false); // iostream stdio 解绑
 std::cin.tie(0); // cin cout 解绑
+
+// 所以，解绑后的c++ iostream与c的stdio性能一样
 ```
 
 ### cout wcout
