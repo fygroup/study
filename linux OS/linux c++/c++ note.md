@@ -4383,6 +4383,21 @@ wprintf(L"%ls", b);
 
 ### sync_with_stdio
 ```c++
+// 为了兼容性，c++的iostream 与 c的stdio公用一个buffer
+// ios_base::sync_with_stdio(false) 让他们用不同的buffer
+// 提前调用了ios::sync_with_stdio(false)，wcout和cout便不会通过stdio.h进行输入输出，而是自己管理缓冲区，就避免了wcout和cout不能混用的问题
+// 注意：一旦iostream与stdio解绑，c++风格与c风格的io就无法保证其顺序安全性
+```
+
+### cin.tie(0)
+```c++
+// c++ 中 cin与cout是绑定的，因为可以保证cin之前会将cout输出缓冲区的数据刷新到输出文件中，不利于性能
+std::ios_base::sync_with_stdio(false); // iostream stdio 解绑
+std::cin.tie(0); // cin cout 解绑
+```
+
+### cout wcout
+```c++
 // https://kc.kexinshe.com/t/81705
 
 // Windows下printf/cout和wprintf/wcout可以混用，fwide函数是空函数
@@ -4390,8 +4405,6 @@ wprintf(L"%ls", b);
 // Linux下printf/cout和wprintf/wcout不可以混用，流的宽窄取决于首次调用哪个函数或先调用fwide(stream, 1)还是fwide(stream, -1)，一旦确定即不可更改，除非重新打开
 
 // iostream库在Linux下有一个坑，默认情况下wcout和cout不能混用。这是因为受到Linux下的C语言stdio.h库的掣肘
-
-// 提前调用了ios::sync_with_stdio(false)，wcout和cout便不会通过stdio.h进行输入输出，而是自己管理缓冲区，就避免了wcout和cout不能混用的问题
 
 // cout wcout
 std::wcout.imbue(std::locale("zh_CN.utf8"));
@@ -4401,7 +4414,7 @@ std::wcout << L"3" << std::endl;
 std::cout << "2" << std::endl;
 // 输出 1 3
 
-std::ios_base::sync_with_stdio(false); // 默认 true
+std::ios_base::sync_with_stdio(false); // cout wcout print wprint 已解绑，都有自己的buffer
 std::wcout.imbue(std::locale("zh_CN.utf8"));
 std::wcout << L"1" << std::endl;
 std::cout << "2" << std::endl;
