@@ -216,3 +216,34 @@ file(GLOB files  LIST_DIRECTORIES false RELATIVE ${CUR}/.. *)
 ```
 CMAKE_PREFIX_PATH
 ```
+
+### release debug
+```
+// 外部指定
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+// 内部指定
+SET(CMAKE_BUILD_TYPE "Debug”)
+SET(CMAKE_BUILD_TYPE "Release")
+
+
+// flag
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -O0 -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak")
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
+```
+
+### PROJECT_BINARY_DIR和PROJECT_SOURCE_DIR
+```
+PROJECT_BINARY_DIR 编译目录
+PROJECT_SOURCE_DIR 源码目录
+
+cd xxx/build
+cmake ../
+PROJECT_BINARY_DIR = xxx/bulid/
+PROJECT_SOURCE_DIR = xxx/
+```

@@ -1584,9 +1584,21 @@ a = v;
 
 ```
 
-### 关闭编译器优化
+### g++ 构造优化
 ```
-编译选项-fno-elide-constructors用来关闭优化
+g++实现省略创建一个只是为了初始化另一个同类型对象的临时对象
+指定这个参数（-fno-elide-constructors）将关闭这种优化，强制g++在所有情况下调用拷贝构造函数
+
+// 例子
+struct A{
+    A() {cout << "A()" << endl;}
+    A(int a) {cout << "A(int)" << endl;}
+    A(const A&) {cout << "A(const A&)" << endl;}
+};
+// 正常情况
+A a = 1;    // 输出 A(int)
+// -fno-elide-constructors 关闭优化
+A a = 1;    // 输出 A(int) A(const A&)
 ```
 
 ### 常量左值引用
@@ -3768,8 +3780,9 @@ int* b=(int*)&a;
 *b=10;      // 此时内存a可能是1
 
 // 当开启优化是-O2,当编译器看到这里的a被const修饰，从语义上讲这里的a是不期望被改变的
-// 优化的时候就可以把a的值存放到寄存器中。可以用volatile解决此情况
+// 所以优化的时候就会把a的值存放到寄存器中
 
+// 用volatile告诉编译器不要对他进行优化
 volatile const int a = 1;
 int* b = (int*)&a;
 *b=10;  // 此时内存a是10
@@ -3892,7 +3905,7 @@ delete pObj;
 ```
 
 ### 柔性数组
-```
+```c++
 // 例子
 struct A {
 	int a;
