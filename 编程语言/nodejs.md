@@ -869,7 +869,7 @@ request.setTimeout(timeout,[callback]) 设置请求超时时间，timeout为毫�
 (2)http.ClientResponse
 http.ClientReponse是与http.ServerResponse相似，提供三个事件，data、end和close，分别在数据到达，传输结束和连
 接结束时触发，其中data事件传递一个参数chunk，表示接受到的数据属性，表示请求的结果状态
-statusCode   HTTP状态码，如200，404，500
+statusCode  HTTP状态码，如200，404，500
 httpVersion：HTTP协议版本
 headers：HTTP请求头
 trailers：HTTP请求尾

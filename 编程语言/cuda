@@ -34,9 +34,9 @@ bool InitCUDA()
  }
 //---内存--------------------------------
 
-锁页内存：cudaMallocHost((void**)&a, nbytes); 在主机端申请一块内存，这块内存gpu可以访问
+锁页内存: cudaMallocHost((void**)&a, nbytes); 在主机端申请一块内存，这块内存gpu可以访问
 cudaFreeHost(host_c);  
-设备内存：cudaMalloc（(void**)&a, nbytes）在设备的Global Memory申请内存
+设备内存: cudaMalloc（(void**)&a, nbytes）在设备的Global Memory申请内存
 cudaFree(dev_a);
 
 //---流操作------------------------------

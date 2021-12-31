@@ -1301,7 +1301,7 @@ rm FS_on_file
     export http_proxy=socks5://10.0.0.52:1080
 // 代理使用用户名密码认证：
     export http_proxy=user:pass@192.158.8.8:8080
-  　　
+
 //  如果需要为https网站设置代理，设置https_proxy环境变量即可；设置方法完全与http_proxy环境变量相同，例如：
     export https_proxy=socks5://10.0.0.52:1080
 
