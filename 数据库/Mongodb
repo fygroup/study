@@ -4,7 +4,7 @@ mongod --config bin/mongodb.conf
 mongod --config bin/mongodb.conf --shutdown
 
 帐号是跟着库走的，所以在指定库里授权，必须也在指定库里验证(auth)。root和admin也要这么做才能操作其他数据库
-例如：
+例如:
 进入
 use admin
 db.createUser({user:'root',pwd:'123456',roles:[{role:'root',db:'admin'}]})
