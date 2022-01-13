@@ -1,337 +1,60 @@
-双引号里面的是字符串 而单引号里面的代表字符
+int a[10]={...}  // 定义时可以这么用
 
-指针初始化时，“=”的右操作数必须为内存中数据的地址，不可以是变量，也不可以直接用整型地址值(但是int*p=0;除外，该语句表示指针为空)。此时，*p是表示定义的是个指针变量，并没有间接取值的意思
-
-Int *s=15; Int *s={2,3,5}; Int *s=a; 
-以上这三种初始化方式都是错误的。
-
-int a,*pa=&a;   #C语言定义，先定义指针pa，然后pa=&a（pa是地址，*pa是变量）
-
-但是对于字符串 可以 char *a="dsadadad";  #字符串本身包含地址
-
-printf("%s",a);   #正确   显示整个字符串
-printf("%c",*a);  #正确   显示第一个字符  
-
-
-int b,*a;
-*a=b 或者 a=&b; ###指针pa已经定义完毕，*a=b 正确
-
-int a[10]={...}  #定义时可以这么用
-
-a[10]={....} #定以后，错误
-
-
-事实上，数组a就是一个指针！！！  但是a是数组首元素的首地址，&a 是整个数组的首地址，虽然值相同，但是类型不同
-例如：
-int a[10];
-printf("%p %p\n",a,&a);
-0x7fff862bc210 0x7fff862bc210
-
-int *p1[10]; 指针数组（先定义一个数组，p1,p1里有十个元素，并且每个元素是一个指针）
-
-
-int (*p2)[10]; 数组指针（先定义一个指针，p2，p2指向一个10个int的数组）
-int (*p2)[10] = new int[2][10];new了一个二维数组, 去掉最左边那一维[2], 剩下int[10], 所以返回的是一个指向int[10]这种一维数组的指针int (*)[10].  
-int (*p3)[2][10] = new int[5][2][10];  new了一个三维数组, 去掉最左边那一维[5], 还有int[2][10], 所以返回的是一个指向二维数组int[2][10]这种类型的指针int (*)[2][10].
-
-
+int *p1[10]; 							// 指针数组（先定义一个数组，p1,p1里有十个元素，并且每个元素是一个指针）
+int (*p2)[10]; 							// 数组指针（先定义一个指针，p2，p2指向一个10个int的数组）
+int (*p2)[10] = new int[2][10];			// new了一个二维数组, 去掉最左边那一维[2], 剩下int[10], 所以返回的是一个指向int[10]这种一维数组的指针int (*)[10].  
+int (*p3)[2][10] = new int[5][2][10];  	// new了一个三维数组, 去掉最左边那一维[5], 还有int[2][10], 所以返回的是一个指向二维数组int[2][10]这种类型的指针int (*)[2][10].
 int a[10];
 int* b;
 int (*c)[10]; /*等价于 int c[][10] */
-b=a;
-c=&a;      /*c是数组指针，它代表整个数组，所以要有&a来赋值，&a他是数组a的指针代表*/
-printf("%d %d",b[1],(*c)[1]);
-
-int* a;
-a=NULL; #空指针
-
-
-
-定义一定大小的数组是，当对某一块内存没有赋值，那么这块内存的值是0
-
-int a[]={1,2,3,4},*b=a;  #正常模式
-printf("%d\n",*b);
-
-char a[]="adsdss",*b=a;  #字符串陷阱 
-printf("%s\n",b);        #虽然 b是指针，但是对于字符串来说，b此时就是个字符串！！！
-printf("%c\n",*b)
-
-void 代表无返回类型
-
-%p 输出指针地址
-
-&i[1] #表示i数组第二个元素的地址
-
-‘’字符  “”字符串
 
 int a[3][4]={{1,2,3,4},{5,6,7,8},{9,10,11,12}}；
-printf("%d\n",**(a+1));
 
-指针的sizeof，就是他地址的sizeof
+// getchar 和 putchar 会把\n也输出
 
-数组空值问题
-例如：
-int a[10]={1,2};
-a[3]   0       #在范围内没有定义的是0
-a[14]  4142134  #在范围外的就是乱码了（地址）
-
-
-二维数组申请空间
-int** a,i;
-a=(int**)malloc(999*sizeof(int)); #理解含义 (int**) 表示先为他申请空间
-for (i = 0; i < 999; ++i)
-{
-	a[i]=(int*)malloc(1000*sizeof(int)); #理解含义 (int*) 表示再为他申请空间
-}
-a[123][124]=2323;
-
-int* a;
-野指针
-
-
-指针历史悠久，单纯的指针除了地之外，不会带其他任何信息！！
-例如：
-int a[10];#静态数组  内存大小不能改变
-int* b=a;
-sizeof(a)  10
-sizeof(b)  没有，b只是一个指针！！！！
-
-
-getchar 和 putchar 会把\n也输出
-
-
-EOF是end of file的缩写，表示"文字流"（stream）的结尾。这里的"文字流"，可以是文件（file），也可以是标准输入（stdin）。
-EOF不是特殊字符，而是一个定义在头文件stdio.h的常量，一般等于-1。
+// EOF是end of file的缩写，表示"文字流"（stream）的结尾
+// 这里的"文字流"，可以是文件（file），也可以是标准输入（stdin）
+// EOF不是特殊字符，而是一个定义在头文件stdio.h的常量，一般等于-1
 #define EOF (-1)
-除了表示文件结尾，EOF还可以表示标准输入的结尾。但是，标准输入与文件不一样，无法事先知道输入的长度，必须手动输入一个字符，表示到达EOF。
-
+// 除了表示文件结尾，EOF还可以表示标准输入的结尾
+// 但是，标准输入与文件不一样，无法事先知道输入的长度，必须手动输入一个字符，表示到达EOF
 feof(fp);
 
+// 判断是否读到文件末尾 feof()
 
-FILE* fp
-(fp=fopen("c:\\hzk16","rb")==NULL   /*打开文件失败*/
-fclose(fq)
-fgetc函数的功能是从指定的文件中读一个字符
-ch=fgetc(fp)
-fputc('a',fp)
-fputc函数有一个返回值，如写入成功则返回写入的字符， 否则返回一个EOF
-读字符串函数fgets函数的功能是从指定的文件中读一个字符串到字符数组中，函数调用的形式为： fgets(字符数组名，n，文件指针) ,返回值是字符数组的首地址
-fputs函数的功能是向指定的文件写入一个字符串
-fputs(“abcd“，fp)；
+// 内核启动的时候默认打开这三个I/O设备文件: 标准输入文件stdin，标准输出文件stdout，标准错误输出文件stderr，分别得到文件描述符 0, 1, 2
 
- fprintf(fp, "%d", buffer); 是将格式化的数据写入文件
-fprintf(文件指针,格式字符串,输出表列);
-
-fwrite(&buffer, sizeof(int), 1, fp);是以二进位方式写入文件
-fwrite(数据，数据类型大小（字节数），写入数据的最大数量，文件指针);
-
-
-fread将文件的磁盘内容直接读入。fscanf将文件的磁盘内容作为ASCII码转换成对应的字符，然后再读入
-
-判断是否读到文件末尾 feof()
-
-
-strcmp(a,b)  /*判断两个字符串是否相等*/
-
-strcpy(char* des,const char* source)   /*赋值字符串source内容到des中*/
-
-sizeof(char*)  /*char指针类型长度*/
-
-
-申请多字符串数组内存
-bamfilelist = (char**)malloc(sizeof(char*)*bamfiles); 
-for (i=0;i<bamfiles;i++) bamfilelist[i] = (char*)malloc(1024);
-
-char* a;
-int b=(int)*a   /*将第一个字符转成ACSII*/
-
-int=atoi（str）/*将str转换成int*/
- 
-float=atof(str) /*将str转换成float/
-
-strlen(str)  /*字符串长度*/
-
-sprintf(fastaindexfile,"%s.fai",fastafile);
-
-内核启动的时候默认打开这三个I/O设备文件：标准输入文件stdin，标准输出文件stdout，标准错误输出文件stderr，分别得到文件描述符 0, 1, 2。
-
-struct ！！！！！！！！！！！！！！！
-typedef struct
-{
-}structure；
-structure* x; /*创建结构指针，指针->structure*/
-理解：此时x指针指向一个结构类structure
-
-x=(struct*)malloc(sizeof(struct)*n); /*与二级指针区别，这不是二级指针，创建是struct指针类型的存储，每个大小是sizeof（struct），创建n个*/
-非常重要，可以理解为创建n个指向structure的指针：point1，point2,point3...,其中可以看成structure* point1，structure* point2。。。
-所以，&x[0]就是point1
-	mlx* structure;
-	structure=(mlx*)malloc(sizeof(mlx)*10);
-	structure->a='a';
-	printf("%p %c\n",structure,structure->a);
-	(&structure[0])->a='b';
-	printf("%p %c\n",&structure[0],structure->a);
-
-
-exit(0) /*C语言退出*/
-
-文件操作
-open(file,'r')==NULL  /*等于NULL打开文件错误*/
-(ch=getc(in))!=EOF     /*读取每一行错误或者读到结尾 类似于 fget(buffer,x,in)!=NULL*/
-fclose(in)!=0      /*b不等于0 表示关闭错误*/
-						
 pow(m,n) //m的n次方
 
 #include<stdlib.h>
 srand((unsigned int)time(NULL));
 rand()%1398101+0;
 
-
-
-strcmp
-C/C++函数，比较两个字符串
-设这两个字符串为str1，str2，
-若str1=str2，则返回零；
-若str1<str2，则返回负数；
-若str1>str2，则返回正数
-
-atoi
-把字符串转换成整型数
-字符串转换成整型数
-
-sizeof不能求得动态分配的内存的大小! 
-char* x[10];  x为静态内存,可以用sizeof(x)
-char* x=(char*)malloc(100)  x为动态内存，不能用sizeof(x)
-
-时间：
-#include<time.h>
-
-int main()
-{
-    time_t timep;
-   
-    time(&timep); /*获取time_t类型当前时间*/   
-    /*转换为常见的字符串：Fri Jan 11 17:04:08 2008*/
-    printf("%s", ctime(&timep));
-    return 0;
-}
-
-排序
+// 排序
 qsort(flist,*fragments,sizeof(FRAGMENT),compare_fragments);
 
-
-(int)(char -48)
-
-结构体指针与结构体的区别：
-struct type* x;  #指针定义完，必须要为他分配空间！！！！！！！！！！！！！！！
-x=(struct type*)malloc(sizeof(struct type));
-x->a=2;
-printf("%i\n",x->a);
-struct type y;
-y.a=2;
-printf("%i\n",y.a);
-
-
-
-
-int abs(int i);                   // 处理int类型的取绝对值
-
-double fabs(double i); //处理double类型的取绝对值
-
-float fabsf(float i);           /处理float类型的取绝对值
-
+int abs(int i);        // 处理int类型的取绝对值
+double fabs(double i); // 处理double类型的取绝对值
+float fabsf(float i);  // 处理float类型的取绝对值
 
 register int x;
-CPU有高速缓存，那个速度非常快，但很小，加这个后，这个变量的存放位置就在register高速缓存里。一般用于频繁修改的全局变量
+// CPU有高速缓存，那个速度非常快，但很小，加这个后，这个变量的存放位置就在register高速缓存里。一般用于频繁修改的全局变量
 
 
-传递数组是，最好把数组的长度传进去
-
-随机数公式
+// 随机数公式
 s=RAND_MIN+(int)(rand()%(RAND_MAX_i-RAND_MIN+1));
 
-指针作为参数传递进去的仅仅只是指针的值，而不是指针的地址，或者说只是指针的一份拷贝
-例如：
-void func(int *p2){
-	注意此时p2代表的是a的数值，就是  p2 == p1 ;但是&p2 != &p1
 
-	如果：
-	p2=(int*)malloc(sizeof(int)*100);
-	此时在&p2处申请了100个int内存，但是&p1还是个空指针
-
-	
-}
-
-int main(){
-	int *p1;
-	int a=2;
-	p1=&a;
-	func(p1);
-}
-
-
-文件操作
-#include<stdio.h>
-FILE* fp;
-fp=fopen(char* path,'r');
-fp=fopen(char* path,'r+');
-fp=fopen(char* path,'w');
-fp=fopen(char* path,'w+');
-
-判断打开是否正确
-fp==NULL
-
-判断文件结尾
-!feof(fp)
-
-char a[1024];
-读取一行：
-char* p
-p=fgets(a,1024,fp)!=NULL;   #读取一行，遇见\n结束 然后在末尾加上\0
-如果读取成功 返回指针，这个指针就是a的指针（p=a）
-
-sscanf(line, "%d %d %d",&array[i * 3], &array[i * 3 + 1], &array[i * 3 + 2]);
-
-输出：
-fprintf(handle, "%d\t%d\t%d\n", x[i], y[i], counts[i]);
-
-feof（检查文件流是否读到了文件尾）
-
-fflush(fp)  /*清楚缓冲区*/
-
-
-#----------
 fseek（移动文件流的读写位置）
 fseek(stream,5,SEEK_SET);
 SEEK_SET从距文件开头offset位移量为新的读写位置；SEEK_CUR 以目前的读写位置往后增加offset个位移量；SEEK_END将读写位置指向文件尾后再增加offset个位移量
 ftell（取得文件流的读取位置）
 fread（）读的过程本身就是一个文件位置指针移动的过程
 fwrite（将数据写至文件流）#用来读写数据
-#----------
 
 getchar()   /*缓存输入*/
 getch()	    /*非缓存输入*/
 
-    switch(day){
-        case Mon: puts("Monday"); break;
-        case Tues: puts("Tuesday"); break;
-        case Wed: puts("Wednesday"); break;
-        case Thurs: puts("Thursday"); break;
-        case Fri: puts("Friday"); break;
-        case Sat: puts("Saturday"); break;
-        case Sun: puts("Sunday"); break;
-        default: puts("Error!");
-    }
-
-
-char str[20];
-memset(str, '\0', sizeof(str)-1);
-
-char* a="dsdsadsad";
-srtcpy(a,"dsada");   #错误 a就是个指针
-
-char a[20]="dsdsadsad";
-srtcpy(a,"dsada");   #正确
 1）字符串操作
 strcpy(p, p1) 复制字符串
 strncpy(p, p1, n) 复制指定长度字符串
@@ -349,9 +72,6 @@ strspn(p, p1) 以目标字符串的所有字符作为集合，在当前字符串
 strcspn(p, p1) 以目标字符串的所有字符作为集合，在当前字符串查找属于该集合的任一元素的偏移 
 * 具有指定长度的字符串处理函数在已处理的字符串之后填补零结尾符  
 
-fp=fopen(infile,"r");正确
-fp=fopen(infile,'r');错误
-
 char* find
 find=strchr(st,'\n') #查找换行符
 *find='\0'
@@ -367,7 +87,7 @@ find=strchr(st,'\n') #查找换行符
 你说的ULONG 应该是一个宏定义。
 从字面意思应该对应的是C中的unsigned long这个类型
 
-解压缩
+// 解压缩
 
 char zipfile[20]="read.txt.gz";
 gzFile gzfp;
@@ -380,10 +100,9 @@ while(gzgets(gzfp,line,1000)!=NULL){
 }
 gzclose(gzfp);
 
-注意！！！ 编译时 用 gcc test.c -lz
+// gcc test.c -lz
 
-
-压缩
+// 压缩
 char* infile="output.txt";
 FILE* fp=fopen(infile,"rb");
 gzFile gzfp=gzopen("output.txt.gz","wb");
@@ -395,7 +114,7 @@ while((n=fread(inbuffer,sizeof(char),sizeof(inbuffer),fp))>0){
 }
 fclose(fp);
 gzclose(gzfp);
-上面有问题！！！
+上面有问题
 fread指的从文件中的取数据
 gzwrite应该这样用
 gzwrite(gzfp,inbuffer,strlen(inbuffer))
@@ -926,7 +645,7 @@ static用来定义变量，会分配空间．
 把结构体声名放在一个头文件中让用到这个结构的文件包含这个头文件。
 extern是指在其它文件声名的变量而不是结构体。
 
-ulimit –s  查看堆可申请的大小
+ulimit -s  查看堆可申请的大小
 
 
 //----------------性能优化----------------------------

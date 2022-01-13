@@ -2748,8 +2748,8 @@ A* a = new A;
 char* tmp = operator new (sizeof(A));   // 申请内存
 new(tmp) A();                           // 在内存上构造对象
 a = tmp;                                // 返回指针
-// 注意，上述实际的顺序可能重排
-// 申请内存、返回指针、构造对象
+// 注意
+// 上述实际的顺序可能重排为 申请内存 -> 返回指针 -> 构造对象
 a = operator new (sizeof(A));
 new(a) A();
 
@@ -3041,11 +3041,11 @@ https://cloud.tencent.com/developer/article/1008625
 ```
 
 ### 异常
-```
+```c++
 // 异常处理机制
-    其基本思想是：函数A在执行过程中发现异常时可以不加处理，而只是"拋出一个异常"给A的调用者，假定为函数B
-    拋出异常而不加处理会导致函数A立即中止，在这种情况下，函数B可以选择捕获A拋出的异常进行处理，也可以选择置之不理。如果置之不理，这个异常就会被拋给B的调用者，以此类推
-    如果一层层的函数都不处理异常，异常最终会被拋给最外层的main函数。main函数应该处理异常。如果main函数也不处理异常，那么程序就会立即异常地中止
+    // 其基本思想是：函数A在执行过程中发现异常时可以不加处理，而只是"拋出一个异常"给A的调用者，假定为函数B
+    // 拋出异常而不加处理会导致函数A立即中止，在这种情况下，函数B可以选择捕获A拋出的异常进行处理，也可以选择置之不理。如果置之不理，这个异常就会被拋给B的调用者，以此类推
+    // 如果一层层的函数都不处理异常，异常最终会被拋给最外层的main函数。main函数应该处理异常。如果main函数也不处理异常，那么程序就会立即异常地中止
 
 // try {} catch {}
     try {
@@ -3065,64 +3065,93 @@ https://cloud.tencent.com/developer/article/1008625
 // 函数的异常声明
     void func() throw(); // 声明不会抛出异常
     void func() throw(int, double); // 声明抛出(int, double)类型的异常
-    > 注意
-        c++11之后不建议函数后面定义错误throw
-        void func();            // 可抛出任何异常
-        void func() noexcept;   // 不会抛出异常
+    // 注意
+    // c++11之后不建议函数后面定义错误throw
+    void func();            // 可抛出任何异常
+    void func() noexcept;   // 不会抛出异常
 
 
 // <exception>
-    (1) 标准异常架构
-        std::exception	该异常是所有标准 C++ 异常的父类
-            std::bad_alloc	该异常可以通过 new 抛出
-            std::bad_cast	该异常可以通过 dynamic_cast 抛出
-            std::bad_exception	这在处理 C++ 程序中无法预期的异常时非常有用
-            std::bad_typeid	该异常可以通过 typeid 抛出
-            std::logic_error	理论上可以通过读取代码来检测到的异常
-                std::domain_error	当使用了一个无效的数学域时，会抛出该异常
-                std::invalid_argument	当使用了无效的参数时，会抛出该异常
-                std::length_error	当创建了太长的 std::string 时，会抛出该异常
-                std::out_of_range	该异常可以通过方法抛出，例如 std::vector 和 std::bitset<>::operator[]()
-            std::runtime_error	理论上不可以通过读取代码来检测到的异常
-                std::overflow_error	当发生数学上溢时，会抛出该异常
-                std::range_error	当尝试存储超出范围的值时，会抛出该异常
-                std::underflow_error	当发生数学下溢时，会抛出该异常
+(1) 标准异常架构
+    std::exception	// 该异常是所有标准 C++ 异常的父类
+        std::bad_alloc	// 该异常可以通过 new 抛出
+        std::bad_cast	// 该异常可以通过 dynamic_cast 抛出
+        std::bad_exception	// 这在处理 C++ 程序中无法预期的异常时非常有用
+        std::bad_typeid	// 该异常可以通过 typeid 抛出
+        std::logic_error	// 理论上可以通过读取代码来检测到的异常
+            std::domain_error	// 当使用了一个无效的数学域时，会抛出该异常
+            std::invalid_argument	// 当使用了无效的参数时，会抛出该异常
+            std::length_error	// 当创建了太长的 std::string 时，会抛出该异常
+            std::out_of_range	// 该异常可以通过方法抛出，例如 std::vector 和 std::bitset<>::operator[]()
+        std::runtime_error	// 理论上不可以通过读取代码来检测到的异常
+            std::overflow_error	// 当发生数学上溢时，会抛出该异常
+            std::range_error	// 当尝试存储超出范围的值时，会抛出该异常
+            std::underflow_error	// 当发生数学下溢时，会抛出该异常
 
-    (2) exception应用
-        try {
-            char * p = new char[0x7fffffff];  //无法分配这么多空间，会抛出异常
-        } catch (std::bad_alloc & e)  {
-            cerr << e.what() << endl;
+(2) exception应用
+    try {
+        char * p = new char[0x7fffffff];  //无法分配这么多空间，会抛出异常
+    } catch (std::bad_alloc & e)  {
+        cerr << e.what() << endl;
+    }
+
+    try {
+        int a[10] {0};
+        a[10] = 100;  //拋出 out_of_range 异常
+    } catch (std::out_of_range & e) {
+        cerr << e.what() << endl;
+    }
+
+    try {
+        ...
+        throw(std::logic_error("logic error"));
+    } catch(std::logic_error & e) {
+        cerr << e.what() << endl;
+    }
+
+(3) 继承exception
+    class MyException : public exception{
+    public:
+        const char *what() const throw() {
+            return "it is my exception";
         }
+    };
 
-        try {
-            int a[10] {0};
-            a[10] = 100;  //拋出 out_of_range 异常
-        } catch (std::out_of_range & e) {
-            cerr << e.what() << endl;
-        }
+    try {
+        throw MyException();
+    }catch(MyException & e) {
+        cout << e.what() << endl;
+    }catch(std::exception & e) {
+        // 其他错误
+    }
+```
 
-        try {
-            ...
-            throw(std::logic_error("logic error"));
-        } catch(std::logic_error & e) {
-            cerr << e.what() << endl;
-        }
+### 构造和析构中的异常
+```c++
+(1) 构造中的异常
+// 在C++构造函数中，既需要分配内存，又需要抛出异常时要特别注意防止内存泄露的情况发生
+// 在构造函数中抛出异常，在概念上将被视为该对象没有被成功构造，因此当前对象的析构函数就不会被调用
+// 由于构造函数本身也是一个函数，在函数体内抛出异常将导致当前函数运行结束，并释放已经构造的成员对象，包括其基类的成员，即执行直接基类和成员对象的析构函数
 
-    (3) 继承exception
-        class MyException : public exception{
-            const char *what() const throw() {
-                return "it is my exception";
-            }
-        };
+// 总结
+// (1) 构造函数没有返回，使用异常可以优雅的抛出错误
+// (2) 构造函数没有执行完成抛出异常，所以不会调用析构函数
+// (3) 要注意处理成员变量和基类的释放
 
-        try {
-            throw MyException();
-        }catch(MyException & e) {
-            cout << e.what() << endl;
-        }catch(std::exception & e) {
-            // 其他错误
-        }
+// 避免使用二阶段构造
+// 因为init中抛出异常，会执行析构函数，析构函数需要判断哪些变量可释放，哪些不能释放
+
+(2) 析构中的异常(避免)
+// 析构函数抛出异常，则异常点之后的程序不会执行，会造成诸如资源泄漏的问题
+// 通常异常发生时，c++的异常处理机制在异常的传播过程中会进行栈展开。在栈展开的过程中就会调用已经在栈构造好的对象的析构函数来释放资源，此时若其他析构函数本身也抛出异常，则前一个异常尚未处理，又有新的异常，会造成程序崩溃
+// 建议
+~Object() {
+    try {
+        // 在try中释放资源
+    } catch {
+        // 处理异常避免跑到外部
+    }
+}
 ```
 
 ### pthread
@@ -4712,3 +4741,17 @@ std::unique_ptr<T> make_unique(Argvs&&... argvs) {
     使用红黑树来存储数据，插入不会使得任何迭代器失效；删除运算使指向删除位置的迭代器失效，但是不会失效其他迭代器.erase迭代器只是被删元素的迭代器失效，但是返回值为void
     所以要采用erase(iter++)的方式删除迭代器
 ```
+
+### extern "C"
+```
+在C++程序中调用被C编译器编译后的函数，为什么要加extern "C"?
+
+C++语言支持函数重载，C语言不支持函数重载，函数被C++编译器编译后在库中的名字可能与C语言的不同
+
+假设某个函数原型为：void foo(int x, int y)
+C编译器编译后在库中的名字为 _foo
+C++编译器则会产生像 _foo_int_int 之类的名字
+
+为了解决此类名字匹配的问题，C++提供了C链接交换指定符号 extern "C"
+```
+
