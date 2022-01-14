@@ -831,6 +831,11 @@ fg 12314
     f n  进入函数域
     p *** 打印当前变量
 
+(5) attach正在运行的程序
+    gdb attach PID
+
+    /root/.gdbinit
+
 ```
 
 ### 查看ssh记录
