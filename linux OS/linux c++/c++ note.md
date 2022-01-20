@@ -164,35 +164,9 @@ ofstream out("...", ios::out);
 ifstream in("...", ios::in);
 fstream foi("...", ios::in|ios::out);
 
-字符转int atoi
-int转字符 itoa
-
-string转换为char*有3中方法：
-1.data
-string str="good boy";
-const char *p=str.data();
-2.c_str
-string str="good boy";
-const char *p=str.c_str();
-3. copy
-string str="good boy";
-char p[20];
-str.copy(p,5,0); //这里5，代表复制几个字符，0代表复制的位置
-*(p+5)='\0'; //要手动加上结束符
-
-或者:
-
-string str="good boy";
-char *p;
-int len = str.length();
-p=(char *)malloc((len+1)*sizeof(char));
-str.copy(p,len,0);
-
 读取文件
 o=ifstream()
 o.is_open()
-
-g++   -lz
 
 use namespace std;
 ios_base::fmtflags initial;
@@ -1377,7 +1351,9 @@ for_each(m.begin(), m.end(), [](const pair<string, string> & i){
 // std::sort
 #include <algorithm>
 vector<int> a;
-sort(a.begin(),a.end(),[](const int & x, const int & y){return(x>y);}); //注意const!!!
+std::sort(a.begin(),a.end(),[](const int & x, const int & y){return(x>y);});
+int a[10];
+std::sort(a, a + 10, [](const int& x, const int& y){ return x < y}); // < 升序; > 降序
 
 // qsort
 int x[10];
@@ -1465,7 +1441,7 @@ __func__
 ```
 
 ### 函数指针map
-```
+```c++
 void func (int a) {
     cout << a << endl;
 }
@@ -2148,25 +2124,6 @@ void callback(function<void(Argvs...)> f, Argvs&&... argvs){
     a<char*> x1;
 ```
 
-### 模板函数数组特化
-```c++ ???
-// reference to array of unknown bound 'int []'
-
-template<typename T> void func(T a) {}
-// 指针特化
-template<typename T> void func(T * a);
-// 引用特化
-template<typename T> void func(T & a);
-
-// int数组特化
-template<> void func<int[]>(int a []) {}
-// int数组特化(注意下面的数字)
-template<> void func<int[]>(int (&a) [10]) {}  
-// int指针特化
-template<> void func<int*>(int *(&a)) {}
-
-```
-
 ### 模板类中的模板函数
 ```c++
 template<typename T>
@@ -2795,32 +2752,6 @@ new(a) A();
 // delete过程
 // (1) 调用对象的析构函数
 // (2) 调用标准库函数 operator delete 来释放该对象的内存
-```
-
-### 对象数组与对象指针 ???????????
-```
-对象数组除了分配对应大小的空间外，还分配了一段空间(double)用来储存数组的个数  [8 bytes] + [数组空间]
-
-所以new[]分配的空间要用delete[]来释放，其逻辑是先根据数组的个数调用n遍析构函数，然后将指针地址减去8再释放整个空间
-
-class A {
-    void* operator new(size_t size) {
-        cout << size << endl;
-        //...
-    }
-    void* operator new[](size_t size) {
-        cout << size << endl;
-        //...
-    }
-};
-
-A* a = new A;       // 打印 1
-A* a1 = new A [1];  // 还是打印 1
-
-char buf[100];
-A* a = new A(buf) [1];
-cout << (void*)buf << endl; // 0x7ffecc65f850
-cout << (void*)&a[0] << endl; // 0x7ffecc65f858
 ```
 
 ### allocator
@@ -4755,3 +4686,146 @@ C++编译器则会产生像 _foo_int_int 之类的名字
 为了解决此类名字匹配的问题，C++提供了C链接交换指定符号 extern "C"
 ```
 
+### chrono 构造
+```c++
+// Clocks
+std::chrono::system_clock           // 本地系统的当前时间 (可以调整)
+std::chrono::steady_clock           // 不能被调整的，稳定增加的时间
+std::chrono::high_resolution_clock  // 提供最高精度的计时周期
+
+// Duration
+std::chrono::duration<>             
+std::chrono::duration_cast<>        // 不同精度转换
+
+// Time point
+//      time_point
+```
+
+### system_clock steady_clock
+```c++
+#include <chrono>
+
+template<typename T>
+using time_point = std::chrono::time_point<T>;
+using system_clock = std::chrono::system_clock;
+using steady_clock = std::chrono::steady_clock;
+
+// system_clock 系统时间，可以被改变
+time_point<system_clock> t = system_clock::now();
+system_clock::duration d = t.time_since_epoch();    // 该时间点到时钟原点的时间间隔
+int64_t m = chrono::duration_cast<chrono::milliseconds>(d).count(); // 转换成毫秒
+
+// steady_clock 从开机逐渐增加的时间，不可以被改变。系统时间回退不会对它造成影响
+time_point<steady_clock> t = steady_clock::now();
+// do some...
+time_point<steady_clock> t1 = steady_clock::now();
+int64_t m = chrono::duration_cast<chrono::milliseconds>(t1 - t).count(); // 计算运行时间
+
+```
+
+### 一个多线程容器的坑
+```c++
+using namespace std;
+
+vector<thread> threadList;
+vector<map<int, int>> vec; // capacity为0
+
+for (size_t i = 0; i < 5; i++) {
+    map<int, int> tm;
+    vec.push_back(tm);                              // (1)
+    threadList.push_back([&vec, i](){
+        map<int, int>& m = vec[i];                  // (2)
+        for(int k : vector<int({1,2,3,4})>) {
+            m[k] = k;                               // (3)
+            // error! heap-use-after-free
+            // 指令重排导致 (2)(3) 步骤先于(1)中的分配空间，所以会出现上述错误
+            // 当线程中sleep可以解决此问题，或者使用内存屏障
+            // 最好在初始化时，先对vec.reserve(5)分配内存
+        }
+    });
+}
+
+for (size_t i = 0; i < 5; i++) {
+    threadList[i].join();
+}
+
+// g++ -std=c++1y main.cpp -lpthread -g -O0 -fsanitize=address -fsanitize=leak -fno-omit-frame-pointer 
+
+
+```
+
+### 数组与指针
+```c++
+// 数组不等于指针
+
+int a[10]={...};
+int *p1[10];    // 指针数组（先定义一个数组，p1,p1里有十个元素，并且每个元素是一个指针）
+int (*p2)[10];  // 数组指针（先定义一个指针，p2，p2指向一个10个int的数组）
+int (*p2)[10] = new int[2][10];	// new了一个二维数组, 去掉最左边那一维[2], 剩下int[10], 所以返回的是一个指向int[10]这种一维数组的指针int (*)[10].  
+int (*p3)[2][10] = new int[5][2][10];  	// new了一个三维数组, 去掉最左边那一维[5], 还有int[2][10], 所以返回的是一个指向二维数组int[2][10]这种类型的指针int (*)[2][10].
+int a[10];
+int (*c)[10]; // 等价于 int c[][10]
+int a[3][4]={{1,2,3,4},{5,6,7,8},{9,10,11,12}}；
+
+// 数组是个"常量指针"
+int a[10]; // a++ 错误
+
+// 表现形式
+char a[] = "hello"; // 声明一个数组，编译器将根据数组的大小为它分配内存空间
+char* b = "hello";  // 声明一个指针，编译器只为指针本身保留内存空间，其值指向内容
+// a -> h e l l o
+// b -> [addr] -> h e l l o
+
+// 二维数组指针赋值
+char a[4][10];
+char (*x)[10] = a;
+
+// 二维数组传参
+void func(char (*a)[10]);
+```
+
+### 对象数组与对象指针 ？？？
+```
+对象数组除了分配对应大小的空间外，还分配了一段空间(double)用来储存数组的个数  [8 bytes] + [数组空间]
+
+所以new[]分配的空间要用delete[]来释放，其逻辑是先根据数组的个数调用n遍析构函数，然后将指针地址减去8再释放整个空间
+
+class A {
+    void* operator new(size_t size) {
+        cout << size << endl;
+        //...
+    }
+    void* operator new[](size_t size) {
+        cout << size << endl;
+        //...
+    }
+};
+
+A* a = new A;       // 打印 1
+A* a1 = new A [1];  // 还是打印 1
+
+char buf[100];
+A* a = new A(buf) [1];
+cout << (void*)buf << endl; // 0x7ffecc65f850
+cout << (void*)&a[0] << endl; // 0x7ffecc65f858
+```
+
+
+### 模板函数数组特化 ？？？
+```c++
+// reference to array of unknown bound 'int []'
+
+template<typename T> void func(T a) {}
+// 指针特化
+template<typename T> void func(T * a);
+// 引用特化
+template<typename T> void func(T & a);
+
+// int数组特化
+template<> void func<int[]>(int a []) {}
+// int数组特化(注意下面的数字)
+template<> void func<int[]>(int (&a) [10]) {}  
+// int指针特化
+template<> void func<int*>(int *(&a)) {}
+
+```
