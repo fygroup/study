@@ -1407,15 +1407,19 @@ execv("/bin/sh",(char* const *)job);
 ```
 
 ### random
-```
+```c++
 #include <random>
-std::default_random_engine e;
-std::uniform_real_distribution<float> u(0,100)  //随机数分布 注意此处是float
-int a = u(e) ;   //产生随机数
+
+std::random_device rd; // 生成随机种子, 每一次执行都是新的种子
+std::mt19937 gen(rd()); // 生成随机数，该算法优于std::default_random_engine
+std::uniform_int_distribution dis(0, 100) //设置范围的分布
+// std::uniform_real_distribution<float> dis(0,100) 某个范围内的随机浮点数
+dis(gen); // //产生随机数
+
 ```
 
 ### sstream
-```
+```c++
 #include <sstream>
 default_random_engine e;
 uniform_real_distribution<int> u(numeric_limits<int>::min(), numeric_limits<int>::max);

@@ -1039,3 +1039,11 @@ readlink("/proc/selef/exe", cwdAbsPath, 1024);
 // 用fwrite_unlocked要自己保证其原子性
 
 ```
+
+### memcpy memmove
+```c++
+void *memcpy(void *restrict s1, const void *restrict s2, size_t n);
+void *memmove(void *s1, const void *s2, size_t n);
+// 这两个函数都是将s2指向位置的n字节数据拷贝到s1指向的位置
+// memcpy不会考虑内存重叠，memmove会考虑内存重叠
+```
