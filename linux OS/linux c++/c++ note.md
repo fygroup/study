@@ -4513,15 +4513,14 @@ weak_ptr: 与shared_ptr配合使用，虽然能访问资源但却不享有资源
 (3) 引用次数
     // shared_ptr多个指针指向相同的对象。shared_ptr使用引用计数，每一个shared_ptr的拷贝都指向相同的内存
     // 每使用他一次，内部的引用计数加1；每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存
-    // shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁
-
     std::shared_ptr<int> a = std::make_shared<int>(10);
     std::shared_ptr<int> & b = a; // 引用 不会改变计数
-    std::shared_ptr<int> c = a; // 复制计数加一 不会改变计数
-    cout << a.use_count() << endl;
+    std::shared_ptr<int> c = a; // 复制计数加一
+    cout << a.use_count() << endl; // 2
+
     // 空指针的计数为0
-    shared_ptr<int> a;      // 计数0
-    shared_ptr<int> b = a;  // 计数0
+    shared_ptr<int> a;      // 空指针
+    shared_ptr<int> b = a;  // 计数为0
 
 (4) 自定义析构函数
     std::shared_ptr<int[]> a(new int[1], [](int* a){
@@ -4550,6 +4549,23 @@ weak_ptr: 与shared_ptr配合使用，虽然能访问资源但却不享有资源
     // 所以！！！auto_ptr几乎没用！！！
 
 (7) 智能指针做参数传值更好
+```
+
+### shared_ptr 线程安全
+```c++
+(1) shared_ptr 线程安全隐患
+// 1) 引用计数的加减操作是否线程安全
+// 2) shared_ptr 修改指向时是否线程安全
+// 3) shared_ptr 操作指向的内容时是否线程安全
+
+
+// 引用计数操作是原子的(an equivalent of std::atomic::fetch_add with std::memory_order_relaxed)，但是对象的读取需要加锁
+
+(1) shared_ptr数据结构
+shared_ptr 是引用计数型（reference counting）智能指针，几乎所有的实现都采用在堆（heap）上放个计数值（count）的办法（除此之外理论上还有用循环链表的办法，不过没有实例）。
+
+具体来说，shared_ptr<Foo> 包含两个成员，一个是指向 Foo 的指针 ptr，另一个是 ref_count 指针（其类型不一定是原始指针，有可能是 class 类型，但不影响这里的讨论），指向堆上的 ref_count 对象。ref_count 对象有多个成员，具体的数据结构如图 1 所示，其中 deleter 和 allocator 是可选的。
+
 ```
 
 ### unique_ptr 与 shared_ptr
