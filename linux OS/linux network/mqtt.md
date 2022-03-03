@@ -74,9 +74,9 @@
     CONNACK：连接确认
     PUBLISH：新发布消息
     PUBACK：新发布消息确认，是QoS 1给PUBLISH消息的回复
-    PUBREC：QoS 2消息流的第一部分，表示消息发布已记录
-    PUBREL：QoS 2消息流的第二部分，表示消息发布已释放
-    PUBCOMP：QoS 2消息流的第三部分，表示消息发布完成
+    PUBREC：QoS 2消息流的第一部分，用来响应PUBLISH
+    PUBREL：QoS 2消息流的第二部分，用来响应PUBREC
+    PUBCOMP：QoS 2消息流的第三部分，用来响应PUBREL
     SUBSCRIBE：客户端订阅某个主题
     SUBACK：对于SUBSCRIBE消息的确认
     UNSUBSCRIBE：客户端终止订阅的消息
@@ -100,6 +100,23 @@ QoS 1：至少分发一次
 
     发消息 -> 收到确认 -> 删除消息
 
+    Publisher                  Broker                    Subscriber
+    store(Msg)
+              PUBLISH(Qos1)-> 
+                              store(Msg)
+                                          PUBLISH(Qos1) ->
+                <-PUBACK                 
+                                            <- PUBACK  
+    del(Msg)                   del(Msg)            
+
+为什么消息会重复
+    mqtt 允许 id 重复，不能通过id来判断是否为重复数据
+    Publisher PUBLIC消息给 Broker
+    broker 收到消息后，删除msg id。发给消息给subscriber，然后收到PUBACK
+    Publisher迟迟未收到PUBACK，重发消息，标记带有dup
+    broker 收到消息后，再发给subscriber
+    如此会产生重复消息
+
 QoS 2：消息仅传送一次(最高级别)
     发布者发布 QoS 为 2 的消息之后，会将发布的消息储存起来并等待接收者回复 PUBREC 的消息
     发送者收到 PUBREC 消息后，它就可以安全丢弃掉之前的发布消息，因为它已经知道接收者成功收到了消息
@@ -110,24 +127,23 @@ QoS 2：消息仅传送一次(最高级别)
 
 无论在传输过程中何时出现丢包，发送端都负责重发上一条消息，不管发送端是 Publisher 还是 Broker。因此，接收端也需要对每一条命令消息都进行应答
 
-    Publisher                       Broker                          Subscriber
+    Publisher                    Broker                      Subscriber
     store(Msg)
-                PUBLISH(QoS2,Msg)->   
-                                    store(Msg)
-                                                PUBLISH(QoS2,Msg)->
-                                                                    store(Msg)
-                    <-PUBREC                           <-PUBREC
-                    PUBREL->                           PUBREL->
-                    <-PUBCOM                           <-PUBCOM
-    delete(Msg)                    delete(Msg)                      delete(Msg)
+              PUBLISH(QoS2)->   
+                               store(Msg)
+                                           PUBLISH(QoS2)->
+                <-PUBREC                                     store(Msg)
+    del(Msg)                                 <-PUBREC
+                               del(Msg)     
+                PUBREL->                      PUBREL->
+                <-PUBCOM                      <-PUBCOM
+    del(Msg Id)                del(Msg Id)                   Notify(Msg)
 
-
-
-    发消息 -> 收到确认 -> 发删除消息 -> 收到删除确认 -+ 
-                                                   +---> 删除消息 
-                        收到删除消息 ---------------+
-
-
+如何保证消息不会重发
+Qos2中，mqtt 通过 msg id 来判断消息是否重复
+Public、Broker 会存储消息
+Public 重发消息，Broker会通过msg id 判断是否重复
+当Public收到PUBREC后，只删除msg数据，然后发送PUBREL，当收到PUBCOM后，才能彻底删除msg id
 
 // QoS降级
 在 MQTT 协议中，从 Broker 到 Subscriber 这段消息传递的实际 QoS 等于
@@ -213,7 +229,7 @@ CONNECT Control Packet
 Byte Bits       Dec  Description
 --------------------------------
 // 固定报头
-0    00010000   1^   Control Packet Type
+0    00010000   1    Control Packet Type
 1    00001100   12   Packet Length
 // 可变报头
 2    00000000   0    Protocol Name Length MSB
@@ -243,7 +259,7 @@ Byte Bits       Dec  Description
 > 保持连接 Keep Alive
     客户端传输完成一个控制报文的时刻到发送下一个报文的时刻，两者之间允许空闲的最大时间间隔
     客户端：在连接时间值内没有其他报文发送，客户端必须发送一个PINGREQ报文
-    服务端：服务端在一点五倍的保持连接时间内没有收到客户端的控制报文，它必须断开客户端的网络连接
+    服务端：服务端如果在1.5倍的保持连接时间内没有收到客户端的控制报文，它必须断开客户端的网络连接
 
 ```
 
@@ -252,7 +268,7 @@ Byte Bits       Dec  Description
 Byte Bits       Dec  Description
 --------------------------------
 // 固定报头
-0    00100000   2^   Control Packet Type
+0    00100000   2    Control Packet Type
 1    00000010   2    Packet Length
 // 可变报头
 2    00000000   0    Connect Acknowledge Flags(连接确认标志)

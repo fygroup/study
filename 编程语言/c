@@ -955,3 +955,5 @@ ll、LL									long long
 lu、LU、Lu、lU、ul、uL、Ul、UL			unsigned long
 llu、LLU、LLu、llU、ull、ULL、uLL、Ull	unsigned long long
 ```
+
+*p++和*(p++)都是先取*p的值再将p自增

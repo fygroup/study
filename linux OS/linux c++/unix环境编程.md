@@ -71,8 +71,8 @@ POSIX定义的可选头文件
 ```
 
 ### linux hook
-```
-由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
+```c++
+// 由于是调用得动态链接库中函数，我们可以通过劫持该函数的方式引入额外处理。 例如通过劫持 malloc、free 来追踪内存使用情况等等
 
 //my_hook.c
 #define _GNU_SOURCE
@@ -81,12 +81,14 @@ POSIX定义的可选头文件
 #include <dlfcn.h>
 
 #define unlikely(x) __builtin_expect(!!(x), 0)
+
 #define TRY_LOAD_HOOK_FUNC(name) if (unlikely(!g_sys_##name)) {g_sys_##name = (sys_##name##_t)dlsym(RTLD_NEXT,#name);}
 
 typedef void* (*sys_malloc_t)(size_t size);
+
 static sys_malloc_t g_sys_malloc = NULL;
-void* malloc(size_t size)
-{
+
+void* malloc(size_t size) {
     TRY_LOAD_HOOK_FUNC(malloc);
     void *p = g_sys_malloc(size);
     printf("in malloc hook function ...\n");
@@ -94,9 +96,10 @@ void* malloc(size_t size)
 }
 
 typedef void (*sys_free_t)(void *ptr);
+
 static sys_free_t g_sys_free = NULL;
-void free(void *ptr)
-{
+
+void free(void *ptr) {
     TRY_LOAD_HOOK_FUNC(free);
     g_sys_free(ptr);
     printf("in free hook function ...\n");
@@ -107,17 +110,17 @@ gcc -o main main.c ./main
 LD_PRELOAD=./libmyhook.so ./main
 
 //LD_PRELOAD
-能够影响程序运行时候动态链接库的加载，可以通过设置其来优先加载某些库，进而覆盖掉某些函数
+// 能够影响程序运行时候动态链接库的加载，可以通过设置其来优先加载某些库，进而覆盖掉某些函数
 
 //内联优化
-由于编译器存在内联优化，不会调用库中的目标函数，所以必须关闭目标函数优化
--fno-builtin-strcmp，关闭 strcmp 函数的优化 
-gcc -o main main.c -fno-builtin-strcmp
+// 由于编译器存在内联优化，不会调用库中的目标函数，所以必须关闭目标函数优化
+// -fno-builtin-strcmp，关闭 strcmp 函数的优化 
+// gcc -o main main.c -fno-builtin-strcmp
 
 //dlsym
 void dlsym(RTLD_NEXT,"malloc")
-RTLD_DEFAULT: 使用默认的库搜索顺序查找所需符号的第一次出现
-RTLD_NEXT: 在当前库之后的搜索顺序中查找下一个出现的函数
+// RTLD_DEFAULT: 使用默认的库搜索顺序查找所需符号的第一次出现
+// RTLD_NEXT: 在当前库之后的搜索顺序中查找下一个出现的函数
 
 ```
 
@@ -132,30 +135,27 @@ RTLD_NEXT: 在当前库之后的搜索顺序中查找下一个出现的函数
 ```
 
 ### 互斥量、信号量
-```
-虽然mutex和semaphore可以相互替代，可以把 值最大为1 的Semaphore当Mutex用，也可以用Mutex＋计数器当Semaphore。
-Mutex管理的是资源的使用权，而Semaphore管理的是资源的数量，有那么一点微妙的小区别。
-Mutex用途：保护资源共享
-Semaphore用途：调度线程
-简而言之，锁是服务于共享资源的；而semaphore是服务于多个线程间的执行的逻辑顺序的
+```c++
+// 虽然mutex和semaphore可以相互替代，可以把值最大为1的Semaphore当Mutex用，也可以用Mutex＋计数器当Semaphore
+// Mutex管理的是资源的使用权，而Semaphore管理的是资源的数量，有那么一点微妙的小区别。
+// Mutex用途：保护资源共享
+// Semaphore用途：调度线程
+// 简而言之，锁是服务于共享资源的；而semaphore是服务于多个线程间的执行的逻辑顺序的
 
 //semaphore实例
 int a, b, c;
-void geta()
-{
+void geta() {
     a = calculatea();
     semaphore_increase();
 }
 
-void getb()
-{
+void getb() {
     b = calculateb();
     semaphore_increase();
 }
 
 
-void getc()
-{
+void getc() {
     semaphore_decrease();
     semaphore_decrease();
     c = a + b;
