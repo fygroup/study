@@ -1492,6 +1492,12 @@ tar zcvf xxx.tar.gz -C /dir1/dir2 xxx
 tar zcvf aaa.tar.gz dir/aa dir/bb
 ```
 
+### tar exclude
+```
+// 忽略目录dir下aa和bb
+tar zcvf aaa.tar.gz --exclude=dir/aa --exclude=dir/bb dir/
+```
+
 ### 更改系统时间
 ```
 date +%Y-%m-%d -s "2021-04-01"

@@ -4911,3 +4911,14 @@ template<> void func<int[]>(int (&a) [10]) {}
 template<> void func<int*>(int *(&a)) {}
 
 ```
+
+### string copy-on-write
+```c++
+string a = "abc";
+string b = a;
+printf("a %x\n", a.c_str());
+printf("b %x\n", b.c_str());
+b[0] = 'q';
+printf("a %x\n", a.c_str());
+printf("b %x\n", b.c_str());
+```
