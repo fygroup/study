@@ -4728,11 +4728,51 @@ std::chrono::steady_clock           // 不能被调整的，稳定增加的时�
 std::chrono::high_resolution_clock  // 提供最高精度的计时周期
 
 // Duration
-std::chrono::duration<>             
-std::chrono::duration_cast<>        // 不同精度转换
+std::chrono::duration<T>             
+std::chrono::duration_cast<T>        // 不同精度转换
 
 // Time point
-//      time_point
+std::chrono::time_point<system_clock>
+std::chrono::time_point<steady_clock>
+
+
+using namespace std::chrono;
+time_t a;
+time(&a);
+// time_t to time_point
+system_clock::time_point p = system_clock::from_time_t(a);
+// time_point to time_t
+time_t t = system_clock::to_time_t(p);
+
+// 时间精度转换
+system_clock::time_point n = system_clock::now();
+system_clock::duration d = n.time_since_epoch();  // nanos
+chrono::milliseconds mills = duration_cast<chrono::milliseconds>(d); // mills
+
+// 时间间隔
+system_clock::time_point n = system_clock::now();
+cout << n.time_since_epoch().count() << endl;
+// do something...
+system_clock::time_point n1 = system_clock::now();
+system_clock::duration d = n - n1;  // 纳秒
+chrono::milliseconds m = duration_cast<chrono::milliseconds>(d);
+chrono::seconds s = duration_cast<chrono::seconds>(d);
+cout << d.count() << endl;
+cout << m.count() << endl;
+cout << s.count() << endl;
+
+
+// 时间加减
+std::chrono::duration<double, std::ratio<60 * 60 * 24>> one_day(1);
+system_clock:time_point cur = system_clock::now();
+cur += on_day;
+
+// int 时间 to time_point
+timeval val;
+gettimeofday(&val, NULL);
+int64_t micro = static_cast<int64_t>(val.tv_sec * 1000000 + val.tv_usec);
+system_clock::time_point cur(chrono::microseconds(micro));
+
 ```
 
 ### system_clock steady_clock

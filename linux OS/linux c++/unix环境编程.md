@@ -964,15 +964,15 @@ key_t ftok(const char *pathname, int proj_id);
 ### cputime walltime
 ```c++
 // https://levelup.gitconnected.com/8-ways-to-measure-execution-time-in-c-c-48634458d0f9
-// cputime cpu时间
-// walltime 墙上时间(运行时间)
+// cputime  cpu执行代码时间。包含user time(用户态代码)，sys time(内核态代码)
+// walltime 从进行开始执行到完成所经历的墙上时钟时间（wall clock）时间，包括其他进程使用的时间片（time slice）和本进程耗费在阻塞（如等待I/O操作完成）上的时间
 
 (1) time command
     // cputime walltime
     $ time ***
-    // real 0m5.931s walltime
-    // user 0m5.926s clocktime
-    // sys 0m0.005s
+    // real 0m5.931s    walltime
+    // user 0m5.926s    cputime
+    // sys 0m0.005s     cputime
 
 (2) c++ <chrono>
     // walltime
@@ -981,7 +981,8 @@ key_t ftok(const char *pathname, int proj_id);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     
-(3) <sys/time.h> gettimeofday()
+(3) <sys/time.h> 
+    // gettimeofday()
     // Walltime
     struct timeval begin, end;
     gettimeofday(&begin, 0);
@@ -992,7 +993,8 @@ key_t ftok(const char *pathname, int proj_id);
     double elapsed = seconds + microseconds*1e-6;
     printf("Time measured: %.3f seconds.\n", elapsed);
 
-(4)  <time.h> time()
+(4) <time.h> 
+    // time()
     // walltime only measure second!!!
     time_t begin, end;
     time(&begin);
@@ -1001,13 +1003,27 @@ key_t ftok(const char *pathname, int proj_id);
     time_t elapsed = end - begin;
     printf("Result: %.20f\n", sum);
 
-(5) <time.h> clock()
-    // clocktime
+(5) <time.h>
+    // clock()
+    // cputime
     clock_t start = clock();
     // do something...
     clock_t end = clock();
     double elapsed = double(end - start)/CLOCKS_PER_SEC;
     printf("Time measured: %.3f seconds.\n", elapsed);
+
+(6) <time.h>
+    // clock_gettime
+    // cputime
+    struct timespec begin, end; 
+    clock_gettime(CLOCK_REALTIME, &begin);
+    // do something...
+    clock_gettime(CLOCK_REALTIME, &end);
+    long seconds = end.tv_sec - begin.tv_sec;
+    long nanoseconds = end.tv_nsec - begin.tv_nsec;
+    double elapsed = seconds + nanoseconds*1e-9;
+    printf("Time measured: %.3f seconds.\n", elapsed);
+    
 ```
 
 
