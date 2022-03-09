@@ -64,9 +64,57 @@ ISP 模块支持标准的Sensor 图像数据处理，包括自动白平衡、自
 
 VDA 视频侦测分析，通过检测视频的亮度变化，得出视频侦测分析结果。VDA 包含运动侦测（MD）和遮挡检测（OD）两种工作模式
 
+亮度    Luma
+色度    Chrm（ Chroma）
+步幅（宽度）stride
+指针类型    pst
+帧内宏块（Intra）帧间宏块（Inter）
+```
 
+### VIDEO_FRAME_S
+```c
+// 视频原始图像帧结构
 
+```
 
+### memory
+```c++
+// 在用户态分配MMZ 内存
+HI_S32 HI_MPI_SYS_MmzAlloc(HI_U64* pu64PhyAddr, HI_VOID** ppVirAddr, const HI_CHAR* strMmb, const HI_CHAR* strZone, HI_U32 u32Len);
+// pu64PhyAddr 物理地址指针。 输出
+// ppVirAddr 指向虚拟地址指针的指针。 输出
+// strMmb Mmb 名称的字符串指针。 输入
+// strZone MMZ zone 名称的字符串指针。 输入
+// u32Len 内存块大小。 输入
+
+// memory 存储映射接口
+HI_VOID* HI_MPI_SYS_Mmap(HI_U64 u64PhyAddr, HI_U32 u32Size);
+// u64PhyAddr 需映射的内存单元起始地址
+// u32Size 映射的字节数
+HI_S32 HI_MPI_SYS_Munmap(HI_VOID* pVirAddr, HI_U32 u32Size);
+
+// 用户态获取一个缓存块的物理地址。指定的缓存块应该是从MPP 视频缓存池中获取的有效缓存块
+HI_U64 HI_MPI_VB_Handle2PhysAddr(VB_BLK Block);
+// Block 缓存块句柄
+
+// 用户态获取一个缓存块
+VB_BLK HI_MPI_VB_GetBlock(VB_POOL Pool, HI_U64 u64BlkSize,const HI_CHAR *pcMmzName);
+// Pool 缓存池ID 号。[0, VB_MAX_POOLS)。输入
+// u64BlkSize 缓存块大小。输入
+// pcMmzName 缓存池所在DDR 的名字。 输入
+
+// 用户可以在创建一个缓存池之后，调用本接口从该缓存池中获取一个缓存块
+// 即将第1 个参数Pool 设置为创建的缓存池ID
+// 第2 个参数u64BlkSize 须小于或等于创建该缓存池时指定的缓存块大小
+// 从指定缓存池获取缓存块时，参数pcMmzName 无效
+
+// 如果用户需要从任意一个公共缓存池中获取一块指定大小的缓存块
+// 则可以将第1个参数Pool设置为无效ID 号（VB_INVALID_POOLID）
+// 将第2 个参数u64BlkSize设置为需要的缓存块大小，并指定要从哪个DDR 上的公共缓存池获取缓存块
+// 如果指定的DDR 上并没有公共缓存池，那么将获取不到缓存块。
+// 如果pcMmzName 等于NULL，则表示在没有命名的DDR 上的公共缓存池获取缓存块
+
+// 公共缓存池主要用来存放VIU 的捕获图像，因此，对公共缓存池的不当操作（如占用过多的缓存块）会影响MPP 系统的正常运行
 ```
 
 ### VI VPSS 工作模式
@@ -84,4 +132,56 @@ VI 和 VPSS 各自的工作模式分为在线 离线
 在线模式可以省一定的带宽和内存，降低端到端的延时
 但是，在线模式时，因为VI 不写出数据到DDR，无法进行CoverEx、OverlayEx、Rotate、LDC 等操作，需要在VPSS 各通道写出后再进行Rotate/LDC 等处理，而且有些功能只在离线下能支持，比如DIS
 所以使用在线模式还是离线模式需要根据具体需求来决定。如果追求低延时，那自然要使用在线模式
+```
+
+### AIC-DLC
+```
+// VI获得相机的流，然后算法处理每一帧，然后送入VENC进行编码
+VI -> hisi_input -> track_trans -> HI_MPI_VENC_SendFrame -> VENC
+  HI_MPI_VPSS_GetChnFrame
+
+// 获得编码后的流送入缓存
+HI_MPI_VENC_GetStream -> HI_DOWSE_VENC_Proc_Cb -> hi_pool_write_frame
+
+// rtsp获得缓存数据推送
+RTSP： hi_pool_read_frame -> hi_rtsp_get_video_data 
+```
+
+### 创建一个视频缓存池
+```c++
+// code demo
+VB_POOL_CONFIG_S pstVbPoolCfg;
+memset(&pstVbPoolCfg, 0, sizeof(VB_POOL_CONFIG_S));
+pstVbPoolCfg.u64BlkSize = BlkSize;  // 缓存块大小，以Byte 位单位
+pstVbPoolCfg.u32BlkCnt = BlkCnt;    // u32BlkCnt 每个缓存池的缓存块个数 范围(0, 10240]
+pstVbPoolCfg.enRemapMode = VB_REMAP_MODE_NOCACHE;   // 内核态虚拟地址映射模式
+VB_POOL VbPool = HI_MPI_VB_CreatePool(&pstVbPoolCfg);
+if (VB_INVALID_POOLID == VbPool) {
+    false;
+} else {
+    true;
+}
+
+// struct desc
+VB_REMAP_MODE_NONE VB 不映射内核态虚拟地址。
+VB_REMAP_MODE_NOCACHE VB 映射nocache 属性的内核态虚拟地址
+VB_REMAP_MODE_CACHED VB 映射cached 属性的内核态虚拟地址
+```
+
+### 用户从通道获取一帧处理完成的图像
+```c++
+// code demo
+VPSS_GRP Grp = 0;
+VPSS_CHN Chn = 0;
+VIDEO_FRAME_INFO_S stFrame;
+int sret = HI_MPI_VPSS_GetChnFrame(Grp, Chn, &stFrame, -1); 
+if (sret != HI_SUCCESS) false;
+
+// struct desc
+typedef struct hiVIDEO_FRAME_INFO_S {
+    VIDEO_FRAME_S stVFrame; // 视频图像帧
+    HI_U32 u32PoolId;       // 视频缓存池ID
+    MOD_ID_E enModId;       // 当前帧数据是由哪一个硬件逻辑模块写出的
+} VIDEO_FRAME_INFO_S;
+
 ```
