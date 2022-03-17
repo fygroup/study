@@ -438,3 +438,49 @@ https://cllc.fun/2020/03/18/linux-zero-copy/
 	调用sendfile将文件内容通过socket发送出去时候，从用户态切换到内核态
 	任务完成之后，切换回来
 ```
+
+### 性能杀手
+```c++
+(1) 临界区
+代码临界区 变量临界区
+临界区的存在，导致多个线程不能并行，造成性能下降。临界区越大，多个线程出入临界区越频繁，对性能的伤害也就越大
+
+(2) 伪共享
+// 在典型的多核架构中，每个CPU都有自己的Cache。如果一个内存中的变量在多个CPU Cache中都有副本，则需要保证变量的Cache的一致性
+// 现在大多数的架构实现Cache一致性都是采用MESI协议
+// CPU Cache是以缓存线（Cache line）为单位进行读写的。通常来说，一条缓存线的大小为64字小为64字节。换言之，就是访问1字节的数据，系统也会将该字节所在的整条缓存线的数据都搬到缓存中
+// 因为CPU Cache具有以Cache line为单位进行读写的性质，所以在多线程编程中，稍有不慎，就会掉入伪共享的陷阱，造成性能恶化
+// 例如
+int sum1;
+int sum2;
+void thread1(int v[], int v_count) {sum1 = 0; for (int i = 0; i < v_count; i++) sum1 += v[i];}
+void thread2(int v[], int v_count) {sum2 = 0; for (int i = 0; i < v_count; i++) sum2 += v[i];}
+sum1 + sum2;
+// 代码定义了两个全局变量sum1和sum2，两个线程分别将计算结果放入各自的全局变量中，看起来并行不悖
+// 由于这两个全局变量分配的内存紧挨着，cpu很可能将两个变量一起加载到同一条Cache line中
+// 尽管线程1所在的CPU并不需要sum2的值，但是由于sum2和sum1在同一条Cache line中，因此sum2的值也随同sum1一并被加载到了thread1所在CPU的Cache中了
+// 当thread1修改sum1的值时，尽管并未更新sum2的值，但影响的是整条Cache line，它会将thread2所在CPU对应的Cache line置为Invalidate
+// 如果thread2尝试更新sum2，会触发缓存不命中反过来，thread2修改sum2时，也会影响到sum1的缓存命中
+// 可以想见，就因为两个值彼此毗邻，落在同一条Cache line中，会导致大量的缓存不命中，从而影响性能
+
+thread1 cache			thread2 cache
++-------------+			+-------------+
+| sum1 | sum2 |			| sum1 | sum2 |
++-------------+			+-------------+
+	   |					   |	
+	   +-----------+-----------+
+	   			   |		
+memory 		+-------------+
+       		| sum1 | sum2 |
+       		+-------------+
+ 
+// 如何避免伪共享
+// 可利用填充的方式避免
+struct sum_t {
+	double sum;
+	char padding[56];
+} _sum[2];
+void thread1(int v[], int v_count) {sum1 = 0; for (int i = 0; i < v_count; i++) _sum[0].sum += v[i];}
+void thread2(int v[], int v_count) {sum2 = 0; for (int i = 0; i < v_count; i++) _sum[1].sum += v[i];}
+_sum[0] + _sum[1];
+```
