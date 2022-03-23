@@ -1083,6 +1083,8 @@ apt提供了大多数与apt-get及apt-cache有的功能，但更方便使用
 
 //列出系统包含的软件和库
 dpkg --list
+// 网络搜索软件包
+apt search [软件]
 //搜索软件包描述
 apt-cache search [软件]
 //显示软件包细节 
