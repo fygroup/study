@@ -485,17 +485,45 @@ if( fp == NULL ) {
 ```
 
 ### fork vs vfork
-```
-(1)
-    fork 是 创建一个子进程，并把父进程的内存数据copy到子进程中(写时复制)。
-    vfork是 创建一个子进程，并和父进程的内存数据share一起用。
+```c++
+(1) fork
+// 子进程和父进程的地址空间独立，但并不会复制空间内容，而是copy-on-write
+// fork后，子进程和父进程独立运行
 
-(2) vfork是这样的工作的
-    1）保证子进程先执行，注意此时的子进程共享父进程的栈，如果子进程return，那么此函数就会退出
-    2）当子进程调用exit()或exec()后，父进程往下执行。
+(2) vfork
+// 共享父进程地址空间(没有 copy-on-write)
+// vfork后，子进程先执行，直到子进程调用 exit 或 exec 后，父进程才开始执行
+// 因为地址共享，子进程修改数据，父进程也会发现修改的数据
 
-(3) 为什么vfork
-    起初只有fork，但是很多程序在fork一个子进程后就exec一个外部程序，于是fork需要copy父进程的数据这个动作就变得毫无意了，而且这样干还很重（注：后来，fork做了优化，详见本文后面），所以，BSD搞出了个父子进程共享的 vfork，这样成本比较低。因此，vfork本就是为了exec而生。
+// fork和vfork最终都是调用do_fork系统调用，差别在于传入的flag不同
+// fork    clone_flag = SIGCHLD
+// vfork   clone_flag = CLONE_VM | CLONEVFORK | SIGCHLD
+
+// fork vfork 都需要wait()
+
+// demo
+#include <unistd.h>
+#include <iostream>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <wait.h>
+#include <time.h>
+
+int pid = fork(); // vfork()
+if (pid == 0) {
+    cout << "child " << getpid() << " time " << time(NULL) << endl;
+    sleep(2);
+    const char* job[] = {"sh","-c","sleep 2 && echo 'dsadsadsa'",NULL};
+    execv("/bin/sh",(char* const *)job);
+} else if (pid > 0) {
+    cout << "parent " << getpid() << " time " << time(NULL) << endl;
+    wait(NULL); // 无论fork vfork 都需要wait()
+} else {
+    cout << "error" << endl;
+}
+
+// fork() 父子进程同时进行
+// vfork() 子进程先开始，exec后，父进程才开始
 
 ```
 
