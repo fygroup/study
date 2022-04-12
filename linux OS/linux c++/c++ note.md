@@ -1144,9 +1144,15 @@ class X
 ```
 
 ### 优先队列
-```
-struct cmp
-{
+```c++
+
+priority_queue<Type, Container, Functional>
+// Type 就是数据类型
+// Container 就是容器类型（Container必须是用数组实现的容器，比如vector,deque等等，但不能用 list。STL里面默认用的是vector）
+// Functional 就是比较的方式，当需要用自定义的数据类型时才需要传入这三个参数，使用基本数据类型时，只需要传入数据类型，默认是大顶堆
+
+
+struct cmp {
 	bool operator()(int & a, int & b){
 		return a == b;
 	}
@@ -1154,10 +1160,11 @@ struct cmp
 
 bool cmp1(int & a, int & b){
 	return a == b;
-}
+};
 
-priority_queue<int,vector<int>,cmp> a;
-priority_queue<int,vector<int>,bool(*)(int & a, int & b)> b(cmp1);
+priority_queue<int, vector<int>, cmp> a;
+
+priority_queue<int, vector<int>, bool(*)(int & a, int & b)> b(cmp1);
 
 ```
 
@@ -1200,7 +1207,7 @@ map set
     它具有队列的属性，所以只能访问第一个元素
     底层存储用vector，用heap来组织数据结构
     //模板类型
-    template <typename T, typename Container=std::vector<T>, typename Compare=std::less<T>>
+    template <typename T, typename Container = std::vector<T>, typename Compare = std::less<T>>
     class priority_queue
 
 // 上述 stack、queue、priority_queue不是容器，而是容器适配器

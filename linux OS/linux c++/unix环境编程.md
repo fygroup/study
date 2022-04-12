@@ -758,6 +758,30 @@ cin.get()   // c++
 getchar()   // c
 ```
 
+
+### time gmtime localtime mktime
+```c++
+// 获取当前时间: 格林威治时间
+// 推荐gettimeofday, 线程安全，且不会系统调用，精确到微秒
+time_t now = time(NULL);
+
+// gm为格林威治时间，直接使用time_t转换即可得到tm结构
+struct tm* gm = gmtime(&now);
+
+// local为当地时间，使用time_t格林威治时间+时区偏差，生成tm结构
+struct tm* local = localtime(&now);
+
+// mktime输入的是localtime-tm结构，得到格林威治时间time_t
+time_t curr = mktime(local);
+
+// ctime展示的当地时间localtime串信息
+printf("current: %s", ctime(&now));
+
+// 注意
+// localtime gmtime 都用到了static变量，没有做线程安全保护
+// localtime_r gmtime_r 是线程安全的
+```
+
 ### time.h
 ```c++
 // time_t 在有的编译器上是32，但大多是64
@@ -783,13 +807,6 @@ time_t StrToTime(const std::string & str){
     return timegm(&t);  // UTC时区
     // return mktime(&t); 本地时区
 }
-```
-
-### localtime gmtime 线程不安全
-```
-localtime gmtime 都用到了static变量，没有做线程安全保护
-localtime_r gmtime_r 是线程安全的
-推荐gettimeofday, 线程安全，且不会系统调用
 ```
 
 ### 位运算条件判断
