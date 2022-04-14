@@ -131,6 +131,36 @@ class A<T<Argvs...>> {
 
 ```
 
+### template template parameter
+```c++
+// 模仿容器类
+template<typename T, 
+        template<typename, typename> ContainType, 
+        typename Alloc = std::allocator<T>>
+class MyContainer {
+public:
+    ContainType<T> value;
+};
+
+MyContainer<int, vector> a;
+
+// 2
+template <typename T, typename ContainType>
+class MyContainer{
+  ContainType value;
+};
+
+MyContainer<int, std::vector<int> > a;
+
+// 3
+template <typename T, typename ContainType = vector<T>>
+class MyContainer{
+  ContainType value;
+};
+
+MyContainer<int> a;
+```
+
 ### declval
 ```c++
 //  返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象

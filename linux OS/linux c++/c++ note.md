@@ -802,7 +802,8 @@ public:
     template<> void func(int a, char b) {}          
     template<> void func<int, char>(int a, char b) {}   // 两个写法都行
 
-    // 偏特化 函数模板不能被偏特化
+    // 偏特化
+    // 函数模板不能被偏特化
     // 因为模板特化版本不参与函数的重载抉策过程，因此在和函数重载一起使用的时候，可能出现不符合预期的结果。因此标准C++禁止了函数模板的偏特化
     // template<typename T2> void func<int, T2>(int a, T2 b) {}   错误!!!
     // 要实现模板函数偏特化可以借助类模板偏特化
@@ -1145,27 +1146,48 @@ class X
 
 ### 优先队列
 ```c++
-
+#include <queue>
 priority_queue<Type, Container, Functional>
 // Type 就是数据类型
 // Container 就是容器类型（Container必须是用数组实现的容器，比如vector,deque等等，但不能用 list。STL里面默认用的是vector）
 // Functional 就是比较的方式，当需要用自定义的数据类型时才需要传入这三个参数，使用基本数据类型时，只需要传入数据类型，默认是大顶堆
+// 大顶堆
+priority_queue<int,vector<int>,less<int>> big_heap;
+// 小顶堆
+priority_queue<int,vector<int>,greater<int>> small_heap;
 
-
-struct cmp {
-	bool operator()(int & a, int & b){
-		return a == b;
+// 重载
+struct item {
+    int value;
+	friend bool operator<(const item & a, const item & b){
+		return a.value < b.value;
 	}
 };
+priority_queue<item> pq;
 
-bool cmp1(int & a, int & b){
-	return a == b;
+// 仿函数
+struct item {
+    int value;
 };
+struct cmp {
+    bool operator()(const item& a, const item& b) {
+        return a.value < b.value;
+    }
+};
+priority_queue<item, vector<item>, cmp> pq;
 
-priority_queue<int, vector<int>, cmp> a;
+// lambda
+struct item {
+    int value;
+};
+auto compare = [](const item& a, const item& b)->bool{return a.value < b.value;};
+std::priority_queue<int, std::vector<int>, decltype(compare)> pq(compare);
 
-priority_queue<int, vector<int>, bool(*)(int & a, int & b)> b(cmp1);
-
+// function
+bool compare(const item& a, const item& b) {
+    return a.value < b.value;
+}
+std::priority_queue<int, std::vector<int>, std::function<bool(const item&, const item&)>> pq(compare);
 ```
 
 ### 容器简介
@@ -2575,7 +2597,7 @@ void g(std::initializer_list<int> const &items){}; //注意const initializer_lis
 g({ 1, 2, 3, 4 });
 ```
 
-### 函数对象
+### 函数对象(仿函数)
 ```c++
 // 函数对象是实现 operator() 的任何类型
 // C++ 标准库主要使用函数对象作为容器和算法内的排序条件
@@ -2613,7 +2635,7 @@ int add(int a, int b){return a+b;}
 // lambda表达式
 auto mod = [](int a, int b)->int{ return a % b;}
 
-// 函数对象类
+// 函数对象(仿函数)
 struct divide{
     int operator()(int denominator, int divisor){
         return denominator/divisor;
@@ -4928,4 +4950,11 @@ printf("b %x\n", b.c_str());
 b[0] = 'q';
 printf("a %x\n", a.c_str());
 printf("b %x\n", b.c_str());
+```
+
+### 模版别名
+```c++
+// 模板别名
+template<typename T>
+using Vector = std::vector<T, std::allocator<T>>;
 ```
