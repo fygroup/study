@@ -135,8 +135,7 @@ class A<T<Argvs...>> {
 ```c++
 // 模仿容器类
 template<typename T, 
-        template<typename, typename> ContainType, 
-        typename Alloc = std::allocator<T>>
+        template<typename, typename Alloc = std::allocator<T>> class ContainType>
 class MyContainer {
 public:
     ContainType<T> value;

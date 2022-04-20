@@ -1187,7 +1187,7 @@ std::priority_queue<int, std::vector<int>, decltype(compare)> pq(compare);
 bool compare(const item& a, const item& b) {
     return a.value < b.value;
 }
-std::priority_queue<int, std::vector<int>, std::function<bool(const item&, const item&)>> pq(compare);
+std::priority_queue<item, std::vector<int>, std::function<bool(const item&, const item&)>> pq(compare);
 ```
 
 ### 容器简介
@@ -4734,6 +4734,15 @@ std::reinterpret_pointer_cast() // 功能与std::reinterpret_cast()类似
 (3) 树形数据结构
     使用红黑树来存储数据，插入不会使得任何迭代器失效；删除运算使指向删除位置的迭代器失效，但是不会失效其他迭代器.erase迭代器只是被删元素的迭代器失效，但是返回值为void
     所以要采用erase(iter++)的方式删除迭代器
+```
+
+### list erase 的问题
+```c++
+list<type> a;
+a.push_back(type());
+auto i = a.begin();
+a.erase(i); // 删除链表中的此元素，还会析构该元素
+
 ```
 
 ### extern "C"
