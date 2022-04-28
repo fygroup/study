@@ -1767,3 +1767,10 @@ touch aaa   666 - 002 = 664    rw-rw-r--
 mkdir aaa   777 - 002 = 775    rwxrwxr-x 
 
 ```
+
+### 查看路由跳转
+```
+traceroute www.baidu.com
+或
+mtr www.baidu.com
+```

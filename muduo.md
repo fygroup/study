@@ -98,7 +98,11 @@ EventLoop::loop()
             curChannel::handleEventWithGuard(receiveTime)
                 EventLoop::handleRead(receiveTime) 
 
+```
 
-
-
+### server
+```
+channel->send(data)
+    data -> outputBuffer
+    enableWriting() -> epoll
 ```

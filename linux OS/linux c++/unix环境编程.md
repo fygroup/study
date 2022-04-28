@@ -11,7 +11,7 @@ POSIX标准定义的头文件
 <regex.h>    正则表达式
 <tar.h>        TAR归档值
 <termios.h>    终端I/O
-<unistd.h>    符号常量
+<unistd.h>    符号常量、系统调用列表和编号
 <utime.h>    文件时间
 <wordexp.h>    字符扩展类型
 -------------------------
@@ -480,6 +480,31 @@ fp = fopen("file.txt", "r");    // 没有文件，系统把错误已经写进err
 if( fp == NULL ) {
     perror("Error: ");          // 输出error得内容，并在前面加上"Error: "
     return(-1);
+}
+
+```
+
+### wait
+```c
+// wait允许父进程获取子进程结束时的状态，并且将子进程的task_struct从内核中清除。在调用wait时，父进程会被阻塞等待返回
+#include <sys/types.h>
+#include <wait.h>
+int wait(int *status)
+// 如果父进程没有调用wait获取子进程状态时，子进程会销毁，但是子进程的task_struct仍然会存在内核数据结构中，并且称之为Zombie进程，Zombie进程过多导致新进程无法创建
+
+
+// 也可以注册SIGCHILD信号来wait子进程退出，当子进程退出时候，内核会发送该信号给父进程
+
+void wait4children(int signo) {  
+  int status;  
+  wait(&status);  
+}  
+   
+int main() {  
+  ...
+  pid_t pid;  
+  signal(SIGCHLD, wait4children);  
+  ...
 }
 
 ```
@@ -1090,7 +1115,7 @@ readlink("/proc/selef/cwd", cwdAbsPath, 1024);
 readlink("/proc/selef/exe", cwdAbsPath, 1024);
 ```
 
-### fwrite_unlocked
+### fwrite_unlocked fread_unlocked
 ```c++
 #include <stdio.h>
 // fwrite_unlocked 是 fwrite 的非线程安全版本
@@ -1107,4 +1132,83 @@ void *memcpy(void *restrict s1, const void *restrict s2, size_t n);
 void *memmove(void *s1, const void *s2, size_t n);
 // 这两个函数都是将s2指向位置的n字节数据拷贝到s1指向的位置
 // memcpy不会考虑内存重叠，memmove会考虑内存重叠
+```
+
+### backtrace
+```c++
+// https://blog.csdn.net/jasonchen_gbd/article/details/44108405
+
+// backtrace()是glibc（>=2.1）提供的函数，用于跟踪函数的调用关系
+#include <execinfo.h>
+int backtrace(void **buffer, int size);
+char **backtrace_symbols(void *const *buffer, int size);
+void backtrace_symbols_fd(void *const *buffer, int size, int fd);
+```
+
+### abi::__cxa_demangle
+```c++
+#include <cxxabi.h>
+// __cxa_demangle来将backtrace_symbols返回的字符串逐个解析成可以方便看懂的字符串
+```
+
+### ptrace
+```c++
+// https://cloud.tencent.com/developer/article/1742878
+// https://blog.csdn.net/edonlii/article/details/8717029
+// ptrace：进程跟踪
+
+// GDB观察程序在内存/寄存器中的使用情况，实现基于ptrace系统调用来完成的
+// 其原理是利用ptrace系统调用，在被调试程序和gdb之间建立跟踪关系。然后所有发送给被调试程序的信号(除SIGKILL)都会被gdb截获，gdb根据截获的信号，查看被调试程序相应的内存地址，并控制被调试的程序继续运行。GDB常用的使用方法有断点设置和单步跟踪
+
+#include<sys/ptrace.h>
+long ptrace(enum __ptrace_request request,  pid_t pid, void *addr,  void *data);
+// request  指定调试的指令，如：PTRACE_TRACEME、PTRACE_PEEKUSER、PTRACE_CONT、PTRACE_GETREGS等
+// pid      进程的ID
+// addr     进程的某个地址空间，可以通过这个参数对进程的某个地址进行读或写操作
+// data     根据不同的指令，有不同的用途
+
+> 原理
+// 在执行系统调用之前，内核会先检查当前进程是否处于被"跟踪"(traced)的状态。如果是的话，内核暂停当前进程并将控制权交给跟踪进程(发送SIGCHLD或其他信号)，使跟踪进程得以察看或者修改被跟踪进程的寄存器
+
+> PTRACE_TRACEME //进入被追踪模式
+
+    child = fork();  // 创建一个子进程
+    if(child == 0) { // 子进程
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL); 
+        // 表示当前进程进入被追踪状态(ptrace调用内核的sys_ptrace)
+
+        execl("/bin/ls", "ls", NULL);
+        // 执行 execl() 的程序后，会向父进程发送 SIGCHLD 信号，并且暂停自身的执行
+        // 实际步骤：
+            // exec()函数后便会发送一个 SIGTRAP 的信号给当前进程(被调试进程)
+            // 当前进程收到SIGTRAP信号后，do_signal进行信号处理
+            // 处理逻辑：
+                // 如果进程被标记为 PTRACE 状态
+                // 让自己进入停止运行状态
+                // 发送 SIGCHLD 信号给父进程
+                // 让出CPU的执行权限
+    } else { // 父进程
+        wait(NULL); 
+        // 等待子进程发送一个 SIGCHLD 信号
+        
+        ptrace(PTRACE_GETREGS, child, NULL, &regs); 
+        // 获取子进程的各个寄存器的值
+        printf("Register: rdi[%ld], rsi[%ld], rdx[%ld], rax[%ld], orig_rax[%ld]\n",
+                regs.rdi, regs.rsi, regs.rdx,regs.rax, regs.orig_rax); // 打印寄存器的值
+        
+        ptrace(PTRACE_CONT, child, NULL, NULL); 
+        // 继续运行子进程
+        sleep(1);
+    }
+
+> PTRACE_PEEKTEXT/PTRACE_PEEKDATA // 获取被调试进程的内存数据
+    ptrace(PTRACE_PEEKDATA, pid, addr, data)
+    // 获取被调试进程 addr 处虚拟内存地址的数据，但每次只能读取一个大小为 4字节的数据。
+    // 是通过access_process_vm函数实现的
+
+> PTRACE_SINGLESTEP // 单步调试模式
+    // 被调试进程每执行一条CPU指令都会停止，并且向父进程（调试进程）发送一个 SIGCHLD 信号
+    // 单步调试模式，X86 CPU 提供了一个硬件的机制，就是通过把 eflags 寄存器的 Trap Flag 设置为1即可
+    // 当把 eflags 寄存器的 Trap Flag 设置为1后，CPU 每执行一条指令便会产生一个异常，然后会触发 Linux 的异常处理，Linux 便会发送一个 SIGTRAP 信号给被调试的进程(当前进程接受信号后会发送SIGCHLD给父进程)
+    // 父进程（调试进程）接收到 SIGCHLD 后，就可以对被调试的进程进行各种操作，比如读取被调试进程内存的数据和寄存器的数据，然后通过调用 ptrace(PTRACE_CONT, child,...) 来让被调试进程进行运行等
 ```

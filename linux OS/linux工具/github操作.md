@@ -278,3 +278,8 @@ git reset --soft HEAD^
 git rm -r --cached .
 git add -A
 ```
+
+### server certificate verification failed
+```
+git config --global http.sslVerify false
+```

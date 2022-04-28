@@ -3886,7 +3886,9 @@ printVec<int>({1,2,3,4}); // 必须要显式调用
 ```c++
 // 构造函数不能是虚函数
 // 由于对象开始还未分配内存空间，所以根本就无法找到虚函数表，从而构造函数也无法被调用。所以构造函数是不能成为虚函数
+
 // 析构函数最好是虚函数
+// 当我们delete(a)的时候，如果析构函数不是虚函数，那么调用的将会是基类base的析构函数。而当继承的时候，通常派生类会在基类的基础上定义自己的成员，此时我们当时是希望可以调用派生类的析构函数对新定义的成员也进行析构啦。
 
 class Base {};
 class Sub:public Base {};
@@ -4255,23 +4257,6 @@ delete a;
 typedef char T_must_complete_type[sizeof(A) == 0? -1 : 1];
 T_must_complete_type test_; (void)test_;
 
-```
-
-### backtrace
-```c++
-// https://blog.csdn.net/jasonchen_gbd/article/details/44108405
-
-// backtrace()是glibc（>=2.1）提供的函数，用于跟踪函数的调用关系
-#include <execinfo.h>
-int backtrace(void **buffer, int size);
-char **backtrace_symbols(void *const *buffer, int size);
-void backtrace_symbols_fd(void *const *buffer, int size, int fd);
-```
-
-### abi::__cxa_demangle
-```c++
-#include <cxxabi.h>
-// __cxa_demangle来将backtrace_symbols返回的字符串逐个解析成可以方便看懂的字符串
 ```
 
 ### 字符编码 locale

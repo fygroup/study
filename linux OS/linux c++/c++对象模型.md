@@ -12,10 +12,10 @@ RTTI
 ### 查看对象的布局
 ```
 // 查看对象布局
-clang -Xclang -fdump-record-layouts -stdlib=libc++ -c model.cc
+clang++ -Xclang -fdump-record-layouts -stdlib=libc++ -c model.cc
 
 // 查看虚函数表布局
-clang -Xclang -fdump-vtable-layouts -stdlib=libc++ -c model.cc
+clang++ -Xclang -fdump-vtable-layouts -stdlib=libc++ -c model.cc
 ```
 
 ### c++对象模型
