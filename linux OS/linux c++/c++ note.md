@@ -263,10 +263,6 @@ f();
 具体化 template<> void func<T>(T & a, T & b);
 应用 job a,b; func(a,b);
 
-//---纯虚函数--------------------
-virtual void func() = 0;
-纯虚函数不能实例化 ，但命名个类指针还是可以的
-
 //---iterator--------------------
 i++ / i-- 时，其迭代的内容改变，但是迭代器本身的地址不变。
 iterator相当于指针，对iterator进行++或--时，iterator指向的位置前移或后移，但是iterator本身的地址是不变的，和指针一样
@@ -672,6 +668,21 @@ unsigned char c;
 string c_str() 返回的是const char*！！！
 //---memset--------------------------------------------------------------------------
 当内存比较大时，memset还是比较费时间的
+```
+
+### 纯虚函数
+```
+class A{
+public:
+    virtual void func() = 0; // 表示纯虚函数    
+    A(int _a):a(_a){}
+    virtual ~A()
+private:
+    int a;
+}
+带有纯虚函数的类只做能被继承，而不能被实例化；
+这个方法必须在派生类中被实现
+
 ```
 
 ### atexit
@@ -1913,7 +1924,7 @@ decltype和auto都可以用来推断类型，但是二者有几处明显的差�
 
 // static_cast
 // static_cast相当于传统的"C语言里的强制转换"，一般情况下类型之间的转化用static_cast
-// 用于基类和派生类之间指针或引用的转换，进行"上行转换"，不能进行下行转换
+// 用于基类和派生类之间指针或引用的转换，进行"向下转型"，不能进行"向上转型"
 // 用于基本数据类型之间的转换，如把int转换成char，把int转换成enum
 // 把空指针转换成目标类型的空指针
 // 把任何类型的表达式转换成void类型
@@ -2115,14 +2126,6 @@ public:
 
 Object<int> a = Object<int>::Object();  // 移动构造
 Object<int> b = a; // 拷贝构造
-```
-
-### 可变参数
-```c++
-template<typename f, typename ...Argvs>
-void callback(function<void(Argvs...)> f, Argvs&&... argvs){
-    f(std::forward<Argvs>(argvs)...);
-}
 ```
 
 ### 模板特化(指针)
@@ -2371,7 +2374,7 @@ constexpr表示这玩意儿在编译期就可以算出来（前提是为了算�
 const只保证了运行时不直接被修改（但这个东西仍然可能是个动态变量）
 ```
 
-### __attribute__
+### \_\_attribute\_\_
 ```
 (1) 概念
     GNU C 的一大特色就是__attribute__ 机制
@@ -4122,101 +4125,6 @@ class {
     [谈谈C++如何实现反射机制] https://zhuanlan.zhihu.com/p/70044481
 ```
 
-### type_traits
-```c++
-#include <type_traits>
-// type_traits是C++11提供的模板元基础库
-// type_traits可实现在编译期计算、判断、转换、查询等等功能
-// type_traits提供了编译期的true和false
-
-(1) integral_constant
-// 该对象包含具有指定值的该整型类型的常量
-std::integral_constant<int, 5>::value;       // 5
-std::integral_constant<bool, true>::value;   // true
-
-(2) true_type false_type
-std::true_type::value;
-std::false_type::value;
-
-(3) is_same
-
-(4) decay
-// 获取它的原始类型
-template<typename T>
-typename std::decay<T>::type* Create(){
-    typedef typename std::decay<T>::type U;
-    return new U();
-}
-
-(5) conditional
-std::conditional<true, int, double>::type   //= int
-
-(6) decltype和auto
-// decltype和auto可以实现模板函数的返回类型
-template<typename F, typename Arg>
-auto Func(F f, Arg arg)->decltype(f(arg)){
-    return f(arg);
-}
-
-(7) result_of 
-// result_of 在编译期推导出一个函数表达式的返回值类型
-int f(int a, int b) {return a+b;}
-template<typename Fn, typename ...Argvs>
-typename std::result_of<Fn(Argvs...)>::type Func(Fn f, Argvs&&... argvs) {
-    return f(argvs...);
-}
-Func(f, 2, 3);
-
-(8) enable_if
-template<bool, typename T = void> struct enable_if {};
-template<typename T> struct enable_if<true, T>{ typedef T type; };
-// 只有当第一个模板参数为 true 时，type 才有定义，否则使用 type 会产生编译错误
-
-(9) declval
-// 返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象
-
-(10) is_constructible
-// 用于检查给定类型T是否是带有参数集的可构造类型
-template <class T, class... Args>
-struct is_constructible;
-
-struct T { 
-    T(int, int){}; 
-};
-
-std::is_constructible<T, int>::value // false
-std::is_constructible<T, int, int>::value // true
-
-(11) is_convertible
-// 测试一种类型是否可转换为另一种类型
-template <class From, class To>
-struct is_convertible;
-
-```
-
-### is_function 简单实现
-```c++
-#include <type_traits>
-
-template<typename T>
-struct my_is_function : public false_type {};
-
-template<typename T>
-struct my_is_function<T()> : public true_type {};   // 普通函数
-template<typename T>
-struct my_is_function<T(*)()> : public true_type {}; // 函数指针
-
-template<typename T, typename... Argvs>
-struct my_is_function<T(Argvs...)> : public true_type {};  // 多参数
-template<typename T, typename... Argvs>
-struct my_is_function<T(*)(Argvs...)> : public true_type {};
-
-void f(int);
-
-my_is_function<decltype<f>>::value; // true
-
-```
-
 ### 基类调用继承类接口
 ```c++
 class A {
@@ -4684,9 +4592,6 @@ std::unique_ptr<T> make_unique(Argvs&&... argvs) {
 //  make版本内部使用allocated一下子分配包含new和control block的内存大小空间，并且这样加快程序运行速度、减小内存碎片的分配
 // > 美观
 //  减少new的使用
-
-
-
 ```
 
 ### 智能指针转换
@@ -4697,6 +4602,33 @@ std::static_pointer_cast()      // 当指针是智能指针时候，向上转换
 std::dynamic_pointer_cast()     // 当指针是智能指针时候，向下转换，类似dynamic_cast
 std::const_pointer_cast()       // 功能与std::const_cast()类似
 std::reinterpret_pointer_cast() // 功能与std::reinterpret_cast()类似
+
+// 可以通过 dynamic_pointer_cast 判断有哪个派生类来的
+
+class Base {
+public:
+    virtual void f() = 0;
+};
+
+class Drived : public Base {
+public:
+    virtual void f(){}
+};
+
+class Drived1 : public Base {
+public:
+    virtual void f(){}
+};
+
+std::shared_ptr<Base> a = std::make_shared<Drived>();
+std::shared_ptr<Drived> b = std::dynamic_pointer_cast<Drived>(a);
+if (b.get()) {
+    cout << "Drived " << endl;
+}
+std::shared_ptr<Drived1> b1 = std::dynamic_pointer_cast<Drived1>(a);
+if (b1.get()) {
+    cout << "Drived1 " << endl;
+}
 ```
 
 ### 编译选项 -rdynamic
@@ -4951,4 +4883,21 @@ printf("b %x\n", b.c_str());
 // 模板别名
 template<typename T>
 using Vector = std::vector<T, std::allocator<T>>;
+```
+
+### 向前声明
+```c++
+// xxx.h
+class A; // 向前声明
+class B {
+    A* a; // 用指针避免实例化
+};
+
+// 前向声明是为了
+// 避免头文件循环引用
+// 避免引入头文件
+
+// 注意：
+// 循环引用只能是 xxx.h 中只出现了类型A的指针，而未调用其成员函数或成员变量
+// 否则还是重新改架构，梳理A与B的关系
 ```

@@ -5,6 +5,106 @@ https://zhuanlan.zhihu.com/p/109582141
 
 ```
 
+### type_traits
+```c++
+#include <type_traits>
+// type_traits是C++11提供的模板元基础库
+// type_traits可实现在编译期计算、判断、转换、查询等等功能
+// type_traits提供了编译期的true和false
+
+> integral_constant
+// 该对象包含具有指定值的该整型类型的常量
+std::integral_constant<int, 5>::value;       // 5
+std::integral_constant<bool, true>::value;   // true
+
+> true_type false_type
+std::true_type::value;
+std::false_type::value;
+
+> is_same
+// 判断两个类型是否相同
+
+> is_class
+// 判断是否为类类型
+// 实现
+template<typename T>
+std::false_type _is_class(...);
+template<typename T>
+std::integral_constant<bool, !std::is_union<T>::value> _is_class(int T::*);
+                                       ↑                            ↑
+                                   要排除union                       | 
+                                                                 类成员指针   
+template<typename T>
+struct is_class : decltype(_is_class<T>(nullptr)) {}
+// demo
+struct A {};
+class B {};
+enum class C {};
+std::is_class<A>; // true
+std::is_class<B>; // true
+std::is_class<C>; // false
+std::is_class<int>; // false
+
+> decay
+// 获取它的原始类型
+template<typename T>
+typename std::decay<T>::type* Create(){
+    typedef typename std::decay<T>::type U;
+    return new U();
+}
+
+> conditional
+std::conditional<true, int, double>::type   //= int
+
+> decltype和auto
+// decltype和auto可以实现模板函数的返回类型
+template<typename F, typename Arg>
+auto Func(F f, Arg arg)->decltype(f(arg)){
+    return f(arg);
+}
+
+> result_of 
+// result_of 在编译期推导出一个函数表达式的返回值类型
+int f(int a, int b) {return a+b;}
+template<typename Fn, typename ...Argvs>
+typename std::result_of<Fn(Argvs...)>::type Func(Fn f, Argvs&&... argvs) {
+    return f(argvs...);
+}
+Func(f, 2, 3);
+
+> enable_if
+template<bool, typename T = void> struct enable_if {};
+template<typename T> struct enable_if<true, T>{ typedef T type; };
+// 只有当第一个模板参数为 true 时，type 才有定义，否则使用 type 会产生编译错误
+
+> declval
+// 返回一个类型的右值引用，不管是否有没有默认构造函数或该类型不可以创建对象
+
+> is_constructible
+// 用于检查给定类型T是否是带有参数集的可构造类型
+template <class T, class... Args>
+struct is_constructible;
+
+struct T { 
+    T(int, int){}; 
+};
+
+std::is_constructible<T, int>::value // false
+std::is_constructible<T, int, int>::value // true
+
+> is_convertible
+// 测试一种类型是否可转换为另一种类型
+template <class From, class To>
+struct is_convertible;
+
+> is_base_of
+template< class Base, class Derived>
+struct is_base_of;
+// 若 Derived 派生自 Base 或为同一非联合类（均忽略 cv 限定），则提供等于 true 的成员常量 value 。否则 value 为 false
+
+
+```
+
 ### 模板元编程
 ```
 C++ 模板是图灵完备，理论上说 C++ 模板可以执行任何计算任务，但实际上因为模板是编译期计算，其能力受到具体编译器实现的限制（如递归嵌套深度，C++11 要求至少 1024，C++98 要求至少 17）
@@ -199,14 +299,39 @@ struct enable_if<true, T>{
     typedef T type;
 };
 
-// enable_if 都用来判断模板参数的类型
-
-// 校验函数模板参数类型必须是int
-template<typename T>
-typename std::enable_if<std::is_intergral<T>::value, bool>::type 
-is_odd(T t) {
-    return bool(T % 2);
+// 用途
+(1) 用于类型偏特化
+// 在使用模板编程的时候，可以使用enbale_if的特性根据模板参数的不同特性进行不同的类型选择
+template <typename _Tp>
+struct Smart_pointer : public false_type {};
+template <typename _Tp>
+struct Smart_pointer<std::weak_ptr<_Tp>> : public true_type {};
+template <typename _Tp>
+struct Smart_pointer<std::shared_ptr<_Tp>> : public true_type {};
+template <typename _Tp>
+typename enable_if<is_smart_pointer<_Tp>::value, void>::type check(_Tp p){
+    std::cout << "is smart pointer" << std::endl;
 }
+template <typename _Tp>
+typename enable_if<!is_smart_pointer<_Tp>::value, void>::type check(_Tp p){
+    std::cout << "not smart pointer" << std::endl;
+}
+
+int *p = new int(3);
+std::shared_ptr<int> sp = std::make_shared<int>(3);
+check(sp);
+check(p);
+
+(2) 限制函数参数类型
+// 限制参数类型(以下限定参数为int)
+template<typename T, class = typename std::enable_if<std::is_integral<T>::value>::type>
+void func(T t) {t++;}
+// 限制参数类型，并控制返回值类型
+template <typename _Tp>
+typename enable_if<std::is_integral<_Tp>::value, int>::type add(_Tp i){return i++;}
+add(10);
+
+
 ```
 
 ### SFINAE
@@ -353,16 +478,28 @@ A a;
 a.func();
 // 上述写法错误，因为会导致析构两次this。shared_ptr<>(this)的写法很危险
 
-// 正确做法: 继承类enable_share_from_this<>，使用函数shared_from_this返回该智能指针
+// 正确做法: 继承类enable_shared_from_this<>，使用函数shared_from_this返回该智能指针
 #include <memory>
-class A : public std::enable_share_from_this<A> {
+class A : public std::enable_shared_from_this<A> {
 public:
     void func(){
         auto p = shared_from_this();
     }
 };
 auto a = make_ptr<A>(); // 要使用智能指针包裹
-a.func();               // 正确
+a->func();               // 正确
+
+// 注意
+// 创建A的时候必须用shared_ptr<A>包裹, 否则会出现bad_weak_ptr异常
+class A : public std::enable_shared_from_this<A> {
+public:
+    void func() {
+        auto ptr = shared_from_this(); // 错误 bad_weak_ptr异常
+    }
+};
+A a;       // 必须要用 shared_ptr<A> 包裹
+a.func();
+
 ```
 
 ### 类型检测
@@ -371,4 +508,85 @@ SFINAE
 enable_if 
 Concept c++20
 void_t
+```
+
+### 可变参数
+```c++
+template<typename f, typename ...Argvs>
+void callback(function<void(Argvs...)> f, Argvs&&... argvs){
+    f(std::forward<Argvs>(argvs)...);
+}
+```
+
+### is_function 简单实现
+```c++
+#include <type_traits>
+
+template<typename T>
+struct my_is_function : public false_type {};
+
+template<typename T>
+struct my_is_function<T()> : public true_type {};   // 普通函数
+template<typename T>
+struct my_is_function<T(*)()> : public true_type {}; // 函数指针
+
+template<typename T, typename... Argvs>
+struct my_is_function<T(Argvs...)> : public true_type {};  // 多参数
+template<typename T, typename... Argvs>
+struct my_is_function<T(*)(Argvs...)> : public true_type {};
+
+void f(int);
+
+my_is_function<decltype<f>>::value; // true
+
+```
+
+### 工厂函数
+```c++
+class StateMachine;
+template<typename M, typename... Args,
+    typename = typename std::enable_if<
+                            std::is_base_of<
+                                StateMachine, 
+                                typename std::decay<M>::type
+                            >::value>::type>
+std::shared_ptr<typename std::decay<M>::type> MakeStateMachine(Args&&... args) {
+    using RealType = typename std::decay<M>::type;
+    std::shared_ptr<RealType> machine = std::make_shared<RealType>(std::forward<Args>(args)...);
+    if (machine) {
+        machine->Birth();
+    }
+
+    return machine;
+}
+
+```
+
+### 类成员指针 函数赋值
+```c++
+struct A {
+    std::string a;
+    std::string b;
+};
+
+#define P(x) &A::x
+
+template<typename T>
+void f(A& a, T A::* x, T&& y) {
+    cout << "T" << endl;
+    a.*x = std::forward<T>(y);
+}
+
+template<typename T, typename T1>
+void f(A& a, T A::* x, T1&& y) {
+    cout << "T T1" << endl;
+    a.*x = static_cast<T>(std::forward<T1>(y));
+}
+
+A my;
+f(my, P(a), string("dddd"));    // T
+f(my, P(a), "dddd");            // T T1 "dddd" 匹配的是 const char[4]，所以会匹配下面的函数，然后再转换
+f(my, P(b), 12);                // T
+f(my, P(b), 1.23);              // T T1
+
 ```
