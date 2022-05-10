@@ -137,6 +137,8 @@ Archiving
 cmake .
 make install
 
+// 外部传参
+cmake -DCMAKE_INSTALL_PREFIX=/usr
 
 (1) 目标文件的安装
     install(TARGETS targets... 
