@@ -1439,6 +1439,12 @@ char *const p2 = "world";   // 指针常量，可以指向非常量的字符，�
 
 ```
 
+### const std::shared_ptr<T> 和 std::shared_ptr<const T>
+```
+shared_ptr<const T> => const T*
+const shared_ptr<T> => T* const
+```
+
 ### execv
 ```
 const char* job[] = {"sh","-c","echo \'fafafafa\'",NULL};
@@ -1947,6 +1953,10 @@ class Child : public Base {};
 Base *a = new Child();
 Child *b = dynamic_cast<Child*>(a);
 
+// reinterpret_cast
+// 不安全强制转换
+unsigned char* a;
+char* b = reinterpret_cast<char*>(a);
 ```
 
 ### enum
