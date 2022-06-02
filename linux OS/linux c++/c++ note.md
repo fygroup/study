@@ -4005,7 +4005,7 @@ struct remove_const<const _Ty> {	// remove top level const qualifier
 #include <tuple>
 
 // 例如
-auto my_tuple = std::make_tuple(Name{"Peter"，"Piper"},42,std::string{"914 626 7890"});
+auto my_tuple = std::make_tuple(Name{"Peter"，"Piper"}, 42, std::string{"914 626 7890"});
 
 // 函数模板 get<>() 可以返回 tuple 中的元素
 // 基于索引
@@ -4026,36 +4026,31 @@ class A{
 auto tup1 = std::make_tuple("Hello World!", 'a', 3.14, 0);
 
 // tie
-auto tup1 = std::make_tuple(3.14, 1, 'a');  
-double a; int b;  char c;  
-std::tie(a, b, c) = tup1;  
+auto tup1 = std::make_tuple(3.14, 1, 'a');
+double a; int b;  char c;
+std::tie(a, b, c) = tup1;
 
 // tuple_cat 用于连接tuple
-std::tuple<float, string> tup1(3.14, "pi");  
-std::tuple<int, char> tup2(10, 'a');  
-auto tup3 = tuple_cat(tup1, tup2);  
+std::tuple<float, string> tup1(3.14, "pi");
+std::tuple<int, char> tup2(10, 'a');
+auto tup3 = tuple_cat(tup1, tup2);
 
 // get<i> 获取第 i 个元素的值
-std::tuple<float, string> tup1(3.14, "pi");  
-cout << get<0>(tup1);  
+std::tuple<float, string> tup1(3.14, "pi");
+cout << get<0>(tup1);
 
 // tuple_element 获取tuple中特定元素数据类型
 std::tuple_element<0, decltype(tup1)>::type i = 1.2;
 
 // size 获取tuple中元素个数
-std::tuple<float, string> tup1(3.14, "pi");  
-cout << tuple_size<decltype(tup1)>::value;  
+std::tuple<float, string> tup1(3.14, "pi");
+cout << tuple_size<decltype(tup1)>::value; 
 
 ```
 
 ### 成员函数的隐形this参数
 ```c++
 // 成员函数都隐含一个名为this的指针形参，并且它是该成员函数的第一个参数
-class A{
-public:
-    void f();
-};
-
 ```
 
 ### 类成员指针

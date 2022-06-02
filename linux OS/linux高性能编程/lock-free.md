@@ -216,7 +216,7 @@ void Push(Stack* stack, Node* newNode) {
     for(;;){
         Node* head = stack->head.load();
         newNode->next.store(head);
-        if (stack->head.atomic_compare_exchange_weak(head, newNode)) return;
+        if (stack->head.compare_exchange_weak(head, newNode)) return;
     }
 }
 
@@ -226,8 +226,8 @@ Node* Pop(Stack* stack) {
         uint64_t tag = stack->tag.load();
         if (head == NULL) return NULL;
         Node* next = head->next.load();
-        if (stack->head.atomic_compare_exchange_weak(head, next) && \
-            stack->tag.atomic_compare_exchange_weak(tag, tag + 1)) {
+        if (stack->head.compare_exchange_weak(head, next) && \
+            stack->tag.compare_exchange_weak(tag, tag + 1)) {
             return head;
         }
     }

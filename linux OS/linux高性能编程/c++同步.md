@@ -36,17 +36,17 @@
     // 用val替换所包含的值，并返回它之前的值。整个操作是原子性的(一个原子的读-修改-写操作)
 
 (8) CAS
-    atomic_compare_exchange_weak
-    atomic_compare_exchange_strong
-    atomic_compare_exchange_weak_explicit
-    atomic_compare_exchange_strong_explicit
-    // 以strong为例
+    bool compare_exchange_strong(T& expected, T desired, std::memory_order, std::memory_order);
+    // if *this == expected:
+    //     *this = desired;
+    // else:
+    //     expected = *this;
+
     template <class T>
     bool atomic_compare_exchange_strong (volatile atomic<T>* obj, T* expected, T val) noexcept;
     bool atomic_compare_exchange_strong (atomic<T>* obj, T* expected, T val) noexcept;
     bool atomic_compare_exchange_strong (volatile A* obj, T* expected, T val) noexcept;
     bool atomic_compare_exchange_strong (A* obj, T* expected, T val) noexcept;
-
     // 原子地比较当前值(obj)与期望值(expected)的内容
     // 当前值与期望值相等时，修改当前值为设定值，返回true，obj = val
     // 当前值与期望值不等时，将期望值修改为当前值，返回false，expected = obj
