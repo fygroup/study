@@ -283,3 +283,8 @@ git add -A
 ```
 git config --global http.sslVerify false
 ```
+
+### 版本号
+```
+git describe
+```
