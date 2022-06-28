@@ -484,3 +484,8 @@ void thread1(int v[], int v_count) {sum1 = 0; for (int i = 0; i < v_count; i++) 
 void thread2(int v[], int v_count) {sum2 = 0; for (int i = 0; i < v_count; i++) _sum[1].sum += v[i];}
 _sum[0] + _sum[1];
 ```
+
+### io_uring
+```
+
+```
