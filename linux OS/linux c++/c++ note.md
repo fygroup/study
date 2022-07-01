@@ -851,7 +851,7 @@ Swap(a,b)
 ```
 
 ### 处理模板化基类内的名称
-```
+```c++
 template<typename T>
 class LoggingMsgSender:public MsgSender<T>
 {
@@ -868,18 +868,20 @@ void func(const T & t){
 ```
 
 ### for_each waitpid
-```
+```c++
 #include <algorithm>
 #include <sys/wait.h>
-for_each(vec.begin(),vec.end(),[](pid_t & pd){waitpid(pd,NULL,0);});
+for_each(vec.begin(),vec.end(),[](pid_t & pd){
+    waitpid(pd,NULL,0);
+});
 ```
 
 ### class static struct初始化
-```
+```c++
 class my
 {
 public:
-    typedef struct _MY{}MY;
+    struct MY{};
     static list<MY*> a;
 };
 
@@ -1031,7 +1033,7 @@ str << "abc" << 2 << "dda";
 ```
 对于class本身，可以利用它的static公有成员，因为它们独立于class对象之外，不必产生对象也可以使用它们
 
-如果在外部使用private构造函数，有以下两种方法：
+如果在外部使用private构造函数
 (1) 添加friend
     class Obj{
     public:
