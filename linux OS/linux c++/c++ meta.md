@@ -543,6 +543,7 @@ my_is_function<decltype<f>>::value; // true
 
 ### 工厂函数
 ```c++
+// 好处 解耦、减少重复、逻辑清楚
 class StateMachine;
 template<typename M, typename... Args,
     typename = typename std::enable_if<
