@@ -383,6 +383,26 @@ https://developer.ibm.com/zh/languages/java/articles/j-jtp0730/
 
 ```
 
+### 死锁
+```
+死锁的四个条件
+禁止抢占（no preemption）：系统资源不能被强制从一个进程（线程）中退出，已经获得的资源在未使用完之前不能被抢占
+等待和保持（hold and wait）：一个进程（线程）因请求资源阻塞时，对已获得的资源保持不放
+互斥（mutual exclusion）：资源只能同时分配给一个进程（线程），无法多个进程（线程）共享
+循环等待（circular waiting）：一系列进程（线程）互相持有其他进程（线程）所需要的资源
+只有同时满足以上四个条件，才会产生死锁，想要消除死锁只需要破坏其中任意一个条件即可
+死锁检测就是检查线程之间是否有环的存在
+
+解决死锁
+	超时机制
+	检测到死锁后，破坏掉一个
+
+避免死锁
+	上锁之前检查是否存在死锁环
+	在业务上，拆分业务，高内聚，低耦合
+	设定等待时间
+```
+
 ### go vs nodejs 并发模型
 ```
 go并发模型：CSP
@@ -453,8 +473,8 @@ https://cllc.fun/2020/03/18/linux-zero-copy/
 // 例如
 int sum1;
 int sum2;
-void thread1(int v[], int v_count) {sum1 = 0; for (int i = 0; i < v_count; i++) sum1 += v[i];}
-void thread2(int v[], int v_count) {sum2 = 0; for (int i = 0; i < v_count; i++) sum2 += v[i];}
+void thread1(int v[], int v_count) {sum1 = 0; for (int i = 0; i < v_count/2; i++) sum1 += v[i];}
+void thread2(int v[], int v_count) {sum2 = 0; for (int i = v_count/2; i < v_count; i++) sum2 += v[i];}
 sum1 + sum2;
 // 代码定义了两个全局变量sum1和sum2，两个线程分别将计算结果放入各自的全局变量中，看起来并行不悖
 // 由于这两个全局变量分配的内存紧挨着，cpu很可能将两个变量一起加载到同一条Cache line中
@@ -487,5 +507,7 @@ _sum[0] + _sum[1];
 
 ### io_uring
 ```
+https://segmentfault.com/a/1190000019300089
 
+异步文件操作，Linux 5.1 的发布，超越POSIX AIO
 ```

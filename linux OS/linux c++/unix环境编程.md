@@ -181,38 +181,36 @@ thread_join(t3);
 ```
 
 ### 守护进程 daemon
-```
-一个守护进程的父进程是init进程，因为它真正的父进程在fork出子进程后就先于子进程exit退出了，所以它是一个由init继承的孤儿进程。
+```c++
+// https://www.cnblogs.com/lvyahui/p/7389554.html
+// https://blog.csdn.net/woxiaohahaa/article/details/53487602
+// https://blog.csdn.net/Leezha/article/details/78019116
 
-守护进程是非交互式程序，没有控制终端，所以任何输出，无论是向标准输出设备stdout还是标准出错设备stderr的输出都需要特殊处理。
+// 一个守护进程的父进程是init进程，因为它真正的父进程在fork出子进程后就先于子进程exit退出了，所以它是一个由init继承的孤儿进程
 
-守护进程的名称通常以d结尾，比如sshd、xinetd、crond等
+// 守护进程是非交互式程序，没有控制终端，所以任何输出，无论是向标准输出设备stdout还是标准出错设备stderr的输出都需要特殊处理
 
-特点
-1、没有控制终端，终端名设置为？号：也就意味着没有 stdin 0 、stdout 1、stderr 2
-2、父进程不是用户创建的进程，init进程或者systemd（pid=1）以及用户人为启动的用户层进程一般以pid=1的进程为父进程，而以kthread内核进程创建的守护进程以kthread为父进程
-3、守护进程一般是会话首进程、组长进程。
-4、工作目录为根目录，主要是为了防止占用磁盘导致无法卸载磁盘
+// 守护进程的名称通常以d结尾，比如sshd、xinetd、crond等
 
-注意：
-fork子进程之后，退出父进程，如果子进程还需要继续运行，则需要处理挂断信号(SIGNUP)，否则进程对挂断信号的默认处理将是退出。
-```
+// 特点
+// 1、没有控制终端，终端名设置为？号：也就意味着没有 stdin 0 、stdout 1、stderr 2
+// 2、父进程不是用户创建的进程，init进程或者systemd（pid=1）以及用户人为启动的用户层进程一般以pid=1的进程为父进程，而以kthread内核进程创建的守护进程以kthread为父进程
+// 3、守护进程一般是会话首进程、组长进程。
+// 4、工作目录为根目录，主要是为了防止占用磁盘导致无法卸载磁盘
 
-(1) 创建步骤
-```
-https://www.cnblogs.com/lvyahui/p/7389554.html
-https://blog.csdn.net/woxiaohahaa/article/details/53487602
-https://blog.csdn.net/Leezha/article/details/78019116
+// 注意：
+// fork子进程之后，退出父进程，如果子进程还需要继续运行，则需要处理挂断信号(SIGNUP)，否则进程对挂断信号的默认处理将是退出
 
-1) fork()创建子进程，父进程exit()退出
-2) 在子进程中调用 setsid() 函数创建新的会话(只有当该进程不是一个进程组长时，才会成功创建一个新的会话期)
-3) 再次 fork() 一个子进程并让父进程退出(禁止进程重新打开控制终端。因为子进程不是会话首进程，该进程将不能重新打开控制终端)
-4) 在子进程中调用 chdir() 函数，让根目录 ”/” 成为子进程的工作目录(防止占用磁盘造成磁盘不能卸载。所以也可以改到别的目录，只要保证目录所在磁盘不会中途卸载)
-5) 在子进程中调用 umask(0) 函数，设置进程的文件权限掩码为0(umask取消进程本身的文件掩码设置，也就是设置Linux文件权限，一般设置为000，这是为了防止子进程创建创建一个不能访问的文件（没有正确分配权限）。此过程并非必须，如果守护进程不会创建文件，也可以不修改)
-6) 信号处理signal(SIGCHLD, SIG_IGN)，忽略子进程退出信号，让子进程的回收交给Init
-7) 在子进程中关闭任何不需要的文件描述符(1,2,3..n)
-8) 守护进程退出处理
-9) 如果是单例守护进程，结合锁文件和kill函数检测是否有进程已经运行
+// 创建步骤
+// 1) fork()创建子进程，父进程exit()退出
+// 2) 在子进程中调用 setsid() 函数创建新的会话(只有当该进程不是一个进程组长时，才会成功创建一个新的会话期)
+// 3) 再次 fork() 一个子进程并让父进程退出(禁止进程重新打开控制终端。因为子进程不是会话首进程，该进程将不能重新打开控制终端)
+// 4) 在子进程中调用 chdir() 函数，让根目录 ”/” 成为子进程的工作目录(防止占用磁盘造成磁盘不能卸载。所以也可以改到别的目录，只要保证目录所在磁盘不会中途卸载)
+// 5) 在子进程中调用 umask(0) 函数，设置进程的文件权限掩码为0(umask取消进程本身的文件掩码设置，也就是设置Linux文件权限，一般设置为000，这是为了防止子进程创建创建一个不能访问的文件（没有正确分配权限）。此过程并非必须，如果守护进程不会创建文件，也可以不修改)
+// 6) 信号处理signal(SIGCHLD, SIG_IGN)，忽略子进程退出信号，让子进程的回收交给Init
+// 7) 在子进程中关闭任何不需要的文件描述符(1,2,3..n)
+// 8) 守护进程退出处理
+// 9) 如果是单例守护进程，结合锁文件和kill函数检测是否有进程已经运行
 
 
 // 代码示例
@@ -229,30 +227,30 @@ https://blog.csdn.net/Leezha/article/details/78019116
 #include <string.h>
 
 void create_daemon() {
-    signal(SIGTTOU,SIG_IGN); // 防止守护进行在没有运行起来前，控制终端受到干扰退出或挂起。
+    signal(SIGTTOU,SIG_IGN);    // 防止守护进行在没有运行起来前，控制终端受到干扰退出或挂起。
     signal(SIGTTIN,SIG_IGN);   
     signal(SIGTSTP,SIG_IGN);   
-    signal(SIGHUP ,SIG_IGN); // 防止会话首进程退出时，发送信号终止进程组中的进程
+    signal(SIGHUP ,SIG_IGN);    // 防止会话首进程退出时，发送信号终止进程组中的进程
 
     pid_t pid = fork();
     if (pid == -1) {
         syslog("fork wrong");
         exit(1);
     }else if (pid > 0) {
-        exit(0);                        //(1)退出主进程
+        exit(0);                // 退出主进程
     }
     if (setsid() == -1) {
         syslog("setsid wrong")
         exit(1);
     }
-    pid = fork();                       //创建子进程，禁止打开终端
+    pid = fork();               //创建子进程，禁止打开终端
     if (pid == -1){
         syslog();
         exit(-1);
     }else if (pid > 0){
         exit(0);
     }
-    if (chdir("/") < 0){                //工作路径改为根目录
+    if (chdir("/") < 0){        //工作路径改为根目录
         syslog();
         exit(-1);
     }
@@ -262,8 +260,8 @@ void create_daemon() {
     for(i=0; i< NOFILE; ++i){
         close(i);
     }
-    umask(0);                           //取消进程的文件掩码，赋予更多的文件权限
-    signal(SIGCHLD,SIG_IGN);            //忽略SIGCHLD
+    umask(0);                    //取消进程的文件掩码，赋予更多的文件权限
+    signal(SIGCHLD,SIG_IGN);     //忽略SIGCHLD
 }
 
 void sig_term(int signo){
@@ -282,25 +280,20 @@ int main(){
     openlog("daemontest", LOG_PID, LOG_USER);
     create_daemon();
     while(1){
-
+        sleep(111);
     }
     return 0;
 }
 
-```
+// setsid
+// 建立一个新的会话期
+// 如果调用setsid的进程不是一个进程组的组长，此函数创建一个新的会话期。
+// 1、此进程变成该对话期的首进程
+// 2、此进程变成一个新进程组的组长进程。
+// 3、此进程没有控制终端，如果在调用setsid前，该进程有控制终端，那么与该终端的联系被解除。 如果该进程是一个进程组的组长，此函数返回错误。
+// 4、为了保证这一点，我们先调用fork()然后exit()，此时只有子进程在运行
 
-(2) setsid
-```
-可以建立一个新的会话期：
-如果，调用setsid的进程不是一个进程组的组长，此函数创建一个新的会话期。
-1、此进程变成该对话期的首进程
-2、此进程变成一个新进程组的组长进程。
-3、此进程没有控制终端，如果在调用setsid前，该进程有控制终端，那么与该终端的联系被解除。 如果该进程是一个进程组的组长，此函数返回错误。
-4、为了保证这一点，我们先调用fork()然后exit()，此时只有子进程在运行
-
-(3) umask
-    设置默认权限(详见（linux命令.md）)
-
+// umask 设置默认权限(详见 linux命令.md)
 ```
 
 ### syslog
@@ -1211,4 +1204,65 @@ long ptrace(enum __ptrace_request request,  pid_t pid, void *addr,  void *data);
     // 单步调试模式，X86 CPU 提供了一个硬件的机制，就是通过把 eflags 寄存器的 Trap Flag 设置为1即可
     // 当把 eflags 寄存器的 Trap Flag 设置为1后，CPU 每执行一条指令便会产生一个异常，然后会触发 Linux 的异常处理，Linux 便会发送一个 SIGTRAP 信号给被调试的进程(当前进程接受信号后会发送SIGCHLD给父进程)
     // 父进程（调试进程）接收到 SIGCHLD 后，就可以对被调试的进程进行各种操作，比如读取被调试进程内存的数据和寄存器的数据，然后通过调用 ptrace(PTRACE_CONT, child,...) 来让被调试进程进行运行等
+```
+
+### zmq
+```c++
+// ZMQ的套接字生命周期主要包含四个部分
+// 创建和销毁套接字
+    zmq_socket(), zmq_close()
+// 配置和读取套接字选项
+    zmq_setsockopt(), zmq_getsockopt()
+// 为套接字建立连接
+    zmq_bind(), zmq_connect()
+// 发送和接收消息
+    zmq_send(), zmq_recv()
+
+// zmq套接字不是socket
+// (1) ZMQ套接字传输的是消息，而不是字节（TCP）或帧（UDP）
+// (2) ZMQ套接字在后台进行I/O操作，也就是说无论是接收还是发送消息，它都会先传送到一个本地的缓冲队列，这个内存队列的大小是可以配置的
+// (3) TCP协议只能进行点对点的连接，而ZMQ则可以进行一对多（类似于无线广播）、多对多（类似于邮局）、多对一（类似于信箱），当然也包括一对一的情况
+// (4) ZMQ套接字可以发送消息给多个端点（扇出模型），或从多个端点中接收消息（扇入模型）
+
+// recv send
+// zmq_recv()方法使用了公平队列的算法来决定接收哪个连接的消息
+// zmq_send()方法时其实并没有真正将消息发送给套接字连接。消息会在一个内存队列中保存下来，并由后台的I/O线程异步地进行发送
+// zmq_send行为是非阻塞的。即便zmq_send()有返回值，并不能代表消息已经发送
+
+// 一组单播传输协议（inporc, ipc, tcp），和两个广播协议（epgm, pgm）
+
+// ZMQ使用指定长度来定义帧
+
+// 核心消息模式
+// 请求-应答模式 将一组服务端和一组客户端相连，用于远程过程调用或任务分发
+// 发布-订阅模式 将一组发布者和一组订阅者相连，用于数据分发
+// 管道模式 使用扇入或扇出的形式组装多个节点，可以产生多个步骤或循环，用于构建并行处理架构
+
+// 接受消息
+zmq_msg_t message;
+// 初始化一个空消息
+zmq_msg_init(&message);
+zmq_recv(socket, &message, 0);
+// 消息长度
+int size = zmq_msg_size(&message);
+char *string = malloc(size + 1);
+// 获取消息内容时需使用zmq_msg_data()
+memcpy(string, zmq_msg_data (&message), size);
+// 释放消息
+zmq_msg_close(&message);
+
+// 发送消息
+zmq_msg_t message;
+// 写入消息时，先用zmq_msg_init_size()来创建消息（同时也已初始化了一块内存区域)
+zmq_msg_init_size(&message, strlen (string));
+// 将信息拷贝到该对象中
+memcpy(zmq_msg_data(&message), string, strlen(string));
+int rc = zmq_send (socket, &message, 0);
+assert (!rc);
+zmq_msg_close(&message);
+
+// 注意
+// (1) 将一个消息对象传递给zmq_send()函数后，该对象的长度就会被清零
+// (2) 可以使用zmq_msg_copy()函数进行拷贝对象, 这个函数不会拷贝消息内容，只是拷贝引用
+
 ```
